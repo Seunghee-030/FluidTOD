@@ -165,6 +165,7 @@ public:
 
 
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
+
     void BakeTODCurves();
 
     void GetTODSettingsAtTime(
@@ -190,19 +191,6 @@ public:
     void GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha);
 
     void ApplyPPVBlending(float CurrentTime);
-
-    // Presets
-    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
-    void SaveToSinglePreset(int32 Index, UTODSinglePreset* Preset);
-
-    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
-    void LoadFromSinglePreset(UTODSinglePreset* Preset, int32 Index);
-
-    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
-    void SaveToFullPreset(UTODPresetData* Preset);
-
-    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
-    void LoadFromFullPreset(UTODPresetData* Preset);
 
 protected:
     // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드

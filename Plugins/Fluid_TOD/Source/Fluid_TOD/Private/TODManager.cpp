@@ -34,14 +34,22 @@ ATODManager::ATODManager()
 	RuntimePPVComponent->Priority = 100;
 }
 
-// 🐛 Debug System
+// ======= System =========
+
+// 게임 시작
 void ATODManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SortTODDataArray();
+	BakeTODCurves();
+
+	UpdateTOD(StartTime);
+
 	GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
 
+// 디버그 출력
 void ATODManager::PrintTODDebugInfo()
 {
 	if (!bEnableDebugPrint || !GEngine) return;
@@ -99,52 +107,43 @@ void ATODManager::PrintTODDebugInfo()
 
 }
 
-// System
+// 정렬
 void ATODManager::SortTODDataArray()
 {
 	if (TOD_DataArray.Num() < 2) return;
 	TOD_DataArray.Sort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
-// Presets
-void ATODManager::SaveToSinglePreset(int32 Index, UTODSinglePreset* Preset)
+// ======= Moon/Sun 분리 =========
+
+void ATODManager::FindComponents()
 {
-	if (!IsValid(Preset)) return;
+	TArray<UDirectionalLightComponent*> Lights;
+	GetComponents<UDirectionalLightComponent>(Lights);
 
-	if (!TOD_DataArray.IsValidIndex(Index)) return;
+	SunLightComponent = nullptr;
+	MoonLightComponent = nullptr;
 
-	Preset->SavedData = TOD_DataArray[Index];
-	Preset->MarkPackageDirty();
+	for (UDirectionalLightComponent* Light : Lights)
+	{
+		// 이름에 Moon 들어가면 Moon으로 인식
+		if (Light->GetName().Contains(TEXT("Moon"), ESearchCase::IgnoreCase))
+		{
+			MoonLightComponent = Light;
+		}
+		else
+		{
+			SunLightComponent = Light;
+		}
+	}
+
+	SkyLightComponent = FindComponentByClass<USkyLightComponent>();
+	FogComponent = FindComponentByClass<UExponentialHeightFogComponent>();
+	SkyAtmosphereComponent = FindComponentByClass<USkyAtmosphereComponent>();
 }
 
-void ATODManager::LoadFromSinglePreset(UTODSinglePreset* Preset, int32 Index)
-{
-	if (!IsValid(Preset)) return;
-	if (!TOD_DataArray.IsValidIndex(Index)) return;
+// ======= PPV =========
 
-	TOD_DataArray[Index] = Preset->SavedData;
-}
-
-void ATODManager::SaveToFullPreset(UTODPresetData* Preset)
-{
-	if (!IsValid(Preset)) return;
-
-	Preset->TOD_DataArray = TOD_DataArray;
-	Preset->MarkPackageDirty();
-}
-
-void ATODManager::LoadFromFullPreset(UTODPresetData* Preset)
-{
-	if (!IsValid(Preset)) return;
-
-	TOD_DataArray = Preset->TOD_DataArray;
-
-#if WITH_EDITOR
-	BakeTODCurves();
-#endif
-}
-
-// PPV
 void ATODManager::GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha)
 {
 	OutPrevIndex = 0; OutNextIndex = 0; OutAlpha = 0.0f;
@@ -331,6 +330,8 @@ void ATODManager::ApplyPPVBlending(float CurrentTime)
 #undef LERP_COLOR_PPV
 }
 
+// ======= Presets =========
+
 void ATODManager::SaveNewPreset()
 {
 #if WITH_EDITOR
@@ -376,31 +377,7 @@ void ATODManager::LoadSelectedPreset()
 	UE_LOG(LogTemp, Warning, TEXT("Fluid_TOD: Preset '%s' loaded successfully!"), *LoadPreset->GetName());
 }
 
-void ATODManager::FindComponents()
-{
-	TArray<UDirectionalLightComponent*> Lights;
-	GetComponents<UDirectionalLightComponent>(Lights);
-
-	SunLightComponent = nullptr;
-	MoonLightComponent = nullptr;
-
-	for (UDirectionalLightComponent* Light : Lights)
-	{
-		// 이름에 Moon 들어가면 Moon으로 인식
-		if (Light->GetName().Contains(TEXT("Moon"), ESearchCase::IgnoreCase))
-		{
-			MoonLightComponent = Light;
-		}
-		else
-		{
-			SunLightComponent = Light;
-		}
-	}
-
-	SkyLightComponent = FindComponentByClass<USkyLightComponent>();
-	FogComponent = FindComponentByClass<UExponentialHeightFogComponent>();
-	SkyAtmosphereComponent = FindComponentByClass<USkyAtmosphereComponent>();
-}
+// ======= TOD System Main =========
 
 void ATODManager::BakeTODCurves()
 {
@@ -408,7 +385,11 @@ void ATODManager::BakeTODCurves()
 
 	if (TOD_DataArray.Num() == 0) return;
 
-	SortTODDataArray();
+	// 로컬 복사본 정렬
+	TArray<FTODMasterData> SortedCopy = TOD_DataArray;
+	SortedCopy.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
+		return A.Time < B.Time;
+		});
 
 	TArray<FRuntimeFloatCurve*> FloatCurves = {
 		&SunIntensityCurve, &SunSourceAngleCurve, &SunSourceSoftAngleCurve, &SunIndirectIntensityCurve,
@@ -425,30 +406,26 @@ void ATODManager::BakeTODCurves()
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(*Curve); }
 
-	for (const FTODMasterData& Data : TOD_DataArray)
+	for (const FTODMasterData& Data : SortedCopy)
 	{
 		float T = Data.Time;
 
-		// Sun & Moon
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunIntensityCurve, T, Data.SunMoon_Settings.Intensity, SunIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunSourceAngleCurve, T, Data.SunMoon_Settings.SourceAngle, SunSourceAngleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunSourceSoftAngleCurve, T, Data.SunMoon_Settings.SourceSoftAngle, SunSourceSoftAngleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunIndirectIntensityCurve, T, Data.SunMoon_Settings.IndirectLightingIntensity, SunIndirectIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SunColorCurve, T, Data.SunMoon_Settings.Color, SunColorInterpMode);
 
-		// SkyLight
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightIntensityCurve, T, Data.SkyLight_Settings.Sky_Light_Intensity, SkyLightIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightIndirectIntensityCurve, T, Data.SkyLight_Settings.Sky_Indirect_Lighting_Intensity, SkyLightIndirectIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightVolumetricScatteringIntensityCurve, T, Data.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity, SkyLightVolumetricScatteringInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SkyColorCurve, T, Data.SkyLight_Settings.Sky_Light_Color, SkyColorInterpMode);
 
-		// Fog
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(FogDensityCurve, T, Data.Fog_Settings.Fog_Density, FogDensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(FogHeightFalloffCurve, T, Data.Fog_Settings.Fog_Height_Falloff, FogHeightFalloffInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(FogInscatteringColorCurve, T, Data.Fog_Settings.Fog_Inscattering_Color, FogInscatteringColorInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(FogDirectionalColorCurve, T, Data.Fog_Settings.Fog_Directional_Inscattering, FogDirectionalColorInterpMode);
 
-		// Sky Atmosphere
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MieScatteringScaleCurve, T, Data.SkyAtmosphere_Settings.Mie_Scattering_Scale, MieScatteringScaleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(RayleighScatteringScaleCurve, T, Data.SkyAtmosphere_Settings.Rayleigh_Scattering_Scale, RayleighScatteringScaleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(AerialPerspectiveDistanceScaleCurve, T, Data.SkyAtmosphere_Settings.Aerial_Perspective_Distance_Scale, AerialPerspectiveDistanceScaleInterpMode);
@@ -503,10 +480,6 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	if (TOD_DataArray.Num() == 0) return;
 
 	if (!SkyLightComponent) FindComponents();
-
-	int32 PrevIndex, NextIndex;
-	float Alpha;
-	GetTODInterpolationData(CurrentTime, PrevIndex, NextIndex, Alpha);
 
 	// 런타임 PPV 사용
 	ApplyPPVBlending(CurrentTime);
@@ -603,6 +576,9 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	OnUpdateCustomMaterials(CurrentTime);
 }
 
+
+// ======= Editor 기능 관련 =========
+
 #if WITH_EDITOR
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -615,12 +591,18 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
 		LoadSelectedPreset();
+		SortTODDataArray();
+		BakeTODCurves();
+		UpdateTOD(StartTime);
 	}
 
-	// 추가:PreviewTime 변경시 화면 갱신
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
+		if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)
+		{
+			SortTODDataArray();
+		}
+
 		int32 Hours = FMath::FloorToInt(StartTime);
 		int32 Minutes = FMath::FloorToInt((StartTime - Hours) * 60.0f);
 
@@ -632,6 +614,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)
 	{
 		BakeTODCurves();
+		UpdateTOD(StartTime);
 	}
 }
 
