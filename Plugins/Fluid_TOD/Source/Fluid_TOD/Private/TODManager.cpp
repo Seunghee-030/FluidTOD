@@ -89,7 +89,7 @@ void ATODManager::PrintTODDebugInfo()
 		Fog.Fog_Density,
 		Atmos.Rayleigh_Scattering_Scale,
 		CurrentBloom, 
-		CurrentExpMin,
+		CurrentExpMin, CurrentExpMax,
 		CurrentTemp,
 		CurrentSaturation.X, CurrentSaturation.Y, CurrentSaturation.Z
 	);
