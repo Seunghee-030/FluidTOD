@@ -54,6 +54,7 @@ void ATODManager::PrintTODDebugInfo()
 
 	float CurrentBloom = 0.0f;
 	float CurrentExpMin = 0.0f;
+	float CurrentExpMax = 0.0f;
 	float CurrentTemp = 6500.0f;
 	FVector4 CurrentSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -61,21 +62,23 @@ void ATODManager::PrintTODDebugInfo()
 	{
 		CurrentBloom = RuntimePPVComponent->Settings.BloomIntensity;
 		CurrentExpMin = RuntimePPVComponent->Settings.AutoExposureMinBrightness;
+		CurrentExpMax = RuntimePPVComponent->Settings.AutoExposureMaxBrightness;
 		CurrentTemp = RuntimePPVComponent->Settings.WhiteTemp;
 		CurrentSaturation = RuntimePPVComponent->Settings.ColorSaturation;
 	}
 
 	FString DebugMsg = FString::Printf(TEXT(
-		"=== TOD System Debug ===\n"
-		"Time: %.2f\n"
-		"-------------------------\n"
-		"[Sun/Moon] Intensity: %.2f / Angle: %.1f\n"
-		"[SkyLight] Curve: %.2f\n"
-		"[SkyIndirect] Curve: %.2f\n"
-		"[Fog] Density: %.5f\n"
-		"[Atmos] Rayleigh Scale: %.5f\n"
-		"-------------------------\n"
-		"[PPV] Bloom: %.2f | Exp Min: %.2f\n"
+		"============ TOD System Debug =============\n"
+		"Time  %.2f\n"
+		"-------------------------------------------\n"
+		"[Sun/Moon] Intensity %.2f | Angle %.1f\n"
+		"[SkyLight] %.2f\n"
+		"[SkyIndirect] %.2f\n"
+		"[Fog] Density %.5f\n"
+		"[Atmos] Rayleigh Scale %.5f\n"
+		"-------------------------------------------\n"
+		"[PPV] Bloom: %.2f\n"
+		"[PPV] Min EV100: % .2f | Max EV100: % .2f\n"
 		"[PPV] White Temp: %.0fK\n"
 		"[PPV] Saturation: (R:%.2f, G:%.2f, B:%.2f)"
 	),
@@ -85,7 +88,8 @@ void ATODManager::PrintTODDebugInfo()
 		Sky.Sky_Indirect_Lighting_Intensity,
 		Fog.Fog_Density,
 		Atmos.Rayleigh_Scattering_Scale,
-		CurrentBloom, CurrentExpMin,
+		CurrentBloom, 
+		CurrentExpMin,
 		CurrentTemp,
 		CurrentSaturation.X, CurrentSaturation.Y, CurrentSaturation.Z
 	);
