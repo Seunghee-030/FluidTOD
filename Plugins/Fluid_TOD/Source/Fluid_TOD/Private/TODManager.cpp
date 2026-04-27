@@ -5,6 +5,8 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PostProcessComponent.h"
+#include "Engine/Engine.h"
+#include "TimerManager.h"
 
 #if WITH_EDITOR
 #include "AssetToolsModule.h"
@@ -31,6 +33,68 @@ ATODManager::ATODManager()
 	RuntimePPVComponent->bUnbound = true;
 	RuntimePPVComponent->Priority = 100;
 }
+
+// 🐛 Debug System
+void ATODManager::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
+}
+
+void ATODManager::PrintTODDebugInfo()
+{
+	if (!bEnableDebugPrint || !GEngine) return;
+
+	FTODSunMoonSettings SunMoon;
+	FTODSkyLightSettings Sky;
+	FTODFogSettings Fog;
+	FTODSkyAtmosphereSettings Atmos;
+	GetTODSettingsAtTime(CurrentSystemTime, SunMoon, Sky, Fog, Atmos);
+
+	float CurrentBloom = 0.0f;
+	float CurrentExpMin = 0.0f;
+	float CurrentTemp = 6500.0f;
+	FVector4 CurrentSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	if (IsValid(RuntimePPVComponent))
+	{
+		CurrentBloom = RuntimePPVComponent->Settings.BloomIntensity;
+		CurrentExpMin = RuntimePPVComponent->Settings.AutoExposureMinBrightness;
+		CurrentTemp = RuntimePPVComponent->Settings.WhiteTemp;
+		CurrentSaturation = RuntimePPVComponent->Settings.ColorSaturation;
+	}
+
+	FString DebugMsg = FString::Printf(TEXT(
+		"=== TOD System Debug ===\n"
+		"Time: %.2f\n"
+		"-------------------------\n"
+		"[Sun/Moon] Intensity: %.2f / Angle: %.1f\n"
+		"[SkyLight] Curve: %.2f\n"
+		"[SkyIndirect] Curve: %.2f\n"
+		"[Fog] Density: %.5f\n"
+		"[Atmos] Rayleigh Scale: %.5f\n"
+		"-------------------------\n"
+		"[PPV] Bloom: %.2f | Exp Min: %.2f\n"
+		"[PPV] White Temp: %.0fK\n"
+		"[PPV] Saturation: (R:%.2f, G:%.2f, B:%.2f)"
+	),
+		CurrentSystemTime,
+		SunMoon.Intensity, SunMoon.SourceAngle,
+		Sky.Sky_Light_Intensity, 
+		Sky.Sky_Indirect_Lighting_Intensity,
+		Fog.Fog_Density,
+		Atmos.Rayleigh_Scattering_Scale,
+		CurrentBloom, CurrentExpMin,
+		CurrentTemp,
+		CurrentSaturation.X, CurrentSaturation.Y, CurrentSaturation.Z
+	);
+
+	// 화면 출력
+	GEngine->AddOnScreenDebugMessage(1357, DebugPrintInterval + 0.1f, FColor::Yellow, DebugMsg);
+
+}
+
 // System
 void ATODManager::SortTODDataArray()
 {
@@ -430,6 +494,8 @@ void ATODManager::GetTODSettingsAtTime(
 
 void ATODManager::UpdateTOD(float CurrentTime)
 {
+	CurrentSystemTime = CurrentTime;
+
 	if (TOD_DataArray.Num() == 0) return;
 
 	if (!SkyLightComponent) FindComponents();
@@ -447,6 +513,19 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentTime, SunMoon, Sky, Fog, Atmos);
 
+	float NightAlpha = 0.0f;
+	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+
+	if (SafeTime >= 18.0f)
+	{
+		NightAlpha = (SafeTime - 18.0f) / 6.0f;
+	}
+	else if (SafeTime <= 6.0f)
+	{
+		NightAlpha = 1.0f - (SafeTime / 6.0f);
+	}
+
 	// 컴포넌트 값 업데이트
 	if (IsValid(SunLightComponent))
 	{
@@ -458,19 +537,42 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		SunLightComponent->SetVisibility(SunMoon.bVisible);
 	}
 
+
+	// bAtmosphereSunLight 해제로 인한 부자연스러움,, 밤 일때 가중치 부여
 	if (IsValid(MoonLightComponent))
 	{
-		MoonLightComponent->SetIntensity(SunMoon.Intensity);
-		MoonLightComponent->SetLightColor(SunMoon.Color);
+		if (MoonLightComponent->bAtmosphereSunLight)
+		{
+			MoonLightComponent->bAtmosphereSunLight = false;
+		}
+
+		// 지평선 보정 가중치 계산
+		float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
+		float HorizonAlpha = FMath::Clamp(1.0f - (FMath::Abs(MoonPitch) / 20.0f), 0.0f, 1.0f);
+
+		// 밤 보정 로직
+		float FinalIntensity = SunMoon.Intensity * FMath::Lerp(1.0f, 0.8f, HorizonAlpha);
+		FLinearColor SafeNightColor = FLinearColor(0.1f, 0.15f, 0.25f, 1.0f);
+		FLinearColor FinalColor = FMath::Lerp(SunMoon.Color, SafeNightColor, HorizonAlpha * 0.3f);
+		float FinalVolumetric = 1.0f * FMath::Lerp(1.0f, 2.5f, HorizonAlpha);
+
+		float FinalIndirectIntensity = SunMoon.IndirectLightingIntensity * FMath::Lerp(1.0f, 3.0f, NightAlpha);
+
+		MoonLightComponent->SetIntensity(FinalIntensity);
+		MoonLightComponent->SetLightColor(FinalColor);
+		MoonLightComponent->SetVolumetricScatteringIntensity(FinalVolumetric);
+		MoonLightComponent->SetIndirectLightingIntensity(FinalIndirectIntensity);
+
 		MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
 		MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-		MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
 		MoonLightComponent->SetVisibility(SunMoon.bVisible);
 	}
 
 	if (IsValid(SkyLightComponent))
 	{
-		SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
+		float FinalSkyLightIntensity = Sky.Sky_Light_Intensity * FMath::Lerp(1.0f, 2.5f, NightAlpha);
+
+		SkyLightComponent->SetIntensity(FinalSkyLightIntensity);
 		SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
 		SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
 		SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);

@@ -36,6 +36,14 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD Preset")
     void LoadSelectedPreset();
 
+    // 디버그 텍스트 출력
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug")
+    bool bEnableDebugPrint = false;
+
+    // 출력 갱신 간격
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug", meta = (EditCondition = "bEnableDebugPrint"))
+    float DebugPrintInterval = 1.0f;
+
     UPROPERTY()
     TObjectPtr<class UPostProcessComponent> RuntimePPVComponent;
 
@@ -195,6 +203,18 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
     void LoadFromFullPreset(UTODPresetData* Preset);
+
+protected:
+    // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드
+    virtual void BeginPlay() override;
+
+private:
+    FTimerHandle DebugTimerHandle;
+    float CurrentSystemTime = 0.0f; // 현재 시간을 기억해둘 변수
+
+    // 지정된 간격마다 호출될 디버그 출력 함수
+    UFUNCTION()
+    void PrintTODDebugInfo();
 
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
