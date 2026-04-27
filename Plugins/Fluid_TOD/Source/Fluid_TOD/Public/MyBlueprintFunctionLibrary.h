@@ -15,28 +15,6 @@ class FLUID_TOD_API UMyBlueprintFunctionLibrary : public UBlueprintFunctionLibra
 	GENERATED_BODY()
 
 public:
-	// System & PPV
-	UFUNCTION(BlueprintCallable, Category = "TOD|System")
-	static void SortTODDataArray(UPARAM(ref) TArray<FTODMasterData>& DataArray);
-
-	UFUNCTION(BlueprintPure, Category = "TOD|System")
-	static void GetTODInterpolationData(const TArray<FTODMasterData>& DataArray, float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha);
-
-	UFUNCTION()
-	static void ApplyPPVBlending(const TArray<FTODMasterData>& DataArray, float CurrentTime, UPostProcessComponent* RuntimePPV);
-
-	// Presets
-	UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
-	static void SaveToSinglePreset(const TArray<FTODMasterData>& DataArray, int32 Index, UTODSinglePreset* Preset);
-
-	UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
-	static void LoadFromSinglePreset(UTODSinglePreset* Preset, TArray<FTODMasterData>& DataArray, int32 Index);
-
-	UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
-	static void SaveToFullPreset(const TArray<FTODMasterData>& DataArray, UTODPresetData* Preset);
-
-	UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
-	static void LoadFromFullPreset(UTODPresetData* Preset, TArray<FTODMasterData>& DataArray);
 
 	// Curve Control
 	UFUNCTION(BlueprintCallable, Category = "TOD|Curve")

@@ -31,6 +31,237 @@ ATODManager::ATODManager()
 	RuntimePPVComponent->bUnbound = true;
 	RuntimePPVComponent->Priority = 100;
 }
+// System
+void ATODManager::SortTODDataArray()
+{
+	if (TOD_DataArray.Num() < 2) return;
+	TOD_DataArray.Sort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
+}
+
+// Presets
+void ATODManager::SaveToSinglePreset(int32 Index, UTODSinglePreset* Preset)
+{
+	if (!IsValid(Preset)) return;
+
+	if (!TOD_DataArray.IsValidIndex(Index)) return;
+
+	Preset->SavedData = TOD_DataArray[Index];
+	Preset->MarkPackageDirty();
+}
+
+void ATODManager::LoadFromSinglePreset(UTODSinglePreset* Preset, int32 Index)
+{
+	if (!IsValid(Preset)) return;
+	if (!TOD_DataArray.IsValidIndex(Index)) return;
+
+	TOD_DataArray[Index] = Preset->SavedData;
+}
+
+void ATODManager::SaveToFullPreset(UTODPresetData* Preset)
+{
+	if (!IsValid(Preset)) return;
+
+	Preset->TOD_DataArray = TOD_DataArray;
+	Preset->MarkPackageDirty();
+}
+
+void ATODManager::LoadFromFullPreset(UTODPresetData* Preset)
+{
+	if (!IsValid(Preset)) return;
+
+	TOD_DataArray = Preset->TOD_DataArray;
+
+#if WITH_EDITOR
+	BakeTODCurves();
+#endif
+}
+
+// PPV
+void ATODManager::GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha)
+{
+	OutPrevIndex = 0; OutNextIndex = 0; OutAlpha = 0.0f;
+	const int32 Num = TOD_DataArray.Num();
+	if (Num < 2) return;
+
+	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+
+	OutPrevIndex = Num - 1;
+	for (int32 i = 0; i < Num - 1; ++i)
+	{
+		if (SafeTime >= TOD_DataArray[i].Time && SafeTime < TOD_DataArray[i + 1].Time)
+		{
+			OutPrevIndex = i;
+			break;
+		}
+	}
+	OutNextIndex = (OutPrevIndex + 1) % Num;
+
+	float PrevTime = TOD_DataArray[OutPrevIndex].Time;
+	float NextTime = TOD_DataArray[OutNextIndex].Time;
+	float AdjustedCurrentTime = SafeTime;
+
+	if (NextTime < PrevTime)
+	{
+		NextTime += 24.0f;
+		if (AdjustedCurrentTime < TOD_DataArray[0].Time) AdjustedCurrentTime += 24.0f;
+	}
+
+	float TimeDiff = NextTime - PrevTime;
+	if (TimeDiff > KINDA_SMALL_NUMBER)
+	{
+		OutAlpha = FMath::Clamp((AdjustedCurrentTime - PrevTime) / TimeDiff, 0.0f, 1.0f);
+	}
+}
+
+void ATODManager::ApplyPPVBlending(float CurrentTime)
+{
+	if (!IsValid(RuntimePPVComponent)) return;
+
+	TArray<FTODMasterData> ValidPPVs;
+	for (const FTODMasterData& Data : TOD_DataArray)
+	{
+		if (IsValid(Data.PPV)) ValidPPVs.Add(Data);
+	}
+
+	const int32 Num = ValidPPVs.Num();
+	if (Num == 0) return;
+
+	ValidPPVs.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
+		return A.Time < B.Time;
+		});
+
+	for (const FTODMasterData& Data : ValidPPVs)
+	{
+		Data.PPV->BlendWeight = 0.0f;
+		Data.PPV->Priority = -10;
+	}
+
+	float SafeTime = CurrentTime;
+	while (SafeTime >= 24.0f) SafeTime -= 24.0f;
+	while (SafeTime < 0.0f) SafeTime += 24.0f;
+
+	int32 PrevIndex = Num - 1;
+	int32 NextIndex = 0;
+
+	for (int32 i = 0; i < Num; ++i)
+	{
+		if (SafeTime < ValidPPVs[i].Time)
+		{
+			NextIndex = i;
+			PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
+			break;
+		}
+	}
+	if (SafeTime >= ValidPPVs[Num - 1].Time)
+	{
+		PrevIndex = Num - 1;
+		NextIndex = 0;
+	}
+
+	float PrevTime = ValidPPVs[PrevIndex].Time;
+	float NextTime = ValidPPVs[NextIndex].Time;
+
+	float Range = NextTime - PrevTime;
+	while (Range <= 0.0f) Range += 24.0f;
+
+	float Elapsed = SafeTime - PrevTime;
+	while (Elapsed < 0.0f) Elapsed += 24.0f;
+
+	float Alpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
+
+	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
+	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
+
+	RuntimePPVComponent->bEnabled = true;
+	RuntimePPVComponent->bUnbound = true;
+	RuntimePPVComponent->Priority = 0;
+	RuntimePPVComponent->BlendWeight = 1.0f;
+
+	// ---보간용 매크로
+
+	// float
+#define LERP_PPV(Prop) \
+		RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
+		RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
+
+	// FVector4
+#define LERP_VEC4_PPV(Prop) \
+		RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
+		RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
+
+	// FLinearColor
+#define LERP_COLOR_PPV(Prop) \
+		RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
+		RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
+
+// Exposure
+	LERP_PPV(AutoExposureMinBrightness);
+	LERP_PPV(AutoExposureMaxBrightness);
+	LERP_PPV(AutoExposureBias);
+	LERP_PPV(AutoExposureSpeedUp);
+	LERP_PPV(AutoExposureSpeedDown);
+	LERP_PPV(AutoExposureApplyPhysicalCameraExposure);
+
+	// Bloom
+	LERP_PPV(BloomIntensity);
+	LERP_PPV(BloomThreshold);
+	LERP_PPV(BloomSizeScale);
+	LERP_PPV(BloomConvolutionIntensity);
+
+	// White Balance
+	LERP_PPV(WhiteTemp);
+	LERP_PPV(WhiteTint);
+
+	// Color Grading
+	LERP_VEC4_PPV(ColorSaturation);
+	LERP_VEC4_PPV(ColorContrast);
+	LERP_VEC4_PPV(ColorGamma);
+	LERP_VEC4_PPV(ColorGain);
+	LERP_VEC4_PPV(ColorOffset);
+
+	// Shadows
+	LERP_VEC4_PPV(ColorSaturationShadows);
+	LERP_VEC4_PPV(ColorContrastShadows);
+	LERP_VEC4_PPV(ColorGammaShadows);
+	LERP_VEC4_PPV(ColorGainShadows);
+	LERP_VEC4_PPV(ColorOffsetShadows);
+
+	// Midtones
+	LERP_VEC4_PPV(ColorSaturationMidtones);
+	LERP_VEC4_PPV(ColorContrastMidtones);
+	LERP_VEC4_PPV(ColorGammaMidtones);
+	LERP_VEC4_PPV(ColorGainMidtones);
+	LERP_VEC4_PPV(ColorOffsetMidtones);
+
+	// Highlights
+	LERP_VEC4_PPV(ColorSaturationHighlights);
+	LERP_VEC4_PPV(ColorContrastHighlights);
+	LERP_VEC4_PPV(ColorGammaHighlights);
+	LERP_VEC4_PPV(ColorGainHighlights);
+	LERP_VEC4_PPV(ColorOffsetHighlights);
+
+	// Lens & Effects
+	LERP_PPV(VignetteIntensity);
+	LERP_PPV(FilmGrainIntensity);
+	LERP_PPV(FilmGrainTexelSize);
+	LERP_PPV(SceneFringeIntensity);
+	LERP_PPV(LensFlareIntensity);
+	LERP_PPV(AmbientOcclusionIntensity);
+	LERP_PPV(IndirectLightingIntensity);
+	LERP_PPV(MotionBlurAmount);
+
+	// Indirect Color
+	LERP_COLOR_PPV(IndirectLightingColor);
+
+	// Lumen
+	LERP_PPV(LumenSceneLightingQuality);
+	LERP_PPV(LumenSceneDetail);
+
+#undef LERP_PPV
+#undef LERP_VEC4_PPV
+#undef LERP_COLOR_PPV
+}
 
 void ATODManager::SaveNewPreset()
 {
@@ -109,7 +340,7 @@ void ATODManager::BakeTODCurves()
 
 	if (TOD_DataArray.Num() == 0) return;
 
-	UMyBlueprintFunctionLibrary::SortTODDataArray(TOD_DataArray);
+	SortTODDataArray();
 
 	TArray<FRuntimeFloatCurve*> FloatCurves = {
 		&SunIntensityCurve, &SunSourceAngleCurve, &SunSourceSoftAngleCurve, &SunIndirectIntensityCurve,
@@ -205,10 +436,10 @@ void ATODManager::UpdateTOD(float CurrentTime)
 
 	int32 PrevIndex, NextIndex;
 	float Alpha;
-	UMyBlueprintFunctionLibrary::GetTODInterpolationData(TOD_DataArray, CurrentTime, PrevIndex, NextIndex, Alpha);
+	GetTODInterpolationData(CurrentTime, PrevIndex, NextIndex, Alpha);
 
 	// 런타임 PPV 사용
-	UMyBlueprintFunctionLibrary::ApplyPPVBlending(TOD_DataArray, CurrentTime, RuntimePPVComponent);
+	ApplyPPVBlending(CurrentTime);
 
 	FTODSunMoonSettings SunMoon;
 	FTODSkyLightSettings Sky;
@@ -278,6 +509,18 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
 		LoadSelectedPreset();
+	}
+
+	// 추가:PreviewTime 변경시 화면 갱신
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
+	{
+		int32 Hours = FMath::FloorToInt(StartTime);
+		int32 Minutes = FMath::FloorToInt((StartTime - Hours) * 60.0f);
+
+		StartTimeDisplay = FString::Printf(TEXT("[ %02d : %02d ]"), Hours, Minutes);
+
+		UpdateTOD(StartTime);
 	}
 
 	if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)

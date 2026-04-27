@@ -15,8 +15,15 @@ class FLUID_TOD_API ATODManager : public AActor
 public:
     ATODManager();
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Data")
+    UPROPERTY(VisibleAnywhere, Category = "TOD", meta = (DisplayPriority = "1"))
+    FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (UIMin = "0.0", UIMax = "24.0", ClampMin = "0.0", ClampMax = "24.0", DisplayPriority = "2"))
+    float StartTime = 12.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3"))
     TArray<FTODMasterData> TOD_DataArray;
+
 
     // Preset Asset
     UPROPERTY(EditAnywhere, Category = "TOD Preset")
@@ -168,6 +175,26 @@ public:
     //  Material 이벤트
     UFUNCTION(BlueprintImplementableEvent, Category = "TOD|System")
     void OnUpdateCustomMaterials(float CurrentTime);
+
+    // System/PPV
+    void SortTODDataArray();
+
+    void GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha);
+
+    void ApplyPPVBlending(float CurrentTime);
+
+    // Presets
+    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
+    void SaveToSinglePreset(int32 Index, UTODSinglePreset* Preset);
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
+    void LoadFromSinglePreset(UTODSinglePreset* Preset, int32 Index);
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
+    void SaveToFullPreset(UTODPresetData* Preset);
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Presets")
+    void LoadFromFullPreset(UTODPresetData* Preset);
 
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
