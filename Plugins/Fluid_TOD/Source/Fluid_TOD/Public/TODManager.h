@@ -217,7 +217,15 @@ private:
     void PrintTODDebugInfo();
 
 #if WITH_EDITOR
+protected:
+    virtual void PostInitProperties() override;
+    virtual void BeginDestroy() override;
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
     virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+
+private:
+    // 외부 액터(PPV)의 변경을 감지할 함수
+    void OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent);
+    FDelegateHandle PropertyChangeDelegateHandle;
 #endif
 };

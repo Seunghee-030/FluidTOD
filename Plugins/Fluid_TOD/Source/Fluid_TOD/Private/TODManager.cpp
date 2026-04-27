@@ -639,9 +639,57 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 
+	if (PropertyChangedEvent.PropertyChain.GetActiveMemberNode())
+	{
+		const FName ActiveMemberName = PropertyChangedEvent.PropertyChain.GetActiveMemberNode()->GetValue()->GetFName();
+
+		if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
+		{
+			// 배열 내부 값이 변경될 때
+			UpdateTOD(StartTime);
+		}
+	}
+
 	if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)
 	{
 		BakeTODCurves();
 	}
 }
+
+void ATODManager::PostInitProperties()
+{
+	Super::PostInitProperties();
+
+	// 엔진 시작 시 등록
+	if (!HasAnyFlags(RF_ClassDefaultObject))
+	{
+		PropertyChangeDelegateHandle = FCoreUObjectDelegates::OnObjectPropertyChanged.AddUObject(this, &ATODManager::OnExternalPropertyChanged);
+	}
+}
+
+void ATODManager::BeginDestroy()
+{
+	// 해제
+	if (PropertyChangeDelegateHandle.IsValid())
+	{
+		FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(PropertyChangeDelegateHandle);
+	}
+	Super::BeginDestroy();
+}
+
+void ATODManager::OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent)
+{
+	if (Object && Object->IsA<APostProcessVolume>())
+	{
+		for (const FTODMasterData& Data : TOD_DataArray)
+		{
+			if (Data.PPV == Object)
+			{
+				UpdateTOD(StartTime);
+				break;
+			}
+		}
+	}
+}
+
 #endif
