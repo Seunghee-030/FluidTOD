@@ -12,6 +12,7 @@
 	"SupportURL": "",
 	"EngineVersion": "5.7.0",
 	"CanContainContent": true,
+	"IsBetaVersion": true,
 	"Installed": true,
 	"Modules": [
 		{
@@ -24,7 +25,5 @@
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit"
 		}
-	],
-	"IsBetaVersion": true,
-	"IsExperimentalVersion": false
+	]
 }
