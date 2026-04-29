@@ -539,7 +539,10 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		if (IsValid(SunLightComponent)) SunLightComponent->SetVisibility(false);
 		if (IsValid(MoonLightComponent))
 		{
-			float FinalIntensity = SunMoon.Intensity * 0.5f; 
+			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
+			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.2f, 1.0f);
+
+			float FinalIntensity = SunMoon.Intensity * 0.5f * HorizonDimming;
 			FLinearColor SafeNightColor = FLinearColor(0.15f, 0.2f, 0.35f, 1.0f);
 
 			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
@@ -552,7 +555,6 @@ void ATODManager::UpdateTOD(float CurrentTime)
 			MoonLightComponent->SetVisibility(SunMoon.bVisible);
 		}
 		break;
-
 	case ETODState::Transition:
 		if (IsValid(SunLightComponent))
 		{
