@@ -540,15 +540,14 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		if (IsValid(MoonLightComponent))
 		{
 			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
-			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.2f, 1.0f);
+			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.5f, 1.0f);
 
 			float FinalIntensity = SunMoon.Intensity * 0.5f * HorizonDimming;
-			FLinearColor SafeNightColor = FLinearColor(0.15f, 0.2f, 0.35f, 1.0f);
 
 			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
 
 			MoonLightComponent->SetIntensity(FinalIntensity);
-			MoonLightComponent->SetLightColor(SafeNightColor);
+			MoonLightComponent->SetLightColor(SunMoon.Color);
 			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
 			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
 			MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
@@ -572,14 +571,13 @@ void ATODManager::UpdateTOD(float CurrentTime)
 			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
 
 			float MoonFade = NightAlpha;
-			float BaseMoonIntensity = SunMoon.Intensity * 0.5f; 
-			FLinearColor SafeNightColor = FLinearColor(0.15f, 0.2f, 0.35f, 1.0f);
+			float BaseMoonIntensity = SunMoon.Intensity * 0.5f;
 
 			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
-			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.2f, 1.0f); 
+			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.5f, 1.0f);
 
 			MoonLightComponent->SetIntensity(BaseMoonIntensity * MoonFade * HorizonDimming);
-			MoonLightComponent->SetLightColor(SafeNightColor); 
+			MoonLightComponent->SetLightColor(SunMoon.Color);
 			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
 			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
 			MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
@@ -591,9 +589,7 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	// 공통 환경
 	if (IsValid(SkyLightComponent))
 	{
-		float FinalSkyLightIntensity = Sky.Sky_Light_Intensity * FMath::Lerp(1.0f, 2.5f, NightAlpha);
-
-		SkyLightComponent->SetIntensity(FinalSkyLightIntensity);
+		SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
 		SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
 		SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
 		SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
