@@ -83,7 +83,7 @@ void ATODManager::PrintTODDebugInfo()
 		"[SkyLight] %.2f\n"
 		"[SkyIndirect] %.2f\n"
 		"[Fog] Density %.5f\n"
-		"[Atmos] Rayleigh Scale %.5f\n"
+		"[Atmos] Mie Scattering Scale %.5f\n"
 		"-------------------------------------------\n"
 		"[PPV] Bloom: %.2f\n"
 		"[PPV] Min EV100: % .2f | Max EV100: % .2f\n"
@@ -95,7 +95,7 @@ void ATODManager::PrintTODDebugInfo()
 		Sky.Sky_Light_Intensity, 
 		Sky.Sky_Indirect_Lighting_Intensity,
 		Fog.Fog_Density,
-		Atmos.Rayleigh_Scattering_Scale,
+		Atmos.Mie_Scattering_Scale,
 		CurrentBloom, 
 		CurrentExpMin, CurrentExpMax,
 		CurrentTemp,
@@ -475,13 +475,16 @@ void ATODManager::GetTODSettingsAtTime(
 
 void ATODManager::UpdateTOD(float CurrentTime)
 {
+	if (!IsValid(this) || IsActorBeingDestroyed() || TOD_DataArray.Num() == 0) return;
+
 	CurrentSystemTime = CurrentTime;
 
-	if (TOD_DataArray.Num() == 0) return;
+	// 현재 State 업데이트
+	UpdateState(CurrentTime);
 
 	if (!SkyLightComponent) FindComponents();
 
-	// 런타임 PPV 사용
+	// 런타임 PPV 보간 적용
 	ApplyPPVBlending(CurrentTime);
 
 	FTODSunMoonSettings SunMoon;
@@ -490,61 +493,100 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentTime, SunMoon, Sky, Fog, Atmos);
 
+	// NightAlpha 0.0 = 낮, 1.0 =  밤
 	float NightAlpha = 0.0f;
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
 
-	if (SafeTime >= 18.0f)
-	{
-		NightAlpha = (SafeTime - 18.0f) / 6.0f;
+	// 새벽 전환 (밤 -> 낮): NightAlpha 1.0 -> 0.0
+	if (SafeTime >= DayStartTime - TransitionDuration && SafeTime < DayStartTime) {
+		NightAlpha = 1.0f - ((SafeTime - (DayStartTime - TransitionDuration)) / TransitionDuration);
 	}
-	else if (SafeTime <= 6.0f)
-	{
-		NightAlpha = 1.0f - (SafeTime / 6.0f);
+	// 노을 전환 (낮 -> 밤): NightAlpha 0.0 -> 1.0
+	else if (SafeTime >= NightStartTime - TransitionDuration && SafeTime < NightStartTime) {
+		NightAlpha = (SafeTime - (NightStartTime - TransitionDuration)) / TransitionDuration;
 	}
-
-	// 컴포넌트 값 업데이트
-	if (IsValid(SunLightComponent))
-	{
-		SunLightComponent->SetIntensity(SunMoon.Intensity);
-		SunLightComponent->SetLightColor(SunMoon.Color);
-		SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
-		SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-		SunLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
-		SunLightComponent->SetVisibility(SunMoon.bVisible);
+	// 밤
+	else if (SafeTime >= NightStartTime || SafeTime < DayStartTime - TransitionDuration) {
+		NightAlpha = 1.0f;
 	}
+	// 낮
+	else {
+		NightAlpha = 0.0f;
+	}
+	NightAlpha = FMath::Clamp(NightAlpha, 0.0f, 1.0f);
 
 
-	// bAtmosphereSunLight 해제로 인한 부자연스러움,, 밤 일때 가중치 부여
-	if (IsValid(MoonLightComponent))
+	// State 별 분기 처리
+	switch (CurrentState)
 	{
-		if (MoonLightComponent->bAtmosphereSunLight)
+	case ETODState::Day:
+		// 낮) 태양 O, 달 X
+		if (IsValid(SunLightComponent))
 		{
-			MoonLightComponent->bAtmosphereSunLight = false;
+			SunLightComponent->SetIntensity(SunMoon.Intensity);
+			SunLightComponent->SetLightColor(SunMoon.Color);
+			SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
+			SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
+			SunLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
+			SunLightComponent->SetVisibility(SunMoon.bVisible);
 		}
+		if (IsValid(MoonLightComponent)) MoonLightComponent->SetVisibility(false);
+		break;
 
-		// 지평선 보정 가중치 계산
-		float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
-		float HorizonAlpha = FMath::Clamp(1.0f - (FMath::Abs(MoonPitch) / 20.0f), 0.0f, 1.0f);
+	case ETODState::Night:
+		// 밤) 태양 X, 달 O
+		if (IsValid(SunLightComponent)) SunLightComponent->SetVisibility(false);
+		if (IsValid(MoonLightComponent))
+		{
+			float FinalIntensity = SunMoon.Intensity * 0.5f; 
+			FLinearColor SafeNightColor = FLinearColor(0.15f, 0.2f, 0.35f, 1.0f);
 
-		// 밤 보정 로직
-		float FinalIntensity = SunMoon.Intensity * FMath::Lerp(1.0f, 0.8f, HorizonAlpha);
-		FLinearColor SafeNightColor = FLinearColor(0.1f, 0.15f, 0.25f, 1.0f);
-		FLinearColor FinalColor = FMath::Lerp(SunMoon.Color, SafeNightColor, HorizonAlpha * 0.3f);
-		float FinalVolumetric = 1.0f * FMath::Lerp(1.0f, 2.5f, HorizonAlpha);
+			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
 
-		float FinalIndirectIntensity = SunMoon.IndirectLightingIntensity * FMath::Lerp(1.0f, 3.0f, NightAlpha);
+			MoonLightComponent->SetIntensity(FinalIntensity);
+			MoonLightComponent->SetLightColor(SafeNightColor);
+			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
+			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
+			MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
+			MoonLightComponent->SetVisibility(SunMoon.bVisible);
+		}
+		break;
 
-		MoonLightComponent->SetIntensity(FinalIntensity);
-		MoonLightComponent->SetLightColor(FinalColor);
-		MoonLightComponent->SetVolumetricScatteringIntensity(FinalVolumetric);
-		MoonLightComponent->SetIndirectLightingIntensity(FinalIndirectIntensity);
+	case ETODState::Transition:
+		if (IsValid(SunLightComponent))
+		{
+			float SunFade = 1.0f - NightAlpha;
+			SunLightComponent->SetIntensity(SunMoon.Intensity * SunFade);
+			SunLightComponent->SetLightColor(SunMoon.Color);
+			SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
+			SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
+			SunLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
+			SunLightComponent->SetVisibility(SunMoon.bVisible);
+		}
+		
+		if (IsValid(MoonLightComponent))
+		{
+			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
 
-		MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
-		MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-		MoonLightComponent->SetVisibility(SunMoon.bVisible);
+			float MoonFade = NightAlpha;
+			float BaseMoonIntensity = SunMoon.Intensity * 0.5f; 
+			FLinearColor SafeNightColor = FLinearColor(0.15f, 0.2f, 0.35f, 1.0f);
+
+			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
+			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.2f, 1.0f); 
+
+			MoonLightComponent->SetIntensity(BaseMoonIntensity * MoonFade * HorizonDimming);
+			MoonLightComponent->SetLightColor(SafeNightColor); 
+			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
+			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
+			MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
+			MoonLightComponent->SetVisibility(SunMoon.bVisible);
+		}
+		break;
 	}
 
+	// 공통 환경
 	if (IsValid(SkyLightComponent))
 	{
 		float FinalSkyLightIntensity = Sky.Sky_Light_Intensity * FMath::Lerp(1.0f, 2.5f, NightAlpha);
@@ -576,6 +618,34 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	OnUpdateCustomMaterials(CurrentTime);
 }
 
+// ======= Day/Night State =========
+
+void ATODManager::UpdateState(float CurrentTime)
+{
+	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+
+	// 낮 전환
+	if (SafeTime >= DayStartTime - TransitionDuration && SafeTime < DayStartTime)
+	{
+		CurrentState = ETODState::Transition;
+	}
+	// 밤 전환
+	else if (SafeTime >= NightStartTime - TransitionDuration && SafeTime < NightStartTime)
+	{
+		CurrentState = ETODState::Transition;
+	}
+	// 낮
+	else if (SafeTime >= DayStartTime && SafeTime < NightStartTime - TransitionDuration)
+	{
+		CurrentState = ETODState::Day;
+	}
+	// 밤
+	else
+	{
+		CurrentState = ETODState::Night;
+	}
+}
 
 // ======= Editor 기능 관련 =========
 

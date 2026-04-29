@@ -6,6 +6,14 @@
 #include "Engine/DataAsset.h"
 #include "TOD_Types.generated.h"
 
+UENUM(BlueprintType)
+enum class ETODState : uint8
+{
+	Day         UMETA(DisplayName = "Day"),
+	Night       UMETA(DisplayName = "Night"),
+	Transition  UMETA(DisplayName = "Transition (Dawn/Dusk)")
+};
+
 USTRUCT(BlueprintType)
 struct FTODSunMoonSettings
 {

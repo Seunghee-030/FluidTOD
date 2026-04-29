@@ -192,6 +192,24 @@ public:
 
     void ApplyPPVBlending(float CurrentTime);
 
+    // =============== State ===============
+public:
+    // 현재 낮/밤 상태
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|State")
+    ETODState CurrentState;
+
+    // 일출
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State")
+    float DayStartTime = 6.0f;
+
+    // 일몰
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State")
+    float NightStartTime = 18.0f;
+
+    // 전환 시간
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State")
+    float TransitionDuration = 1.0f;
+
 protected:
     // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드
     virtual void BeginPlay() override;
@@ -203,6 +221,9 @@ private:
     // 지정된 간격마다 호출될 디버그 출력 함수
     UFUNCTION()
     void PrintTODDebugInfo();
+
+    // 시간에 따른 상태 업데이트 함수
+    void UpdateState(float CurrentTime);
 
 #if WITH_EDITOR
 protected:
