@@ -125,7 +125,7 @@ FString ATODManager::GetFormattedTimeAsString(float InTime) const
 void ATODManager::SortTODDataArray()
 {
 	if (TOD_DataArray.Num() < 2) return;
-	TOD_DataArray.Sort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
+	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
 // ======= Moon/Sun 분리 =========
@@ -140,12 +140,12 @@ void ATODManager::FindComponents()
 
 	for (UDirectionalLightComponent* Light : Lights)
 	{
-		// 이름에 Moon 들어가면 Moon으로 인식
-		if (Light->GetName().Contains(TEXT("Moon"), ESearchCase::IgnoreCase))
+		// 해시 비교
+		if (Light->ComponentHasTag(FName(TEXT("Moon"))))
 		{
 			MoonLightComponent = Light;
 		}
-		else
+		else if (Light->ComponentHasTag(FName(TEXT("Sun"))))
 		{
 			SunLightComponent = Light;
 		}
@@ -157,43 +157,6 @@ void ATODManager::FindComponents()
 }
 
 // ======= PPV =========
-
-void ATODManager::GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha)
-{
-	OutPrevIndex = 0; OutNextIndex = 0; OutAlpha = 0.0f;
-	const int32 Num = TOD_DataArray.Num();
-	if (Num < 2) return;
-
-	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
-	if (SafeTime < 0.0f) SafeTime += 24.0f;
-
-	OutPrevIndex = Num - 1;
-	for (int32 i = 0; i < Num - 1; ++i)
-	{
-		if (SafeTime >= TOD_DataArray[i].Time && SafeTime < TOD_DataArray[i + 1].Time)
-		{
-			OutPrevIndex = i;
-			break;
-		}
-	}
-	OutNextIndex = (OutPrevIndex + 1) % Num;
-
-	float PrevTime = TOD_DataArray[OutPrevIndex].Time;
-	float NextTime = TOD_DataArray[OutNextIndex].Time;
-	float AdjustedCurrentTime = SafeTime;
-
-	if (NextTime < PrevTime)
-	{
-		NextTime += 24.0f;
-		if (AdjustedCurrentTime < TOD_DataArray[0].Time) AdjustedCurrentTime += 24.0f;
-	}
-
-	float TimeDiff = NextTime - PrevTime;
-	if (TimeDiff > KINDA_SMALL_NUMBER)
-	{
-		OutAlpha = FMath::Clamp((AdjustedCurrentTime - PrevTime) / TimeDiff, 0.0f, 1.0f);
-	}
-}
 
 void ATODManager::ApplyPPVBlending(float CurrentTime)
 {

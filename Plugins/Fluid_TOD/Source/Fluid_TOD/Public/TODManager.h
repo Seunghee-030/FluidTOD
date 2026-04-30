@@ -236,8 +236,6 @@ public:
     // System/PPV
     void SortTODDataArray();
 
-    void GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha);
-
     void ApplyPPVBlending(float CurrentTime);
 
 protected:
