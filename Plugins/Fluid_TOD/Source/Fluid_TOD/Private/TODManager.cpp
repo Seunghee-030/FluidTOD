@@ -109,6 +109,18 @@ void ATODManager::PrintTODDebugInfo()
 
 }
 
+FString ATODManager::GetFormattedTimeAsString(float InTime) const
+{
+	// 시간 0~24 보정
+	float SafeTime = FMath::Fmod(InTime, 24.0f);
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+
+	int32 Hours = FMath::FloorToInt(SafeTime);
+	int32 Minutes = FMath::FloorToInt((SafeTime - Hours) * 60.0f);
+
+	return FString::Printf(TEXT("[ %02d : %02d ]"), Hours, Minutes);
+}
+
 // 정렬
 void ATODManager::SortTODDataArray()
 {
@@ -388,6 +400,53 @@ void ATODManager::UpdateSunTimes()
 
 	CalculatedSunriseTime = 6.0f - LatitudeOffset;
 	CalculatedSunsetTime = 18.0f + LatitudeOffset;
+
+	SunriseTime = GetFormattedTimeAsString(CalculatedSunriseTime);
+	SunsetTime = GetFormattedTimeAsString(CalculatedSunsetTime);
+}
+
+FRotator ATODManager::CalculatePivotRotation(float InTime) const
+{
+	// 시간 0~24 보정
+	float SafeTime = FMath::Fmod(InTime, 24.0f);
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+
+	float PitchAngle = 0.0f;
+
+	bool bIsDaytime = (SafeTime >= CalculatedSunriseTime) && (SafeTime < CalculatedSunsetTime);
+
+	if (bIsDaytime)
+	{
+		// 낮
+		PitchAngle = FMath::GetMappedRangeValueClamped(
+			FVector2D(CalculatedSunriseTime, CalculatedSunsetTime),
+			FVector2D(180.0f, 360.0f),
+			SafeTime
+		);
+	}
+	else
+	{
+		// 밤
+		float TotalNightDuration = 24.0f - (CalculatedSunsetTime - CalculatedSunriseTime);
+		float ElapsedNightTime = 0.0f;
+
+		if (SafeTime >= CalculatedSunsetTime)
+		{
+			ElapsedNightTime = SafeTime - CalculatedSunsetTime;
+		}
+		else
+		{
+			ElapsedNightTime = (24.0f - CalculatedSunsetTime) + SafeTime;
+		}
+
+		PitchAngle = FMath::GetMappedRangeValueClamped(
+			FVector2D(0.0f, TotalNightDuration),
+			FVector2D(0.0f, 180.0f),
+			ElapsedNightTime
+		);
+	}
+
+	return FRotator(0.0f, PitchAngle, 0.0f);
 }
 
 // ======= TOD System Main =========
@@ -506,25 +565,21 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentTime, SunMoon, Sky, Fog, Atmos);
 
-	// 위도 기반 시간 적용
-	float SunriseTime = CalculatedSunriseTime;
-	float SunsetTime = CalculatedSunsetTime;
-
 	// NightAlpha 0.0 = 낮, 1.0 = 밤
 	float NightAlpha = 0.0f;
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
 
 	// 새벽 전환 (밤 -> 낮): NightAlpha 1.0 -> 0.0
-	if (SafeTime >= SunriseTime - TransitionDuration && SafeTime < SunriseTime) {
-		NightAlpha = 1.0f - ((SafeTime - (SunriseTime - TransitionDuration)) / TransitionDuration);
+	if (SafeTime >= CalculatedSunriseTime - TransitionDuration && SafeTime < CalculatedSunriseTime) {
+		NightAlpha = 1.0f - ((SafeTime - (CalculatedSunriseTime - TransitionDuration)) / TransitionDuration);
 	}
 	// 노을 전환 (낮 -> 밤): NightAlpha 0.0 -> 1.0
-	else if (SafeTime >= SunsetTime - TransitionDuration && SafeTime < SunsetTime) {
-		NightAlpha = (SafeTime - (SunsetTime - TransitionDuration)) / TransitionDuration;
+	else if (SafeTime >= CalculatedSunsetTime - TransitionDuration && SafeTime < CalculatedSunsetTime) {
+		NightAlpha = (SafeTime - (CalculatedSunsetTime - TransitionDuration)) / TransitionDuration;
 	}
 	// 밤
-	else if (SafeTime >= SunsetTime || SafeTime < SunriseTime - TransitionDuration) {
+	else if (SafeTime >= CalculatedSunsetTime || SafeTime < CalculatedSunriseTime - TransitionDuration) {
 		NightAlpha = 1.0f;
 	}
 	// 낮
@@ -640,21 +695,18 @@ void ATODManager::UpdateState(float CurrentTime)
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
 
-	float SunriseTime = CalculatedSunriseTime;
-	float SunsetTime = CalculatedSunsetTime;
-
 	// 낮 전환
-	if (SafeTime >= SunriseTime - TransitionDuration && SafeTime < SunriseTime)
+	if (SafeTime >= CalculatedSunriseTime - TransitionDuration && SafeTime < CalculatedSunriseTime)
 	{
 		CurrentState = ETODState::Transition;
 	}
 	// 밤 전환
-	else if (SafeTime >= SunsetTime - TransitionDuration && SafeTime < SunsetTime)
+	else if (SafeTime >= CalculatedSunsetTime - TransitionDuration && SafeTime < CalculatedSunsetTime)
 	{
 		CurrentState = ETODState::Transition;
 	}
 	// 낮
-	else if (SafeTime >= SunriseTime && SafeTime < SunsetTime - TransitionDuration)
+	else if (SafeTime >= CalculatedSunriseTime && SafeTime < CalculatedSunsetTime - TransitionDuration)
 	{
 		CurrentState = ETODState::Day;
 	}
@@ -699,10 +751,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 			SortTODDataArray();
 		}
 
-		int32 Hours = FMath::FloorToInt(StartTime);
-		int32 Minutes = FMath::FloorToInt((StartTime - Hours) * 60.0f);
-
-		StartTimeDisplay = FString::Printf(TEXT("[ %02d : %02d ]"), Hours, Minutes);
+		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
 
 		UpdateTOD(StartTime);
 	}

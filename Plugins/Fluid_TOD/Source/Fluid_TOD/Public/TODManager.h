@@ -52,18 +52,38 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
     float Longitude = 127.0f;
 
-    // 계산한 일출/일몰 시간 (읽기 전용)
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    // 일출/일몰
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
     float CalculatedSunriseTime = 6.0f;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
     float CalculatedSunsetTime = 18.0f;
+
+    // 외부 노출용 일출/일몰 시간
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    FString SunriseTime = TEXT("[ 06 : 00 ]");
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    FString SunsetTime = TEXT("[ 18 : 00 ]");
 
     // 위도 기반 일출/일몰 계산 함수
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void UpdateSunTimes();
 
+    UFUNCTION(BlueprintPure, Category = "TOD|Geography")
+    FRotator CalculatePivotRotation(float InTime) const;
 
+    // =============== State ===============
+public:
+    // 현재 낮/밤 상태
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    ETODState CurrentState;
+
+    // 전환 시간
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    float TransitionDuration = 1.0f;
+
+public:
     // Class
     UPROPERTY()
     TObjectPtr<class UPostProcessComponent> RuntimePPVComponent;
@@ -209,30 +229,16 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "TOD|System")
     void OnUpdateCustomMaterials(float CurrentTime);
 
+    // float 값 시간 변환
+    UFUNCTION(BlueprintPure, Category = "TOD|Helper")
+    FString GetFormattedTimeAsString(float InTime) const;
+
     // System/PPV
     void SortTODDataArray();
 
     void GetTODInterpolationData(float CurrentTime, int32& OutPrevIndex, int32& OutNextIndex, float& OutAlpha);
 
     void ApplyPPVBlending(float CurrentTime);
-
-    // =============== State ===============
-public:
-    // 현재 낮/밤 상태
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|State")
-    ETODState CurrentState;
-
-    // 일출
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State")
-    float DayStartTime = 6.0f;
-
-    // 일몰
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State")
-    float NightStartTime = 18.0f;
-
-    // 전환 시간
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State")
-    float TransitionDuration = 1.0f;
 
 protected:
     // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드
