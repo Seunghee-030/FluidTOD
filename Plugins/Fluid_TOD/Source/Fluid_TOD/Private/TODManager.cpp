@@ -41,6 +41,8 @@ void ATODManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UpdateSunTimes();
+
 	SortTODDataArray();
 	BakeTODCurves();
 
@@ -377,6 +379,17 @@ void ATODManager::LoadSelectedPreset()
 	UE_LOG(LogTemp, Warning, TEXT("Fluid_TOD: Preset '%s' loaded successfully!"), *LoadPreset->GetName());
 }
 
+
+// ======= TOD Geography =========
+
+void ATODManager::UpdateSunTimes()
+{
+	float LatitudeOffset = (Latitude / 90.0f) * 2.0f;
+
+	CalculatedSunriseTime = 6.0f - LatitudeOffset;
+	CalculatedSunsetTime = 18.0f + LatitudeOffset;
+}
+
 // ======= TOD System Main =========
 
 void ATODManager::BakeTODCurves()
@@ -493,21 +506,25 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentTime, SunMoon, Sky, Fog, Atmos);
 
-	// NightAlpha 0.0 = 낮, 1.0 =  밤
+	// 위도 기반 시간 적용
+	float SunriseTime = CalculatedSunriseTime;
+	float SunsetTime = CalculatedSunsetTime;
+
+	// NightAlpha 0.0 = 낮, 1.0 = 밤
 	float NightAlpha = 0.0f;
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
 
 	// 새벽 전환 (밤 -> 낮): NightAlpha 1.0 -> 0.0
-	if (SafeTime >= DayStartTime - TransitionDuration && SafeTime < DayStartTime) {
-		NightAlpha = 1.0f - ((SafeTime - (DayStartTime - TransitionDuration)) / TransitionDuration);
+	if (SafeTime >= SunriseTime - TransitionDuration && SafeTime < SunriseTime) {
+		NightAlpha = 1.0f - ((SafeTime - (SunriseTime - TransitionDuration)) / TransitionDuration);
 	}
 	// 노을 전환 (낮 -> 밤): NightAlpha 0.0 -> 1.0
-	else if (SafeTime >= NightStartTime - TransitionDuration && SafeTime < NightStartTime) {
-		NightAlpha = (SafeTime - (NightStartTime - TransitionDuration)) / TransitionDuration;
+	else if (SafeTime >= SunsetTime - TransitionDuration && SafeTime < SunsetTime) {
+		NightAlpha = (SafeTime - (SunsetTime - TransitionDuration)) / TransitionDuration;
 	}
 	// 밤
-	else if (SafeTime >= NightStartTime || SafeTime < DayStartTime - TransitionDuration) {
+	else if (SafeTime >= SunsetTime || SafeTime < SunriseTime - TransitionDuration) {
 		NightAlpha = 1.0f;
 	}
 	// 낮
@@ -515,7 +532,6 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		NightAlpha = 0.0f;
 	}
 	NightAlpha = FMath::Clamp(NightAlpha, 0.0f, 1.0f);
-
 
 	// State 별 분기 처리
 	switch (CurrentState)
@@ -539,12 +555,12 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		if (IsValid(SunLightComponent)) SunLightComponent->SetVisibility(false);
 		if (IsValid(MoonLightComponent))
 		{
+			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
+
 			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
 			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.5f, 1.0f);
 
 			float FinalIntensity = SunMoon.Intensity * 0.5f * HorizonDimming;
-
-			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
 
 			MoonLightComponent->SetIntensity(FinalIntensity);
 			MoonLightComponent->SetLightColor(SunMoon.Color);
@@ -555,6 +571,7 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		}
 		break;
 	case ETODState::Transition:
+		// 전환, 태양 페이드 아웃/인, 달 페이드 인/아웃
 		if (IsValid(SunLightComponent))
 		{
 			float SunFade = 1.0f - NightAlpha;
@@ -623,18 +640,21 @@ void ATODManager::UpdateState(float CurrentTime)
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
 
+	float SunriseTime = CalculatedSunriseTime;
+	float SunsetTime = CalculatedSunsetTime;
+
 	// 낮 전환
-	if (SafeTime >= DayStartTime - TransitionDuration && SafeTime < DayStartTime)
+	if (SafeTime >= SunriseTime - TransitionDuration && SafeTime < SunriseTime)
 	{
 		CurrentState = ETODState::Transition;
 	}
 	// 밤 전환
-	else if (SafeTime >= NightStartTime - TransitionDuration && SafeTime < NightStartTime)
+	else if (SafeTime >= SunsetTime - TransitionDuration && SafeTime < SunsetTime)
 	{
 		CurrentState = ETODState::Transition;
 	}
 	// 낮
-	else if (SafeTime >= DayStartTime && SafeTime < NightStartTime - TransitionDuration)
+	else if (SafeTime >= SunriseTime && SafeTime < SunsetTime - TransitionDuration)
 	{
 		CurrentState = ETODState::Day;
 	}
@@ -661,6 +681,14 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		LoadSelectedPreset();
 		SortTODDataArray();
 		BakeTODCurves();
+		UpdateTOD(StartTime);
+	}
+
+	// 위도,경도 관련
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
+	{
+		UpdateSunTimes();
 		UpdateTOD(StartTime);
 	}
 

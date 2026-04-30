@@ -44,6 +44,27 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug", meta = (EditCondition = "bEnableDebugPrint"))
     float DebugPrintInterval = 1.0f;
 
+
+    // 지리적 설정
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    float Latitude = 37.5f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    float Longitude = 127.0f;
+
+    // 계산한 일출/일몰 시간 (읽기 전용)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    float CalculatedSunriseTime = 6.0f;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    float CalculatedSunsetTime = 18.0f;
+
+    // 위도 기반 일출/일몰 계산 함수
+    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    void UpdateSunTimes();
+
+
+    // Class
     UPROPERTY()
     TObjectPtr<class UPostProcessComponent> RuntimePPVComponent;
 
@@ -90,6 +111,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun&Moon")
     TEnumAsByte<ERichCurveInterpMode> SunColorInterpMode = RCIM_Linear;
 
+
     // SkyLight
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|SkyLight")
     FRuntimeFloatCurve SkyLightIntensityCurve;
@@ -111,6 +133,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|SkyLight")
     TEnumAsByte<ERichCurveInterpMode> SkyColorInterpMode = RCIM_Linear;
 
+
     // Fog
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Fog")
     FRuntimeFloatCurve FogDensityCurve;
@@ -131,6 +154,7 @@ public:
     FRuntimeCurveLinearColor FogDirectionalColorCurve;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Fog")
     TEnumAsByte<ERichCurveInterpMode> FogDirectionalColorInterpMode = RCIM_Linear;
+
 
     // Sky Atmosphere
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|SkyAtmosphere")
