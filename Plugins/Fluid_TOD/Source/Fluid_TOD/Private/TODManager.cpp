@@ -78,21 +78,21 @@ void ATODManager::PrintTODDebugInfo()
 	}
 
 	FString DebugMsg = FString::Printf(TEXT(
-		"============ TOD System Debug =============\n"
-		"Time  %.2f\n"
-		"-------------------------------------------\n"
+		"=========== TOD System Debug ===========\n"
+		"Time   %s\n"
+		"--------------------------------------------------\n"
 		"[Sun/Moon] Intensity %.2f | Angle %.1f\n"
 		"[SkyLight] %.2f\n"
 		"[SkyIndirect] %.2f\n"
 		"[Fog] Density %.5f\n"
 		"[Atmos] Mie Scattering Scale %.5f\n"
-		"-------------------------------------------\n"
+		"--------------------------------------------------\n"
 		"[PPV] Bloom: %.2f\n"
 		"[PPV] Min EV100: % .2f | Max EV100: % .2f\n"
 		"[PPV] White Temp: %.0fK\n"
 		"[PPV] Saturation: (R:%.2f, G:%.2f, B:%.2f)"
 	),
-		CurrentSystemTime,
+		*GetFormattedTimeAsString(CurrentSystemTime),
 		SunMoon.Intensity, SunMoon.SourceAngle,
 		Sky.Sky_Light_Intensity, 
 		Sky.Sky_Indirect_Lighting_Intensity,

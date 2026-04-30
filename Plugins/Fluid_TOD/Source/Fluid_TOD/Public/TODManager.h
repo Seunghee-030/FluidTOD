@@ -7,7 +7,7 @@
 #include "Curves/CurveLinearColor.h"
 #include "TODManager.generated.h"
 
-UCLASS(BlueprintType)
+UCLASS(BlueprintType, meta = (PrioritizeCategories = "TOD_Geography TOD TOD_Preset TOD_Debug"))
 class FLUID_TOD_API ATODManager : public AActor
 {
     GENERATED_BODY()
@@ -24,63 +24,63 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3"))
     TArray<FTODMasterData> TOD_DataArray;
 
-
-    // Preset Asset
-    UPROPERTY(EditAnywhere, Category = "TOD Preset")
-    TObjectPtr<UTODPresetData> LoadPreset;
-
+    
     // Save as new Asset
-    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD Preset")
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "1"))
     void SaveNewPreset();
 
-    UFUNCTION(BlueprintCallable, Category = "TOD Preset")
+    // Preset Asset
+    UPROPERTY(EditAnywhere, Category = "TOD_Preset", meta = (DisplayPriority = "2"))
+    TObjectPtr<UTODPresetData> LoadPreset;
+
+    UFUNCTION()
     void LoadSelectedPreset();
 
+
     // 디버그 텍스트 출력
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Debug", meta = (DisplayPriority = "1"))
     bool bEnableDebugPrint = false;
 
     // 출력 갱신 간격
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug", meta = (EditCondition = "bEnableDebugPrint"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Debug", meta = (EditCondition = "bEnableDebugPrint", DisplayPriority = "2"))
     float DebugPrintInterval = 1.0f;
 
 
     // 지리적 설정
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Geography")
     float Latitude = 37.5f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    UPROPERTY(BlueprintReadOnly, Category = "TOD_Geography")
     float Longitude = 127.0f;
 
-    // 일출/일몰
-    UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(BlueprintReadOnly, Category = "TOD_Geography")
     float CalculatedSunriseTime = 6.0f;
 
-    UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(BlueprintReadOnly, Category = "TOD_Geography")
     float CalculatedSunsetTime = 18.0f;
 
-    // 외부 노출용 일출/일몰 시간
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    // 일출/일몰 시간
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD_Geography")
     FString SunriseTime = TEXT("[ 06 : 00 ]");
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD_Geography")
     FString SunsetTime = TEXT("[ 18 : 00 ]");
 
     // 위도 기반 일출/일몰 계산 함수
-    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    UFUNCTION(BlueprintCallable, Category = "TOD_Geography")
     void UpdateSunTimes();
 
-    UFUNCTION(BlueprintPure, Category = "TOD|Geography")
+    UFUNCTION(BlueprintPure, Category = "TOD_Geography")
     FRotator CalculatePivotRotation(float InTime) const;
 
     // =============== State ===============
 public:
     // 현재 낮/밤 상태
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD_Geography")
     ETODState CurrentState;
 
-    // 전환 시간
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    // 전환되는 시간
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Geography")
     float TransitionDuration = 1.0f;
 
 public:
