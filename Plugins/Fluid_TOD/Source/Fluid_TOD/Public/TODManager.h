@@ -25,12 +25,16 @@ public:
     TArray<FTODMasterData> TOD_DataArray;
 
     
-    // Save as new Asset
+    // 새로 저장
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "1"))
     void SaveNewPreset();
 
+    // 덮어쓰며 저장
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "2"))
+    void SaveCurrentPreset();
+
     // Preset Asset
-    UPROPERTY(EditAnywhere, Category = "TOD_Preset", meta = (DisplayPriority = "2"))
+    UPROPERTY(EditAnywhere, Category = "TOD_Preset", meta = (DisplayPriority = "3"))
     TObjectPtr<UTODPresetData> LoadPreset;
 
     UFUNCTION()

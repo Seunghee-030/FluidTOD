@@ -343,6 +343,40 @@ void ATODManager::SaveNewPreset()
 #endif
 }
 
+void ATODManager::SaveCurrentPreset()
+{
+#if WITH_EDITOR
+	if (!LoadPreset)
+	{
+		FNotificationInfo ErrorInfo(FText::FromString(TEXT("Save Failed: No Preset loaded to overwrite!")));
+		ErrorInfo.ExpireDuration = 3.0f;
+		FSlateNotificationManager::Get().AddNotification(ErrorInfo);
+
+		UE_LOG(LogTemp, Warning, TEXT("Fluid TOD: Cannot overwrite preset because LoadPreset is null."));
+		return;
+	}
+
+	SortTODDataArray();
+
+	LoadPreset->TOD_DataArray = TOD_DataArray;
+
+	for (FTODMasterData& Data : LoadPreset->TOD_DataArray)
+	{
+		Data.PPV = nullptr;
+	}
+
+	LoadPreset->MarkPackageDirty();
+
+	FString AssetName = LoadPreset->GetName();
+	FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Overwrote: {0}")), FText::FromString(AssetName)));
+	Info.ExpireDuration = 3.0f;
+	FSlateNotificationManager::Get().AddNotification(Info);
+
+	UE_LOG(LogTemp, Log, TEXT("Fluid TOD: Preset '%s' save successfully."), *AssetName);
+#endif
+}
+
+
 void ATODManager::LoadSelectedPreset()
 {
 	if (!LoadPreset) return;
@@ -573,14 +607,7 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		if (IsValid(SunLightComponent)) SunLightComponent->SetVisibility(false);
 		if (IsValid(MoonLightComponent))
 		{
-			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
-
-			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
-			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.5f, 1.0f);
-
-			float FinalIntensity = SunMoon.Intensity * 0.5f * HorizonDimming;
-
-			MoonLightComponent->SetIntensity(FinalIntensity);
+			MoonLightComponent->SetIntensity(SunMoon.Intensity);
 			MoonLightComponent->SetLightColor(SunMoon.Color);
 			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
 			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
@@ -589,11 +616,10 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		}
 		break;
 	case ETODState::Transition:
-		// 전환, 태양 페이드 아웃/인, 달 페이드 인/아웃
+		// 전환
 		if (IsValid(SunLightComponent))
 		{
-			float SunFade = 1.0f - NightAlpha;
-			SunLightComponent->SetIntensity(SunMoon.Intensity * SunFade);
+			SunLightComponent->SetIntensity(SunMoon.Intensity);
 			SunLightComponent->SetLightColor(SunMoon.Color);
 			SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
 			SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
@@ -603,15 +629,7 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		
 		if (IsValid(MoonLightComponent))
 		{
-			if (MoonLightComponent->bAtmosphereSunLight) MoonLightComponent->bAtmosphereSunLight = false;
-
-			float MoonFade = NightAlpha;
-			float BaseMoonIntensity = SunMoon.Intensity * 0.5f;
-
-			float MoonPitch = MoonLightComponent->GetComponentRotation().Pitch;
-			float HorizonDimming = FMath::Clamp(FMath::Abs(MoonPitch) / 10.0f, 0.5f, 1.0f);
-
-			MoonLightComponent->SetIntensity(BaseMoonIntensity * MoonFade * HorizonDimming);
+			MoonLightComponent->SetIntensity(SunMoon.Intensity);
 			MoonLightComponent->SetLightColor(SunMoon.Color);
 			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
 			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
