@@ -584,59 +584,123 @@ void ATODManager::UpdateTOD(float CurrentTime)
 		NightAlpha = 0.0f;
 	}
 	NightAlpha = FMath::Clamp(NightAlpha, 0.0f, 1.0f);
-
-	// State 별 분기 처리
-	switch (CurrentState)
+	
+	// 지평선 부근 오버라이드
+	if (CurrentState == ETODState::Transition && bEnableTwilightOverride)
 	{
-	case ETODState::Day:
-		// 낮) 태양 O, 달 X
-		if (IsValid(SunLightComponent))
-		{
-			SunLightComponent->SetIntensity(SunMoon.Intensity);
-			SunLightComponent->SetLightColor(SunMoon.Color);
-			SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
-			SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-			SunLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
-			SunLightComponent->SetVisibility(SunMoon.bVisible);
-		}
-		if (IsValid(MoonLightComponent)) MoonLightComponent->SetVisibility(false);
-		break;
+		float TwilightAlpha = FMath::Sin(NightAlpha * PI);
 
-	case ETODState::Night:
-		// 밤) 태양 X, 달 O
-		if (IsValid(SunLightComponent)) SunLightComponent->SetVisibility(false);
-		if (IsValid(MoonLightComponent))
+		float TargetSunMoonIntensity = SunMoon.Intensity * TwilightDirectionalDimmingFactor;
+		SunMoon.Intensity = FMath::Lerp(SunMoon.Intensity, TargetSunMoonIntensity, TwilightAlpha);
+
+		if (SunMoon.Intensity <= 0.01f)
 		{
-			MoonLightComponent->SetIntensity(SunMoon.Intensity);
-			MoonLightComponent->SetLightColor(SunMoon.Color);
-			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
-			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-			MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
-			MoonLightComponent->SetVisibility(SunMoon.bVisible);
+			SunMoon.bVisible = false;
 		}
-		break;
-	case ETODState::Transition:
-		// 전환
-		if (IsValid(SunLightComponent))
+
+		// 스카이라이트
+		Sky.Sky_Light_Intensity = FMath::Lerp(Sky.Sky_Light_Intensity, TwilightSkyLightBoostIntensity, TwilightAlpha);
+	}
+
+	float SunFadeAlpha = 0.0f;
+	float MoonFadeAlpha = 0.0f;
+
+	if (CurrentState == ETODState::Day)
+	{
+		SunFadeAlpha = 1.0f;
+		MoonFadeAlpha = 0.0f;
+	}
+	else if (CurrentState == ETODState::Transition)
+	{
+		// Transition
+		if (SafeTime >= CalculatedSunsetTime - TransitionDuration && SafeTime < CalculatedSunsetTime)
 		{
-			SunLightComponent->SetIntensity(SunMoon.Intensity);
-			SunLightComponent->SetLightColor(SunMoon.Color);
-			SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
-			SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-			SunLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
-			SunLightComponent->SetVisibility(SunMoon.bVisible);
+			// 일몰
+			SunFadeAlpha = 1.0f - NightAlpha;
+			MoonFadeAlpha = 0.0f;
 		}
-		
-		if (IsValid(MoonLightComponent))
+		else
 		{
-			MoonLightComponent->SetIntensity(SunMoon.Intensity);
-			MoonLightComponent->SetLightColor(SunMoon.Color);
-			MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
-			MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
-			MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
-			MoonLightComponent->SetVisibility(SunMoon.bVisible);
+			// 일출
+			SunFadeAlpha = 1.0f - NightAlpha;
+			MoonFadeAlpha = NightAlpha;
 		}
-		break;
+	}
+	else if (CurrentState == ETODState::Night)
+	{
+		SunFadeAlpha = 0.0f;
+
+		// 일몰 이후 밤 시간 경과량
+		float TimeSinceSunset = SafeTime - CalculatedSunsetTime;
+		if (TimeSinceSunset < 0.0f) TimeSinceSunset += 24.0f;
+
+		if (TimeSinceSunset < TwilightMoonRiseDelay)
+		{
+			MoonFadeAlpha = 0.0f;
+		}
+		else if (TimeSinceSunset < TwilightMoonRiseDelay + TwilightMoonRiseFadeDuration)
+		{
+			MoonFadeAlpha = (TimeSinceSunset - TwilightMoonRiseDelay) / TwilightMoonRiseFadeDuration;
+		}
+		else
+		{
+			// 완전히 떠오름
+			MoonFadeAlpha = 1.0f;
+		}
+	}
+
+
+	// 라이팅 오버라이드, 최종 컴포넌트 세팅
+	float FinalSunIntensity = SunMoon.Intensity;
+	float FinalMoonIntensity = SunMoon.Intensity;
+	bool bFinalSunVisible = false;
+	bool bFinalMoonVisible = false;
+
+	if (bEnableTwilightOverride)
+	{
+		// 태양, DimmingFactor 값으로 감쇠
+		FinalSunIntensity = FMath::Lerp(SunMoon.Intensity * TwilightDirectionalDimmingFactor, SunMoon.Intensity, SunFadeAlpha);
+		bFinalSunVisible = (SunFadeAlpha > 0.01f);
+
+		// 달, 목표값으로 부스트
+		FinalMoonIntensity = FMath::Lerp(0.0f, SunMoon.Intensity, MoonFadeAlpha);
+		bFinalMoonVisible = (MoonFadeAlpha > 0.01f);
+
+		// 교차점에서 환경광 보정
+		if (CurrentState == ETODState::Transition)
+		{
+			float TwilightSkyWeight = FMath::Sin(NightAlpha * PI);
+			Sky.Sky_Light_Intensity = FMath::Lerp(Sky.Sky_Light_Intensity, TwilightSkyLightBoostIntensity, TwilightSkyWeight);
+		}
+	}
+	else
+	{
+		FinalSunIntensity = SunMoon.Intensity * SunFadeAlpha;
+		bFinalSunVisible = (SunFadeAlpha > 0.01f);
+
+		FinalMoonIntensity = SunMoon.Intensity * MoonFadeAlpha;
+		bFinalMoonVisible = (MoonFadeAlpha > 0.01f);
+	}
+
+	// 분리된 변수를 각 라이트 컴포넌트에 즉각 인가
+	if (IsValid(SunLightComponent))
+	{
+		SunLightComponent->SetIntensity(FinalSunIntensity);
+		SunLightComponent->SetLightColor(SunMoon.Color);
+		SunLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
+		SunLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
+		SunLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
+		SunLightComponent->SetVisibility(bFinalSunVisible);
+	}
+
+	if (IsValid(MoonLightComponent))
+	{
+		MoonLightComponent->SetIntensity(FinalMoonIntensity);
+		MoonLightComponent->SetLightColor(SunMoon.Color);
+		MoonLightComponent->SetLightSourceAngle(SunMoon.SourceAngle);
+		MoonLightComponent->SetLightSourceSoftAngle(SunMoon.SourceSoftAngle);
+		MoonLightComponent->SetIndirectLightingIntensity(SunMoon.IndirectLightingIntensity);
+		MoonLightComponent->SetVisibility(bFinalMoonVisible);
 	}
 
 	// 공통 환경
