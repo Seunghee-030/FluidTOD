@@ -84,7 +84,7 @@ public:
     ETODState CurrentState;
 
     // 전환되는 시간
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Geography")
+    UPROPERTY()
     float TransitionDuration = 1.0f;
 
 public:
@@ -246,19 +246,19 @@ protected:
     // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드
     virtual void BeginPlay() override;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD | Twilight")
+    UPROPERTY()
     bool bEnableTwilightOverride = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD | Twilight", meta = (EditCondition = "bEnableTwilightOverride", ClampMin = "0.0", ClampMax = "1.0"))
+    UPROPERTY()
     float TwilightDirectionalDimmingFactor = 0.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD | Twilight", meta = (EditCondition = "bEnableTwilightOverride"))
+    UPROPERTY()
     float TwilightSkyLightBoostIntensity = 10.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD | Twilight", meta = (EditCondition = "bEnableTwilightOverride"))
+    UPROPERTY()
     float TwilightMoonRiseDelay = 0.5f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD | Twilight", meta = (EditCondition = "bEnableTwilightOverride"))
+    UPROPERTY()
     float TwilightMoonRiseFadeDuration = 1.0f;
 
 private:
