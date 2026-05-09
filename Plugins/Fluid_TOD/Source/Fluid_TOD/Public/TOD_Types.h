@@ -14,6 +14,15 @@ enum class ETODState : uint8
 	Transition  UMETA(DisplayName = "Transition (Dawn/Dusk)")
 };
 
+// 사용할 빛 종류 선택 (Sun/Moon/Both)
+UENUM(BlueprintType)
+enum class ETODDirectionalLightType : uint8
+{
+	SunOnly         UMETA(DisplayName = "Sun"),
+	MoonOnly       UMETA(DisplayName = "Moon"),
+	Transition  UMETA(DisplayName = "Sun&Moon")
+};
+
 USTRUCT(BlueprintType)
 struct FTODSunMoonSettings
 {
@@ -33,9 +42,6 @@ struct FTODSunMoonSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FLinearColor Color = FLinearColor::White;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	bool bVisible = true;
 };
 
 USTRUCT(BlueprintType)
@@ -103,6 +109,7 @@ struct FTODSkyAtmosphereSettings
 	FLinearColor Sky_Luminance_Factor = FLinearColor::White;
 };
 
+
 // 마스터 구조체
 USTRUCT(BlueprintType)
 struct FTODMasterData
@@ -118,8 +125,17 @@ struct FTODMasterData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	TObjectPtr<APostProcessVolume> PPV = nullptr;
 
+	// 밤,낮,전환기 선택
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	FTODSunMoonSettings SunMoon_Settings;
+	ETODDirectionalLightType ActiveLightMode = ETODDirectionalLightType::SunOnly;
+
+	// Day/Transition 상태일 때만 노출
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (EditCondition = "ActiveLightMode == ETODDirectionalLightType::SunOnly || ActiveLightMode == ETODDirectionalLightType::Transition", EditConditionHides))
+	FTODSunMoonSettings Sun_Settings;
+
+	// Night/Transition 상태일 때만 노출
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (EditCondition = "ActiveLightMode == ETODDirectionalLightType::MoonOnly || ActiveLightMode == ETODDirectionalLightType::Transition", EditConditionHides))
+	FTODSunMoonSettings Moon_Settings;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FTODSkyLightSettings SkyLight_Settings;

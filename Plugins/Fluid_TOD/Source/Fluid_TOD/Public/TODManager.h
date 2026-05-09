@@ -24,7 +24,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3", TitleProperty = "Name"))
     TArray<FTODMasterData> TOD_DataArray;
 
-    
+
     // 새로 저장
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "1"))
     void SaveNewPreset();
@@ -109,32 +109,52 @@ public:
 
 
 
-    // Sun & Moon
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun&Moon")
-    FRuntimeFloatCurve SunIntensityCurve;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun&Moon")
+    // Sun
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun")
+    FRuntimeFloatCurve SunLightIntensityCurve;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun")
     TEnumAsByte<ERichCurveInterpMode> SunIntensityInterpMode = RCIM_Linear;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun")
     FRuntimeFloatCurve SunSourceAngleCurve;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun")
     TEnumAsByte<ERichCurveInterpMode> SunSourceAngleInterpMode = RCIM_Linear;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun")
     FRuntimeFloatCurve SunSourceSoftAngleCurve;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun")
     TEnumAsByte<ERichCurveInterpMode> SunSourceSoftAngleInterpMode = RCIM_Linear;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun")
     FRuntimeFloatCurve SunIndirectIntensityCurve;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun")
     TEnumAsByte<ERichCurveInterpMode> SunIndirectIntensityInterpMode = RCIM_Linear;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Sun")
     FRuntimeCurveLinearColor SunColorCurve;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun&Moon")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Sun")
     TEnumAsByte<ERichCurveInterpMode> SunColorInterpMode = RCIM_Linear;
 
+    // Moon
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Moon")
+    FRuntimeFloatCurve MoonLightIntensityCurve;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Moon")
+    TEnumAsByte<ERichCurveInterpMode> MoonIntensityInterpMode = RCIM_Linear;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Moon")
+    FRuntimeFloatCurve MoonSourceAngleCurve;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Moon")
+    TEnumAsByte<ERichCurveInterpMode> MoonSourceAngleInterpMode = RCIM_Linear;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Moon")
+    FRuntimeFloatCurve MoonSourceSoftAngleCurve;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Moon")
+    TEnumAsByte<ERichCurveInterpMode> MoonSourceSoftAngleInterpMode = RCIM_Linear;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|Moon")
+    FRuntimeCurveLinearColor MoonColorCurve;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Curves|Moon")
+    TEnumAsByte<ERichCurveInterpMode> MoonColorInterpMode = RCIM_Linear;
 
     // SkyLight
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Curves|SkyLight")
@@ -213,12 +233,12 @@ public:
 
 
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
-
     void BakeTODCurves();
 
     void GetTODSettingsAtTime(
         float InTime,
-        FTODSunMoonSettings& OutSunMoon,
+        FTODSunMoonSettings& OutSun,
+        FTODSunMoonSettings& OutMoon,
         FTODSkyLightSettings& OutSkyLight,
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere
@@ -245,21 +265,6 @@ public:
 protected:
     // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드
     virtual void BeginPlay() override;
-
-    UPROPERTY()
-    bool bEnableTwilightOverride = true;
-
-    UPROPERTY()
-    float TwilightDirectionalDimmingFactor = 0.0f;
-
-    UPROPERTY()
-    float TwilightSkyLightBoostIntensity = 10.0f;
-
-    UPROPERTY()
-    float TwilightMoonRiseDelay = 0.5f;
-
-    UPROPERTY()
-    float TwilightMoonRiseFadeDuration = 1.0f;
 
 private:
     FTimerHandle DebugTimerHandle;
