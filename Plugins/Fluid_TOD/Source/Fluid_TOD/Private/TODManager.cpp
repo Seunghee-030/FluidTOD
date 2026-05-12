@@ -480,7 +480,7 @@ void ATODManager::BakeTODCurves()
 	{
 		float T = Data.Time;
 
-		// 사용하지 않는 빛 강도 = 0.0
+		// 사용X, Intensity = 0.0
 		float FinalSunIntensity = (Data.ActiveLightMode != ETODDirectionalLightType::MoonOnly) ? Data.Sun_Settings.Intensity : 0.0f;
 		float FinalMoonIntensity = (Data.ActiveLightMode != ETODDirectionalLightType::SunOnly) ? Data.Moon_Settings.Intensity : 0.0f;
 
@@ -588,7 +588,6 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentTime, SunSettings, MoonSettings, Sky, Fog, Atmos);
 
-	// 분리된 변수를 각 라이트 컴포넌트에 즉각 인가
 	if (IsValid(SunLightComponent))
 	{
 		if (!SunLightComponent->bAtmosphereSunLight)
