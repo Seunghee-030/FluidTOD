@@ -7,6 +7,8 @@
 #include "Curves/CurveLinearColor.h"
 #include "TODManager.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTODDataChangedSignature);
+
 UCLASS(BlueprintType, meta = (PrioritizeCategories = "TOD_Geography TOD TOD_Preset TOD_Debug"))
 class FLUID_TOD_API ATODManager : public AActor
 {
@@ -14,6 +16,10 @@ class FLUID_TOD_API ATODManager : public AActor
 
 public:
     ATODManager();
+
+    // EUW 용 디스패쳐 선언
+    UPROPERTY(BlueprintAssignable, Category = "TOD_Events")
+    FOnTODDataChangedSignature OnTODDataChanged;
 
     UPROPERTY(VisibleAnywhere, Category = "TOD", meta = (DisplayPriority = "1"))
     FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
@@ -30,16 +36,15 @@ public:
     void SaveNewPreset();
 
     // 덮어쓰며 저장
-    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "2"))
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset")
     void SaveCurrentPreset();
 
     // Preset Asset
-    UPROPERTY(EditAnywhere, Category = "TOD_Preset", meta = (DisplayPriority = "3"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Preset")
     TObjectPtr<UTODPresetData> LoadPreset;
 
-    UFUNCTION()
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset")
     void LoadSelectedPreset();
-
 
     // 디버그 텍스트 출력
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Debug", meta = (DisplayPriority = "1"))

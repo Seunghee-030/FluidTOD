@@ -745,6 +745,9 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 	{
 		BakeTODCurves();
 	}
+
+	// TOD 데이터 변경 시 브로드캐스트
+	OnTODDataChanged.Broadcast();
 }
 
 void ATODManager::PostInitProperties()
