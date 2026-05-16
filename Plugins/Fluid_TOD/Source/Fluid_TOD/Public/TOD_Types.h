@@ -4,6 +4,8 @@
 #include "UObject/NoExportTypes.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/DataAsset.h"
+#include "Curves/CurveFloat.h"
+#include "Curves/CurveLinearColor.h"
 #include "TOD_Types.generated.h"
 
 UENUM(BlueprintType)
@@ -145,6 +147,106 @@ struct FTODMasterData
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FTODSkyAtmosphereSettings SkyAtmosphere_Settings;
+};
+
+// 커브 구조체
+USTRUCT(BlueprintType)
+struct FTODSunCurveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeFloatCurve IntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> IntensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeFloatCurve SourceAngleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> SourceAngleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeFloatCurve SourceSoftAngleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> SourceSoftAngleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeFloatCurve IndirectIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> IndirectIntensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeCurveLinearColor ColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> ColorInterpMode = RCIM_Linear;
+};
+
+USTRUCT(BlueprintType)
+struct FTODMoonCurveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve IntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> IntensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceAngleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> SourceAngleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceSoftAngleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> SourceSoftAngleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeCurveLinearColor ColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> ColorInterpMode = RCIM_Linear;
+};
+
+USTRUCT(BlueprintType)
+struct FTODSkyLightCurveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve IntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> IntensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve IndirectIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> IndirectIntensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve VolumetricScatteringIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> VolumetricScatteringInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeCurveLinearColor ColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> ColorInterpMode = RCIM_Linear;
+};
+
+USTRUCT(BlueprintType)
+struct FTODFogCurveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") FRuntimeFloatCurve DensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") TEnumAsByte<ERichCurveInterpMode> DensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") FRuntimeFloatCurve HeightFalloffCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") TEnumAsByte<ERichCurveInterpMode> HeightFalloffInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") FRuntimeCurveLinearColor InscatteringColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") TEnumAsByte<ERichCurveInterpMode> InscatteringColorInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") FRuntimeCurveLinearColor DirectionalColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fog Curves") TEnumAsByte<ERichCurveInterpMode> DirectionalColorInterpMode = RCIM_Linear;
+};
+
+USTRUCT(BlueprintType)
+struct FTODSkyAtmosphereCurveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") FRuntimeFloatCurve MieScatteringScaleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") TEnumAsByte<ERichCurveInterpMode> MieScatteringScaleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") FRuntimeFloatCurve RayleighScatteringScaleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") TEnumAsByte<ERichCurveInterpMode> RayleighScatteringScaleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") FRuntimeFloatCurve AerialPerspectiveDistanceScaleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") TEnumAsByte<ERichCurveInterpMode> AerialPerspectiveDistanceScaleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") FRuntimeCurveLinearColor MieScatteringColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") TEnumAsByte<ERichCurveInterpMode> MieScatteringColorInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") FRuntimeCurveLinearColor AbsorptionColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") TEnumAsByte<ERichCurveInterpMode> AbsorptionColorInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") FRuntimeCurveLinearColor SkyLuminanceFactorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere Curves") TEnumAsByte<ERichCurveInterpMode> SkyLuminanceFactorInterpMode = RCIM_Linear;
 };
 
 UCLASS()
