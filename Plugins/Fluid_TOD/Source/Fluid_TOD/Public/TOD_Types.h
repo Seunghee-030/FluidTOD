@@ -13,7 +13,10 @@ enum class ETODState : uint8
 {
 	Day         UMETA(DisplayName = "Day"),
 	Night       UMETA(DisplayName = "Night"),
-	Transition  UMETA(DisplayName = "Transition (Dawn/Dusk)")
+	Dawn  UMETA(DisplayName = "Dawn"),
+	Sunrise  UMETA(DisplayName = "Sunrise"),
+	Dusk  UMETA(DisplayName = "Dusk"),
+	Sunset  UMETA(DisplayName = "Sunset"),
 };
 
 // 사용할 빛 종류 선택 (Sun/Moon/Both)

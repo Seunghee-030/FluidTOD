@@ -659,22 +659,38 @@ void ATODManager::UpdateState(float CurrentTime)
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
 
-	// 낮 전환
-	if (SafeTime >= CalculatedSunriseTime - TransitionDuration && SafeTime < CalculatedSunriseTime)
+	float DawnStart = CalculatedSunriseTime - TransitionDuration;
+	float SunriseEnd = CalculatedSunriseTime + TransitionDuration;
+
+	float SunsetStart = CalculatedSunsetTime - TransitionDuration;
+	float DuskEnd = CalculatedSunsetTime + TransitionDuration;
+
+	// 일출 전
+	if (SafeTime >= DawnStart && SafeTime < CalculatedSunriseTime)
 	{
-		CurrentState = ETODState::Transition;
+		CurrentState = ETODState::Dawn;
 	}
-	// 밤 전환
-	else if (SafeTime >= CalculatedSunsetTime - TransitionDuration && SafeTime < CalculatedSunsetTime)
+	// 일출
+	else if (SafeTime >= CalculatedSunriseTime && SafeTime < SunriseEnd)
 	{
-		CurrentState = ETODState::Transition;
+		CurrentState = ETODState::Sunrise;
 	}
 	// 낮
-	else if (SafeTime >= CalculatedSunriseTime && SafeTime < CalculatedSunsetTime - TransitionDuration)
+	else if (SafeTime >= SunriseEnd && SafeTime < SunsetStart)
 	{
 		CurrentState = ETODState::Day;
 	}
-	// 밤
+	// 일몰
+	else if (SafeTime >= SunsetStart && SafeTime < CalculatedSunsetTime)
+	{
+		CurrentState = ETODState::Sunset;
+	}
+	// 일몰 후
+	else if (SafeTime >= CalculatedSunsetTime && SafeTime < DuskEnd)
+	{
+		CurrentState = ETODState::Dusk;
+	}
+	// Night
 	else
 	{
 		CurrentState = ETODState::Night;
