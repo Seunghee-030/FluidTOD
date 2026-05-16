@@ -13,6 +13,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
+#include "Editor/EditorEngine.h"
 #endif
 
 ATODManager::ATODManager()
@@ -678,6 +679,18 @@ void ATODManager::UpdateState(float CurrentTime)
 	{
 		CurrentState = ETODState::Night;
 	}
+}
+
+// ======= EUW 관련 =========
+
+void ATODManager::ForceViewportRedraw()
+{
+#if WITH_EDITOR
+	if (GEditor)
+	{
+		GEditor->RedrawLevelEditingViewports();
+	}
+#endif
 }
 
 // ======= Editor 기능 관련 =========

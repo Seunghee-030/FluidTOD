@@ -144,6 +144,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void UpdateTOD(float CurrentTime);
 
+    // EUW 뷰포트 갱신
+    UFUNCTION(BlueprintCallable, Category = "TOD|Editor")
+    void ForceViewportRedraw();
+
     void FindComponents();
 
     //  Material 이벤트
