@@ -14,6 +14,10 @@
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "Editor/EditorEngine.h"
+
+#include "ContentBrowserModule.h"
+#include "IContentBrowserSingleton.h"
+#include "Misc/PackageName.h"
 #endif
 
 ATODManager::ATODManager()
@@ -316,32 +320,53 @@ void ATODManager::SaveNewPreset()
 {
 #if WITH_EDITOR
 	FString Timestamp = FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"));
-	FString AssetName = FString::Printf(TEXT("TOD_Preset_%s"), *Timestamp);
-	FString PackagePath = TEXT("/Game/TOD_Presets/");
+	FString DefaultAssetName = FString::Printf(TEXT("TOD_Preset_%s"), *Timestamp);
+	FString DefaultPath = TEXT("/Game/TOD_Presets");
 
-	IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	FSaveAssetDialogConfig SaveAssetDialogConfig;
+	SaveAssetDialogConfig.DialogTitleOverride = FText::FromString(TEXT("Save TOD Preset"));
+	SaveAssetDialogConfig.DefaultPath = DefaultPath;
+	SaveAssetDialogConfig.DefaultAssetName = DefaultAssetName;
+	SaveAssetDialogConfig.ExistingAssetPolicy = ESaveAssetDialogExistingAssetPolicy::AllowButWarn;
 
-	UTODPresetData* NewAsset = Cast<UTODPresetData>(AssetTools.CreateAsset(
-		AssetName,
-		PackagePath,
-		UTODPresetData::StaticClass(),
-		nullptr
-	));
+	// 다이얼로그 열기
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+	FString SaveObjectPath = ContentBrowserModule.Get().CreateModalSaveAssetDialog(SaveAssetDialogConfig);
 
-	if (NewAsset)
+	// 저장
+	if (!SaveObjectPath.IsEmpty())
 	{
-		NewAsset->TOD_DataArray = TOD_DataArray;
-		for (FTODMasterData& Data : NewAsset->TOD_DataArray) { Data.PPV = nullptr; }
+		FString PackagePath = FPaths::GetPath(SaveObjectPath);
+		FString AssetName = FPaths::GetBaseFilename(SaveObjectPath);
 
-		NewAsset->MarkPackageDirty();
-		FAssetRegistryModule::AssetCreated(NewAsset);
-		LoadPreset = NewAsset;
+		IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
 
-		FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Created: {0}")), FText::FromString(AssetName)));
-		Info.ExpireDuration = 3.0f;
-		FSlateNotificationManager::Get().AddNotification(Info);
+		UTODPresetData* NewAsset = Cast<UTODPresetData>(AssetTools.CreateAsset(
+			AssetName,
+			PackagePath,
+			UTODPresetData::StaticClass(),
+			nullptr
+		));
 
-		UE_LOG(LogTemp, Log, TEXT("Fluid TOD: New preset created at %s/%s"), *PackagePath, *AssetName);
+		if (NewAsset)
+		{
+			NewAsset->TOD_DataArray = TOD_DataArray;
+			for (FTODMasterData& Data : NewAsset->TOD_DataArray) { Data.PPV = nullptr; }
+
+			NewAsset->MarkPackageDirty();
+			FAssetRegistryModule::AssetCreated(NewAsset);
+			LoadPreset = NewAsset;
+
+			FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Saved: {0}")), FText::FromString(AssetName)));
+			Info.ExpireDuration = 3.0f;
+			FSlateNotificationManager::Get().AddNotification(Info);
+
+			UE_LOG(LogTemp, Log, TEXT("Fluid TOD: New preset created at %s"), *SaveObjectPath);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Fluid TOD: Preset creation cancelled by user."));
 	}
 #endif
 }

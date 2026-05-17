@@ -48,7 +48,9 @@ public class Fluid_TOD : ModuleRules
     			PrivateDependencyModuleNames.AddRange(
         			new string[]
         			{
-            				"UnrealEd"
+            				"UnrealEd",
+					"AssetTools",
+				        "ContentBrowser"
         			}
     			);
 		}
