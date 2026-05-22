@@ -39,6 +39,9 @@ public:
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset")
     void SaveCurrentPreset();
 
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "2"))
+    void OpenPresetDialog();
+
     // Preset Asset
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Preset")
     TObjectPtr<UTODPresetData> LoadPreset;

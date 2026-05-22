@@ -405,6 +405,44 @@ void ATODManager::SaveCurrentPreset()
 #endif
 }
 
+// 프리셋 로드 다이얼로그
+void ATODManager::OpenPresetDialog()
+{
+#if WITH_EDITOR
+	FOpenAssetDialogConfig OpenAssetDialogConfig;
+	OpenAssetDialogConfig.DialogTitleOverride = FText::FromString(TEXT("Load TOD Preset"));
+	OpenAssetDialogConfig.DefaultPath = TEXT("/Game/TOD_Presets");
+	OpenAssetDialogConfig.bAllowMultipleSelection = false; // 단일 선택만 허용
+
+	OpenAssetDialogConfig.AssetClassNames.Add(UTODPresetData::StaticClass()->GetClassPathName());
+
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+	TArray<FAssetData> SelectedAssets = ContentBrowserModule.Get().CreateModalOpenAssetDialog(OpenAssetDialogConfig);
+
+	if (SelectedAssets.Num() > 0)
+	{
+		UTODPresetData* SelectedPreset = Cast<UTODPresetData>(SelectedAssets[0].GetAsset());
+		if (SelectedPreset)
+		{
+			LoadPreset = SelectedPreset;
+			LoadSelectedPreset();
+
+			SortTODDataArray();
+			BakeTODCurves();
+			UpdateTOD(StartTime);
+
+			FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Loaded: {0}")), FText::FromString(SelectedPreset->GetName())));
+			Info.ExpireDuration = 3.0f;
+			FSlateNotificationManager::Get().AddNotification(Info);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Fluid TOD: Preset loading cancelled by user."));
+	}
+#endif
+}
+
 void ATODManager::LoadSelectedPreset()
 {
 	if (!LoadPreset) return;
