@@ -33,20 +33,32 @@ struct FTODSunMoonSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "1"))
 	float Intensity = 8000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	float SourceAngle = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "2"))
+	float Source_Angle = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	float SourceSoftAngle = 0.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3"))
+	float Source_Soft_Angle = 0.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	float IndirectLightingIntensity = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "4"))
+	float Indirect_Light_Intensity = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	FLinearColor Color = FLinearColor::White;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "5"))
+	FLinearColor Light_Color = FLinearColor::White;
+};
+
+USTRUCT(BlueprintType)
+struct FTODMoonSettings : public FTODSunMoonSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "10"))
+	float Moon_Source_Scale = 300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "11"))
+	float Moon_Source_Emissive_Intensity = 300.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -65,6 +77,9 @@ struct FTODSkyLightSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	float Sky_Volumetric_Scattering_Intensity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	float Sky_Texture_Emissive_Intensity = 1.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -140,7 +155,7 @@ struct FTODMasterData
 
 	// Night/Transition 상태일 때만 노출
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (EditCondition = "ActiveLightMode == ETODDirectionalLightType::MoonOnly || ActiveLightMode == ETODDirectionalLightType::Transition", EditConditionHides))
-	FTODSunMoonSettings Moon_Settings;
+	FTODMoonSettings Moon_Settings;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FTODSkyLightSettings SkyLight_Settings;
@@ -188,8 +203,17 @@ struct FTODMoonCurveData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceSoftAngleCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> SourceSoftAngleInterpMode = RCIM_Linear;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeCurveLinearColor ColorCurve;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> ColorInterpMode = RCIM_Linear;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve IndirectIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> IndirectIntensityInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeCurveLinearColor LightColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> LightColorInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceScaleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> SourceScaleInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceEmissiveIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") TEnumAsByte<ERichCurveInterpMode> SourceEmissiveIntensityInterpMode = RCIM_Linear;
 };
 
 USTRUCT(BlueprintType)
@@ -206,8 +230,11 @@ struct FTODSkyLightCurveData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve VolumetricScatteringIntensityCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> VolumetricScatteringInterpMode = RCIM_Linear;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeCurveLinearColor ColorCurve;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> ColorInterpMode = RCIM_Linear;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeCurveLinearColor LightColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> LightColorInterpMode = RCIM_Linear;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve TextureEmissiveIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") TEnumAsByte<ERichCurveInterpMode> TextureEmissiveIntensityInterpMode = RCIM_Linear;
 };
 
 USTRUCT(BlueprintType)

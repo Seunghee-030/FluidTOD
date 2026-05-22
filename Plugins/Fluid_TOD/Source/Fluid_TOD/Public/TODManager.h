@@ -112,6 +112,12 @@ public:
     UPROPERTY()
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
 
+    UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
+    TObjectPtr<UMaterialInstanceDynamic> MoonMaterialInstance;
+
+    UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
+    TObjectPtr<UMaterialInstanceDynamic> SkyMaterialInstance;
+
 	// Curve Data
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun")
     FTODSunCurveData SunCurves;
@@ -135,7 +141,7 @@ public:
     void GetTODSettingsAtTime(
         float InTime,
         FTODSunMoonSettings& OutSun,
-        FTODSunMoonSettings& OutMoon,
+        FTODMoonSettings& OutMoon,
         FTODSkyLightSettings& OutSkyLight,
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere
