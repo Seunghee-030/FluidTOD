@@ -694,7 +694,7 @@ void ATODManager::UpdateTOD(float CurrentTime)
 	
 		if (IsValid(MoonMaterialInstance))
 		{
-			MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonEmissiveColor"), MoonSettings.Moon_Source_Scale);
+			//MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonEmissiveColor"), FinalMoonSourceScale);
 			MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonSourceEmissiveIntensity"), MoonSettings.Moon_Source_Emissive_Intensity);
 		}
 	}

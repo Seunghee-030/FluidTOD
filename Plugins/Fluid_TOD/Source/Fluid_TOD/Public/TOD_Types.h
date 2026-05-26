@@ -28,6 +28,20 @@ enum class ETODDirectionalLightType : uint8
 	Transition  UMETA(DisplayName = "Sun&Moon")
 };
 
+
+// EUW용 컴포넌트 카테고리
+UENUM(BlueprintType)
+enum class ETODComponentCategory : uint8
+{
+	All                   UMETA(DisplayName = "All"),
+	Sun					  UMETA(DisplayName = "Sun"),
+	Moon				  UMETA(DisplayName = "Moon"),
+	SkyLight              UMETA(DisplayName = "SkyLight"),
+	ExponentialHeightFog  UMETA(DisplayName = "ExponentialHeightFog"),
+	SkyAtmosphere         UMETA(DisplayName = "SkyAtmosphere"),
+	PostProcessVolume     UMETA(DisplayName = "PostProcessVolume")
+};
+
 USTRUCT(BlueprintType)
 struct FTODSunMoonSettings
 {

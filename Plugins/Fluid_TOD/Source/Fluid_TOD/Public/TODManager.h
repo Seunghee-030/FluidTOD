@@ -30,6 +30,14 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3", TitleProperty = "Name"))
     TArray<FTODMasterData> TOD_DataArray;
 
+public:
+    // Moon Source Scale 오버라이드
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Material")
+    bool bOverrideMoonSourceScale = false;
+
+    // 고정 Moon Source Scale 값
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Material")
+    float OverriddenMoonSourceScale = 1.0f;
 
     // 새로 저장
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "1"))
@@ -94,6 +102,11 @@ public:
     // 전환되는 시간
     UPROPERTY()
     float TransitionDuration = 1.0f;
+
+public:
+    // EUW 컴포넌트 필터 상태 저장
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Editor")
+    ETODComponentCategory CurrentComponentFilter = ETODComponentCategory::All;
 
 public:
     // Class
