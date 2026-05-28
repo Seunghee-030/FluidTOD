@@ -58,6 +58,24 @@ void ATODManager::PrintTODDebugInfo()
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentSystemTime, Sun, Moon, Sky, Fog, Atmos);
 
+	float ActualMoonEmissive = 0.f;
+	float ActualSkyEmissive = 0.f;
+
+	if (IsValid(MoonMaterialInstance))
+	{
+		MoonMaterialInstance->GetScalarParameterValue(
+			FMaterialParameterInfo(TEXT("MoonSourceEmissiveIntensity")),
+			ActualMoonEmissive
+		);
+	}
+
+	if (IsValid(SkyMaterialInstance))
+	{
+		SkyMaterialInstance->GetScalarParameterValue(
+			FMaterialParameterInfo(TEXT("SkyTextureEmissiveIntensity")),
+			ActualSkyEmissive
+		);
+	}
 	float CurrentBloom = 0.0f;
 	float CurrentExpMin = 0.0f;
 	float CurrentExpMax = 0.0f;
@@ -93,8 +111,8 @@ void ATODManager::PrintTODDebugInfo()
 		*GetFormattedTimeAsString(CurrentSystemTime),
 		Sun.Intensity, Sun.Source_Angle,
 		Moon.Intensity, Moon.Source_Angle, 
-		Moon.Moon_Source_Scale, Moon.Moon_Source_Emissive_Intensity,
-		Sky.Sky_Light_Intensity, Sky.Sky_Texture_Emissive_Intensity,
+		Moon.Moon_Source_Scale, ActualMoonEmissive,
+		Sky.Sky_Light_Intensity, ActualSkyEmissive,
 		Sky.Sky_Indirect_Lighting_Intensity,
 		Fog.Fog_Density,
 		Atmos.Mie_Scattering_Scale,
