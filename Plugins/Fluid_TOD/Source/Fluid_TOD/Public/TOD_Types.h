@@ -47,19 +47,19 @@ struct FTODSunMoonSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	float Intensity = 8000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "2"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	float Source_Angle = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	float Source_Soft_Angle = 0.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "4"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	float Indirect_Light_Intensity = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "5"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FLinearColor Light_Color = FLinearColor::White;
 };
 
@@ -68,10 +68,10 @@ struct FTODMoonSettings : public FTODSunMoonSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "10"))
-	float Moon_Source_Scale = 300.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	float Moon_Source_Scale = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "11"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	float Moon_Source_Emissive_Intensity = 300.0f;
 };
 

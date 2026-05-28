@@ -127,6 +127,8 @@ void ATODManager::SortTODDataArray()
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
+
+// ======== Curve Evaluation =========
 void ATODManager::BakeTODCurves()
 {
 	CurveEvaluator.BakeTODCurves(this);
@@ -156,213 +158,7 @@ void ATODManager::GetTODSettingsAtTime(
 	);
 }
 
-// ======= Moon/Sun 분리 =========
-
-void ATODManager::FindComponents()
-{
-	TArray<UDirectionalLightComponent*> Lights;
-	GetComponents<UDirectionalLightComponent>(Lights);
-
-	SunLightComponent = nullptr;
-	MoonLightComponent = nullptr;
-
-	for (UDirectionalLightComponent* Light : Lights)
-	{
-		// 해시 비교
-		if (Light->ComponentHasTag(FName(TEXT("Moon"))))
-		{
-			MoonLightComponent = Light;
-		}
-		else if (Light->ComponentHasTag(FName(TEXT("Sun"))))
-		{
-			SunLightComponent = Light;
-		}
-	}
-
-	SkyLightComponent = FindComponentByClass<USkyLightComponent>();
-	FogComponent = FindComponentByClass<UExponentialHeightFogComponent>();
-	SkyAtmosphereComponent = FindComponentByClass<USkyAtmosphereComponent>();
-}
-
-// ======= Presets =========
-void ATODManager::SaveNewPreset()
-{
-	EditorModule.SaveNewPreset(this);
-}
-
-void ATODManager::SaveCurrentPreset()
-{
-	EditorModule.SaveCurrentPreset(this);
-}
-
-void ATODManager::OpenPresetDialog()
-{
-	EditorModule.OpenPresetDialog(this);
-}
-
-void ATODManager::LoadSelectedPreset()
-{
-	EditorModule.LoadSelectedPreset(this);
-}
-
-void ATODManager::ForceViewportRedraw()
-{
-	EditorModule.ForceViewportRedraw(this);
-}
-
-
-// ======= TOD Geography =========
-
-void ATODManager::UpdateSunTimes()
-{
-	float LatitudeOffset = (Latitude / 90.0f) * 2.0f;
-
-	CalculatedSunriseTime = 6.0f - LatitudeOffset;
-	CalculatedSunsetTime = 18.0f + LatitudeOffset;
-
-	SunriseTime = GetFormattedTimeAsString(CalculatedSunriseTime);
-	SunsetTime = GetFormattedTimeAsString(CalculatedSunsetTime);
-}
-
-FRotator ATODManager::CalculatePivotRotation(float InTime) const
-{
-	// 시간 0~24 보정
-	float SafeTime = FMath::Fmod(InTime, 24.0f);
-	if (SafeTime < 0.0f) SafeTime += 24.0f;
-
-	float PitchAngle = 0.0f;
-
-	bool bIsDaytime = (SafeTime >= CalculatedSunriseTime) && (SafeTime < CalculatedSunsetTime);
-
-	if (bIsDaytime)
-	{
-		// 낮
-		PitchAngle = FMath::GetMappedRangeValueClamped(
-			FVector2D(CalculatedSunriseTime, CalculatedSunsetTime),
-			FVector2D(180.0f, 360.0f),
-			SafeTime
-		);
-	}
-	else
-	{
-		// 밤
-		float TotalNightDuration = 24.0f - (CalculatedSunsetTime - CalculatedSunriseTime);
-		float ElapsedNightTime = 0.0f;
-
-		if (SafeTime >= CalculatedSunsetTime)
-		{
-			ElapsedNightTime = SafeTime - CalculatedSunsetTime;
-		}
-		else
-		{
-			ElapsedNightTime = (24.0f - CalculatedSunsetTime) + SafeTime;
-		}
-
-		PitchAngle = FMath::GetMappedRangeValueClamped(
-			FVector2D(0.0f, TotalNightDuration),
-			FVector2D(0.0f, 180.0f),
-			ElapsedNightTime
-		);
-	}
-
-	return FRotator(0.0f, PitchAngle, 0.0f);
-}
-
-void ATODManager::UpdateTOD(float CurrentTime)
-{
-	if (!IsValid(this) || IsActorBeingDestroyed() || TOD_DataArray.Num() == 0) return;
-
-	CurrentSystemTime = CurrentTime;
-
-	UpdateState(CurrentTime);
-
-	if (!SkyLightComponent) FindComponents();
-
-	// 런타임 PPV 보간 적용
-	ApplyPPVBlending(CurrentTime);
-
-	FTODSunMoonSettings SunSettings;
-	FTODMoonSettings MoonSettings;
-	FTODSkyLightSettings Sky;
-	FTODFogSettings Fog;
-	FTODSkyAtmosphereSettings Atmos;
-	GetTODSettingsAtTime(CurrentTime, SunSettings, MoonSettings, Sky, Fog, Atmos);
-
-	if (IsValid(SunLightComponent))
-	{
-		if (!SunLightComponent->bAtmosphereSunLight)
-		{
-			SunLightComponent->SetAtmosphereSunLight(true);
-			SunLightComponent->MarkRenderStateDirty();
-		}
-
-		SunLightComponent->SetIntensity(SunSettings.Intensity);
-		SunLightComponent->SetLightColor(SunSettings.Light_Color);
-		SunLightComponent->SetLightSourceAngle(SunSettings.Source_Angle);
-		SunLightComponent->SetLightSourceSoftAngle(SunSettings.Source_Soft_Angle);
-		SunLightComponent->SetIndirectLightingIntensity(SunSettings.Indirect_Light_Intensity);
-	}
-
-	if (IsValid(MoonLightComponent))
-	{
-		// 달의 대기 산란 영향 차단 (붉은 달 방지)
-		if (MoonLightComponent->bAtmosphereSunLight)
-		{
-			MoonLightComponent->SetAtmosphereSunLight(false);
-			MoonLightComponent->MarkRenderStateDirty();
-		}
-		MoonLightComponent->SetAtmosphereSunLightIndex(1);
-		MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
-
-		MoonLightComponent->SetIntensity(MoonSettings.Intensity);
-		MoonLightComponent->SetLightColor(MoonSettings.Light_Color);
-		MoonLightComponent->SetLightSourceAngle(MoonSettings.Source_Angle);
-		MoonLightComponent->SetLightSourceSoftAngle(MoonSettings.Source_Soft_Angle);
-		MoonLightComponent->SetIndirectLightingIntensity(MoonSettings.Indirect_Light_Intensity);
-	
-		if (IsValid(MoonMaterialInstance))
-		{
-			//MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonEmissiveColor"), FinalMoonSourceScale);
-			MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonSourceEmissiveIntensity"), MoonSettings.Moon_Source_Emissive_Intensity);
-		}
-	}
-
-	// 공통 환경
-	if (IsValid(SkyLightComponent))
-	{
-		SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
-		SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
-		SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
-		SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
-		if (IsValid(SkyMaterialInstance))
-		{
-			SkyMaterialInstance->SetScalarParameterValue(TEXT("SkyTextureEmissiveIntensity"), Sky.Sky_Texture_Emissive_Intensity);
-		}
-	}
-
-	if (IsValid(FogComponent))
-	{
-		FogComponent->SetFogDensity(Fog.Fog_Density);
-		FogComponent->SetFogHeightFalloff(Fog.Fog_Height_Falloff);
-		FogComponent->SetFogInscatteringColor(Fog.Fog_Inscattering_Color);
-		FogComponent->SetDirectionalInscatteringColor(Fog.Fog_Directional_Inscattering);
-	}
-
-	if (IsValid(SkyAtmosphereComponent))
-	{
-		SkyAtmosphereComponent->SetMieScatteringScale(Atmos.Mie_Scattering_Scale);
-		SkyAtmosphereComponent->SetMieScattering(Atmos.Mie_Scattering_Color);
-		SkyAtmosphereComponent->SetOtherAbsorption(Atmos.Absorption_Color);
-		SkyAtmosphereComponent->SetRayleighScatteringScale(Atmos.Rayleigh_Scattering_Scale);
-		SkyAtmosphereComponent->SetAerialPespectiveViewDistanceScale(Atmos.Aerial_Perspective_Distance_Scale);
-		SkyAtmosphereComponent->SetSkyLuminanceFactor(Atmos.Sky_Luminance_Factor);
-	}
-
-	OnUpdateCustomMaterials(CurrentTime);
-}
-
 // ======= Day/Night State =========
-
 void ATODManager::UpdateState(float CurrentTime)
 {
 	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
@@ -404,6 +200,53 @@ void ATODManager::UpdateState(float CurrentTime)
 	{
 		CurrentState = ETODState::Night;
 	}
+}
+
+// ======= Presets: Editor =========
+void ATODManager::SaveNewPreset()
+{
+	EditorModule.SaveNewPreset(this);
+}
+
+void ATODManager::SaveCurrentPreset()
+{
+	EditorModule.SaveCurrentPreset(this);
+}
+
+void ATODManager::OpenPresetDialog()
+{
+	EditorModule.OpenPresetDialog(this);
+}
+
+void ATODManager::LoadSelectedPreset()
+{
+	EditorModule.LoadSelectedPreset(this);
+}
+
+void ATODManager::ForceViewportRedraw()
+{
+	EditorModule.ForceViewportRedraw(this);
+}
+
+// ========= System ===========
+void ATODManager::UpdateTOD(float CurrentTime)
+{
+	TODSystem.UpdateTOD(this, CurrentTime);
+}
+
+void ATODManager::FindComponents()
+{
+	TODSystem.FindComponents(this);
+}
+
+void ATODManager::UpdateSunTimes()
+{
+	TODSystem.UpdateSunTimes(this);
+}
+
+FRotator ATODManager::CalculatePivotRotation(float InTime) const
+{
+	return TODSystem.CalculatePivotRotation(this, InTime);
 }
 
 // ======= Editor 기능 관련 =========

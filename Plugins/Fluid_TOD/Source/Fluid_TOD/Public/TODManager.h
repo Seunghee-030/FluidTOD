@@ -5,10 +5,11 @@
 #include "TOD_Types.h"
 #include "Curves/CurveFloat.h"
 #include "Curves/CurveLinearColor.h"
-// 파일 분할
+
 #include "TODCurveEvaluator.h"
 #include "TODEditor.h"
-//
+#include "TODSystem.h"
+
 #include "TODManager.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTODDataChangedSignature);
@@ -37,6 +38,7 @@ public:
 private:
     FTODCurveEvaluator CurveEvaluator;
     FTODEditor EditorModule;
+    FTODSystem TODSystem;
 public:
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void BakeTODCurves();
@@ -62,15 +64,13 @@ public:
     float OverriddenMoonSourceScale = 1.0f;
 
 
-    // -----Preset Asset------
+    // ======= Preset Asset =========
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Preset")
     TObjectPtr<UTODPresetData> LoadPreset;
 
-    // 새로 저장
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "1"))
     void SaveNewPreset();
 
-    // 덮어쓰며 저장
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset")
     void SaveCurrentPreset();
 
@@ -94,7 +94,7 @@ public:
 
     // 지리적 설정
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Geography")
-    float Latitude = 37.5f;
+    float Latitude = 45.0f;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD_Geography")
     float Longitude = 127.0f;
@@ -121,6 +121,9 @@ public:
 
     // =============== State ===============
 public:
+    // 현재 시간을 기억해둘 변수
+    float CurrentSystemTime = 0.0f; 
+
     // 현재 낮/밤 상태
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD_Geography")
     ETODState CurrentState;
@@ -200,7 +203,6 @@ protected:
 
 private:
     FTimerHandle DebugTimerHandle;
-    float CurrentSystemTime = 0.0f; // 현재 시간을 기억해둘 변수
 
     // 지정된 간격마다 호출될 디버그 출력 함수
     UFUNCTION()
