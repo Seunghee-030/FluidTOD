@@ -5,6 +5,7 @@
 #include "TOD_Types.h"
 #include "Curves/CurveFloat.h"
 #include "Curves/CurveLinearColor.h"
+#include "TODCurveEvaluator.h"
 #include "TODManager.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTODDataChangedSignature);
@@ -29,6 +30,22 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3", TitleProperty = "Name"))
     TArray<FTODMasterData> TOD_DataArray;
+private:
+    FTODCurveEvaluator CurveEvaluator;
+public:
+    UFUNCTION(BlueprintCallable, Category = "TOD|System")
+    void BakeTODCurves();
+
+    void GetTODSettingsAtTime(
+        float InTime,
+        FTODSunMoonSettings& OutSun,
+        FTODMoonSettings& OutMoon,
+        FTODSkyLightSettings& OutSkyLight,
+        FTODFogSettings& OutFog,
+        FTODSkyAtmosphereSettings& OutSkyAtmosphere
+    );
+
+    void ApplyPPVBlending(float CurrentTime);
 
 public:
     // Moon Source Scale 오버라이드
@@ -150,19 +167,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyAtmosphere")
     FTODSkyAtmosphereCurveData SkyAtmosphereCurves;
 
-	// Curve Bake
-    UFUNCTION(BlueprintCallable, Category = "TOD|System")
-    void BakeTODCurves();
-
-    void GetTODSettingsAtTime(
-        float InTime,
-        FTODSunMoonSettings& OutSun,
-        FTODMoonSettings& OutMoon,
-        FTODSkyLightSettings& OutSkyLight,
-        FTODFogSettings& OutFog,
-        FTODSkyAtmosphereSettings& OutSkyAtmosphere
-    );
-
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void UpdateTOD(float CurrentTime);
 
@@ -183,7 +187,7 @@ public:
     // System/PPV
     void SortTODDataArray();
 
-    void ApplyPPVBlending(float CurrentTime);
+    
 
 protected:
     // 게임 시작 시 타이머를 작동시키기 위한 BeginPlay 오버라이드

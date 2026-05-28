@@ -7,6 +7,7 @@
 #include "Components/PostProcessComponent.h"
 #include "Engine/Engine.h"
 #include "TimerManager.h"
+#include "TODCurveEvaluator.h"
 
 #if WITH_EDITOR
 #include "AssetToolsModule.h"
@@ -137,6 +138,35 @@ void ATODManager::SortTODDataArray()
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
+void ATODManager::BakeTODCurves()
+{
+	CurveEvaluator.BakeTODCurves(this);
+}
+
+void ATODManager::ApplyPPVBlending(float CurrentTime)
+{
+	CurveEvaluator.ApplyPPVBlending(this, CurrentTime);
+}
+
+void ATODManager::GetTODSettingsAtTime(
+	float InTime,
+	FTODSunMoonSettings& OutSun,
+	FTODMoonSettings& OutMoon,
+	FTODSkyLightSettings& OutSkyLight,
+	FTODFogSettings& OutFog,
+	FTODSkyAtmosphereSettings& OutSkyAtmosphere)
+{
+	CurveEvaluator.GetTODSettingsAtTime(
+		this,
+		InTime,
+		OutSun,
+		OutMoon,
+		OutSkyLight,
+		OutFog,
+		OutSkyAtmosphere
+	);
+}
+
 // ======= Moon/Sun 분리 =========
 
 void ATODManager::FindComponents()
@@ -163,156 +193,6 @@ void ATODManager::FindComponents()
 	SkyLightComponent = FindComponentByClass<USkyLightComponent>();
 	FogComponent = FindComponentByClass<UExponentialHeightFogComponent>();
 	SkyAtmosphereComponent = FindComponentByClass<USkyAtmosphereComponent>();
-}
-
-// ======= PPV =========
-
-void ATODManager::ApplyPPVBlending(float CurrentTime)
-{
-	if (!IsValid(RuntimePPVComponent)) return;
-
-	TArray<FTODMasterData> ValidPPVs;
-	for (const FTODMasterData& Data : TOD_DataArray)
-	{
-		if (IsValid(Data.PPV)) ValidPPVs.Add(Data);
-	}
-
-	const int32 Num = ValidPPVs.Num();
-	if (Num == 0) return;
-
-	ValidPPVs.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
-		return A.Time < B.Time;
-		});
-
-	for (const FTODMasterData& Data : ValidPPVs)
-	{
-		Data.PPV->BlendWeight = 0.0f;
-		Data.PPV->Priority = -10;
-	}
-
-	float SafeTime = CurrentTime;
-	while (SafeTime >= 24.0f) SafeTime -= 24.0f;
-	while (SafeTime < 0.0f) SafeTime += 24.0f;
-
-	int32 PrevIndex = Num - 1;
-	int32 NextIndex = 0;
-
-	for (int32 i = 0; i < Num; ++i)
-	{
-		if (SafeTime < ValidPPVs[i].Time)
-		{
-			NextIndex = i;
-			PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
-			break;
-		}
-	}
-	if (SafeTime >= ValidPPVs[Num - 1].Time)
-	{
-		PrevIndex = Num - 1;
-		NextIndex = 0;
-	}
-
-	float PrevTime = ValidPPVs[PrevIndex].Time;
-	float NextTime = ValidPPVs[NextIndex].Time;
-
-	float Range = NextTime - PrevTime;
-	while (Range <= 0.0f) Range += 24.0f;
-
-	float Elapsed = SafeTime - PrevTime;
-	while (Elapsed < 0.0f) Elapsed += 24.0f;
-
-	float Alpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
-
-	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
-	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
-
-	RuntimePPVComponent->bEnabled = true;
-	RuntimePPVComponent->bUnbound = true;
-	RuntimePPVComponent->Priority = 0;
-	RuntimePPVComponent->BlendWeight = 1.0f;
-
-	// ---보간용 매크로
-
-	// float
-#define LERP_PPV(Prop) \
-		RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
-		RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
-
-	// FVector4
-#define LERP_VEC4_PPV(Prop) \
-		RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
-		RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
-
-	// FLinearColor
-#define LERP_COLOR_PPV(Prop) \
-		RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
-		RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
-
-// Exposure
-	LERP_PPV(AutoExposureMinBrightness);
-	LERP_PPV(AutoExposureMaxBrightness);
-	LERP_PPV(AutoExposureBias);
-	LERP_PPV(AutoExposureSpeedUp);
-	LERP_PPV(AutoExposureSpeedDown);
-
-	// Bloom
-	LERP_PPV(BloomIntensity);
-	LERP_PPV(BloomThreshold);
-	LERP_PPV(BloomSizeScale);
-	LERP_PPV(BloomConvolutionIntensity);
-
-	// White Balance
-	LERP_PPV(WhiteTemp);
-	LERP_PPV(WhiteTint);
-
-	// Color Grading
-	LERP_VEC4_PPV(ColorSaturation);
-	LERP_VEC4_PPV(ColorContrast);
-	LERP_VEC4_PPV(ColorGamma);
-	LERP_VEC4_PPV(ColorGain);
-	LERP_VEC4_PPV(ColorOffset);
-
-	// Shadows
-	LERP_VEC4_PPV(ColorSaturationShadows);
-	LERP_VEC4_PPV(ColorContrastShadows);
-	LERP_VEC4_PPV(ColorGammaShadows);
-	LERP_VEC4_PPV(ColorGainShadows);
-	LERP_VEC4_PPV(ColorOffsetShadows);
-
-	// Midtones
-	LERP_VEC4_PPV(ColorSaturationMidtones);
-	LERP_VEC4_PPV(ColorContrastMidtones);
-	LERP_VEC4_PPV(ColorGammaMidtones);
-	LERP_VEC4_PPV(ColorGainMidtones);
-	LERP_VEC4_PPV(ColorOffsetMidtones);
-
-	// Highlights
-	LERP_VEC4_PPV(ColorSaturationHighlights);
-	LERP_VEC4_PPV(ColorContrastHighlights);
-	LERP_VEC4_PPV(ColorGammaHighlights);
-	LERP_VEC4_PPV(ColorGainHighlights);
-	LERP_VEC4_PPV(ColorOffsetHighlights);
-
-	// Lens & Effects
-	LERP_PPV(VignetteIntensity);
-	LERP_PPV(FilmGrainIntensity);
-	LERP_PPV(FilmGrainTexelSize);
-	LERP_PPV(SceneFringeIntensity);
-	LERP_PPV(LensFlareIntensity);
-	LERP_PPV(AmbientOcclusionIntensity);
-	LERP_PPV(IndirectLightingIntensity);
-	LERP_PPV(MotionBlurAmount);
-
-	// Indirect Color
-	LERP_COLOR_PPV(IndirectLightingColor);
-
-	// Lumen
-	LERP_PPV(LumenSceneLightingQuality);
-	LERP_PPV(LumenSceneDetail);
-
-#undef LERP_PPV
-#undef LERP_VEC4_PPV
-#undef LERP_COLOR_PPV
 }
 
 // ======= Presets =========
@@ -510,134 +390,6 @@ FRotator ATODManager::CalculatePivotRotation(float InTime) const
 	}
 
 	return FRotator(0.0f, PitchAngle, 0.0f);
-}
-
-// ======= TOD System Main =========
-
-void ATODManager::BakeTODCurves()
-{
-	FindComponents();
-
-	if (TOD_DataArray.Num() == 0) return;
-
-	TArray<FTODMasterData> SortedCopy = TOD_DataArray;
-	SortedCopy.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
-		return A.Time < B.Time;
-		});
-
-	// 구조체 내부 커브 포인터 매핑
-	TArray<FRuntimeFloatCurve*> FloatCurves = {
-		&SunCurves.IntensityCurve, &SunCurves.SourceAngleCurve, &SunCurves.SourceSoftAngleCurve, &SunCurves.IndirectIntensityCurve,
-		&MoonCurves.IntensityCurve, &MoonCurves.SourceAngleCurve, &MoonCurves.SourceSoftAngleCurve, &MoonCurves.SourceScaleCurve, &MoonCurves.SourceEmissiveIntensityCurve,
-		&SkyLightCurves.IntensityCurve, &SkyLightCurves.IndirectIntensityCurve, &SkyLightCurves.VolumetricScatteringIntensityCurve, &SkyLightCurves.TextureEmissiveIntensityCurve,
-		&FogCurves.DensityCurve, &FogCurves.HeightFalloffCurve,
-		&SkyAtmosphereCurves.MieScatteringScaleCurve, &SkyAtmosphereCurves.RayleighScatteringScaleCurve, &SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
-	};
-
-	TArray<FRuntimeCurveLinearColor*> ColorCurves = {
-		&SunCurves.ColorCurve, &MoonCurves.LightColorCurve, &SkyLightCurves.LightColorCurve, &FogCurves.InscatteringColorCurve, &FogCurves.DirectionalColorCurve,
-		&SkyAtmosphereCurves.MieScatteringColorCurve, &SkyAtmosphereCurves.AbsorptionColorCurve, &SkyAtmosphereCurves.SkyLuminanceFactorCurve
-	};
-
-	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(*Curve); }
-	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(*Curve); }
-
-	for (const FTODMasterData& Data : SortedCopy)
-	{
-		float T = Data.Time;
-
-		float FinalSunIntensity = (Data.ActiveLightMode != ETODDirectionalLightType::MoonOnly) ? Data.Sun_Settings.Intensity : 0.0f;
-		float FinalMoonIntensity = (Data.ActiveLightMode != ETODDirectionalLightType::SunOnly) ? Data.Moon_Settings.Intensity : 0.0f;
-
-		// Sun
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunCurves.IntensityCurve, T, FinalSunIntensity, SunCurves.IntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunCurves.SourceAngleCurve, T, Data.Sun_Settings.Source_Angle, SunCurves.SourceAngleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunCurves.SourceSoftAngleCurve, T, Data.Sun_Settings.Source_Soft_Angle, SunCurves.SourceSoftAngleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SunCurves.IndirectIntensityCurve, T, Data.Sun_Settings.Indirect_Light_Intensity, SunCurves.IndirectIntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SunCurves.ColorCurve, T, Data.Sun_Settings.Light_Color, SunCurves.ColorInterpMode);
-
-		// Moon
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MoonCurves.IntensityCurve, T, FinalMoonIntensity, MoonCurves.IntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MoonCurves.SourceAngleCurve, T, Data.Moon_Settings.Source_Angle, MoonCurves.SourceAngleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MoonCurves.SourceSoftAngleCurve, T, Data.Moon_Settings.Source_Soft_Angle, MoonCurves.SourceSoftAngleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MoonCurves.IndirectIntensityCurve, T, Data.Moon_Settings.Indirect_Light_Intensity, MoonCurves.IndirectIntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(MoonCurves.LightColorCurve, T, Data.Moon_Settings.Light_Color, MoonCurves.LightColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MoonCurves.SourceScaleCurve, T, Data.Moon_Settings.Moon_Source_Scale, MoonCurves.SourceScaleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(MoonCurves.SourceEmissiveIntensityCurve, T, Data.Moon_Settings.Moon_Source_Emissive_Intensity, MoonCurves.SourceEmissiveIntensityInterpMode);
-
-		// SkyLight
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightCurves.IntensityCurve, T, Data.SkyLight_Settings.Sky_Light_Intensity, SkyLightCurves.IntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightCurves.IndirectIntensityCurve, T, Data.SkyLight_Settings.Sky_Indirect_Lighting_Intensity, SkyLightCurves.IndirectIntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightCurves.VolumetricScatteringIntensityCurve, T, Data.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity, SkyLightCurves.VolumetricScatteringInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SkyLightCurves.LightColorCurve, T, Data.SkyLight_Settings.Sky_Light_Color, SkyLightCurves.LightColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyLightCurves.TextureEmissiveIntensityCurve, T, Data.SkyLight_Settings.Sky_Texture_Emissive_Intensity, SkyLightCurves.TextureEmissiveIntensityInterpMode);
-
-		// Fog
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(FogCurves.DensityCurve, T, Data.Fog_Settings.Fog_Density, FogCurves.DensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(FogCurves.HeightFalloffCurve, T, Data.Fog_Settings.Fog_Height_Falloff, FogCurves.HeightFalloffInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(FogCurves.InscatteringColorCurve, T, Data.Fog_Settings.Fog_Inscattering_Color, FogCurves.InscatteringColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(FogCurves.DirectionalColorCurve, T, Data.Fog_Settings.Fog_Directional_Inscattering, FogCurves.DirectionalColorInterpMode);
-
-		// SkyAtmosphere
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyAtmosphereCurves.MieScatteringScaleCurve, T, Data.SkyAtmosphere_Settings.Mie_Scattering_Scale, SkyAtmosphereCurves.MieScatteringScaleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyAtmosphereCurves.RayleighScatteringScaleCurve, T, Data.SkyAtmosphere_Settings.Rayleigh_Scattering_Scale, SkyAtmosphereCurves.RayleighScatteringScaleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve, T, Data.SkyAtmosphere_Settings.Aerial_Perspective_Distance_Scale, SkyAtmosphereCurves.AerialPerspectiveDistanceScaleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SkyAtmosphereCurves.MieScatteringColorCurve, T, Data.SkyAtmosphere_Settings.Mie_Scattering_Color, SkyAtmosphereCurves.MieScatteringColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SkyAtmosphereCurves.AbsorptionColorCurve, T, Data.SkyAtmosphere_Settings.Absorption_Color, SkyAtmosphereCurves.AbsorptionColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(SkyAtmosphereCurves.SkyLuminanceFactorCurve, T, Data.SkyAtmosphere_Settings.Sky_Luminance_Factor, SkyAtmosphereCurves.SkyLuminanceFactorInterpMode);
-	}
-
-	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(*Curve); }
-	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::SealColorCurveFor24Hours(*Curve); }
-}
-
-void ATODManager::GetTODSettingsAtTime(
-	float InTime,
-	FTODSunMoonSettings& OutSun,
-	FTODMoonSettings& OutMoon,
-	FTODSkyLightSettings& OutSkyLight,
-	FTODFogSettings& OutFog,
-	FTODSkyAtmosphereSettings& OutSkyAtmosphere)
-{
-	float SafeTime = FMath::Fmod(InTime, 24.0f);
-	if (SafeTime < 0.0f) SafeTime += 24.0f;
-
-	// Sun
-	if (const FRichCurve* Curve = SunCurves.IntensityCurve.GetRichCurveConst()) OutSun.Intensity = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SunCurves.SourceAngleCurve.GetRichCurveConst()) OutSun.Source_Angle = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SunCurves.SourceSoftAngleCurve.GetRichCurveConst()) OutSun.Source_Soft_Angle = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SunCurves.IndirectIntensityCurve.GetRichCurveConst()) OutSun.Indirect_Light_Intensity = Curve->Eval(SafeTime);
-	OutSun.Light_Color = SunCurves.ColorCurve.GetLinearColorValue(SafeTime);
-
-	// Moon
-	if (const FRichCurve* Curve = MoonCurves.IntensityCurve.GetRichCurveConst()) OutMoon.Intensity = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = MoonCurves.SourceAngleCurve.GetRichCurveConst()) OutMoon.Source_Angle = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = MoonCurves.SourceSoftAngleCurve.GetRichCurveConst()) OutMoon.Source_Soft_Angle = Curve->Eval(SafeTime);
-	OutMoon.Indirect_Light_Intensity = OutSun.Indirect_Light_Intensity;
-	OutMoon.Light_Color = MoonCurves.LightColorCurve.GetLinearColorValue(SafeTime);
-	if (const FRichCurve* Curve = MoonCurves.SourceScaleCurve.GetRichCurveConst()) OutMoon.Moon_Source_Scale = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = MoonCurves.SourceEmissiveIntensityCurve.GetRichCurveConst()) OutMoon.Moon_Source_Emissive_Intensity = Curve->Eval(SafeTime);
-
-	// SkyLight
-	if (const FRichCurve* Curve = SkyLightCurves.IntensityCurve.GetRichCurveConst()) OutSkyLight.Sky_Light_Intensity = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SkyLightCurves.IndirectIntensityCurve.GetRichCurveConst()) OutSkyLight.Sky_Indirect_Lighting_Intensity = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SkyLightCurves.VolumetricScatteringIntensityCurve.GetRichCurveConst()) OutSkyLight.Sky_Volumetric_Scattering_Intensity = Curve->Eval(SafeTime);
-	OutSkyLight.Sky_Light_Color = SkyLightCurves.LightColorCurve.GetLinearColorValue(SafeTime);
-	if (const FRichCurve* Curve = SkyLightCurves.TextureEmissiveIntensityCurve.GetRichCurveConst()) OutSkyLight.Sky_Texture_Emissive_Intensity = Curve->Eval(SafeTime);
-
-	// Fog
-	if (const FRichCurve* Curve = FogCurves.DensityCurve.GetRichCurveConst()) OutFog.Fog_Density = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = FogCurves.HeightFalloffCurve.GetRichCurveConst()) OutFog.Fog_Height_Falloff = Curve->Eval(SafeTime);
-	OutFog.Fog_Inscattering_Color = FogCurves.InscatteringColorCurve.GetLinearColorValue(SafeTime);
-	OutFog.Fog_Directional_Inscattering = FogCurves.DirectionalColorCurve.GetLinearColorValue(SafeTime);
-
-	// SkyAtmosphere
-	if (const FRichCurve* Curve = SkyAtmosphereCurves.MieScatteringScaleCurve.GetRichCurveConst()) OutSkyAtmosphere.Mie_Scattering_Scale = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SkyAtmosphereCurves.RayleighScatteringScaleCurve.GetRichCurveConst()) OutSkyAtmosphere.Rayleigh_Scattering_Scale = Curve->Eval(SafeTime);
-	if (const FRichCurve* Curve = SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve.GetRichCurveConst()) OutSkyAtmosphere.Aerial_Perspective_Distance_Scale = Curve->Eval(SafeTime);
-	OutSkyAtmosphere.Mie_Scattering_Color = SkyAtmosphereCurves.MieScatteringColorCurve.GetLinearColorValue(SafeTime);
-	OutSkyAtmosphere.Absorption_Color = SkyAtmosphereCurves.AbsorptionColorCurve.GetLinearColorValue(SafeTime);
-	OutSkyAtmosphere.Sky_Luminance_Factor = SkyAtmosphereCurves.SkyLuminanceFactorCurve.GetLinearColorValue(SafeTime);
 }
 
 void ATODManager::UpdateTOD(float CurrentTime)
