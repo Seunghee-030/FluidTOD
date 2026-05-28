@@ -5,7 +5,10 @@
 #include "TOD_Types.h"
 #include "Curves/CurveFloat.h"
 #include "Curves/CurveLinearColor.h"
+// 파일 분할
 #include "TODCurveEvaluator.h"
+#include "TODEditor.h"
+//
 #include "TODManager.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTODDataChangedSignature);
@@ -30,8 +33,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3", TitleProperty = "Name"))
     TArray<FTODMasterData> TOD_DataArray;
+
 private:
     FTODCurveEvaluator CurveEvaluator;
+    FTODEditor EditorModule;
 public:
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void BakeTODCurves();
@@ -56,6 +61,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Material")
     float OverriddenMoonSourceScale = 1.0f;
 
+
+    // -----Preset Asset------
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Preset")
+    TObjectPtr<UTODPresetData> LoadPreset;
+
     // 새로 저장
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "1"))
     void SaveNewPreset();
@@ -67,13 +77,12 @@ public:
     UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD_Preset", meta = (DisplayPriority = "2"))
     void OpenPresetDialog();
 
-    // Preset Asset
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Preset")
-    TObjectPtr<UTODPresetData> LoadPreset;
-
     UFUNCTION(BlueprintCallable, Category = "TOD_Preset")
     void LoadSelectedPreset();
 
+    // EUW 뷰포트 갱신
+    UFUNCTION(BlueprintCallable, Category = "TOD|Editor")
+    void ForceViewportRedraw();
     // 디버그 텍스트 출력
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Debug", meta = (DisplayPriority = "1"))
     bool bEnableDebugPrint = false;
@@ -169,10 +178,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void UpdateTOD(float CurrentTime);
-
-    // EUW 뷰포트 갱신
-    UFUNCTION(BlueprintCallable, Category = "TOD|Editor")
-    void ForceViewportRedraw();
 
     void FindComponents();
 

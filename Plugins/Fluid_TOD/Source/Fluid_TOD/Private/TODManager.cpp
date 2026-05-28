@@ -9,17 +9,6 @@
 #include "TimerManager.h"
 #include "TODCurveEvaluator.h"
 
-#if WITH_EDITOR
-#include "AssetToolsModule.h"
-#include "AssetRegistry/AssetRegistryModule.h"
-#include "Framework/Notifications/NotificationManager.h"
-#include "Widgets/Notifications/SNotificationList.h"
-#include "Editor/EditorEngine.h"
-
-#include "ContentBrowserModule.h"
-#include "IContentBrowserSingleton.h"
-#include "Misc/PackageName.h"
-#endif
 
 ATODManager::ATODManager()
 {
@@ -196,142 +185,29 @@ void ATODManager::FindComponents()
 }
 
 // ======= Presets =========
-
 void ATODManager::SaveNewPreset()
 {
-#if WITH_EDITOR
-	FString Timestamp = FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"));
-	FString DefaultAssetName = FString::Printf(TEXT("TOD_Preset_%s"), *Timestamp);
-	FString DefaultPath = TEXT("/Game/TOD_Presets");
-
-	FSaveAssetDialogConfig SaveAssetDialogConfig;
-	SaveAssetDialogConfig.DialogTitleOverride = FText::FromString(TEXT("Save TOD Preset"));
-	SaveAssetDialogConfig.DefaultPath = DefaultPath;
-	SaveAssetDialogConfig.DefaultAssetName = DefaultAssetName;
-	SaveAssetDialogConfig.ExistingAssetPolicy = ESaveAssetDialogExistingAssetPolicy::AllowButWarn;
-
-	// 다이얼로그 열기
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
-	FString SaveObjectPath = ContentBrowserModule.Get().CreateModalSaveAssetDialog(SaveAssetDialogConfig);
-
-	// 저장
-	if (!SaveObjectPath.IsEmpty())
-	{
-		FString PackagePath = FPaths::GetPath(SaveObjectPath);
-		FString AssetName = FPaths::GetBaseFilename(SaveObjectPath);
-
-		IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
-
-		UTODPresetData* NewAsset = Cast<UTODPresetData>(AssetTools.CreateAsset(
-			AssetName,
-			PackagePath,
-			UTODPresetData::StaticClass(),
-			nullptr
-		));
-
-		if (NewAsset)
-		{
-			NewAsset->TOD_DataArray = TOD_DataArray;
-			for (FTODMasterData& Data : NewAsset->TOD_DataArray) { Data.PPV = nullptr; }
-
-			NewAsset->MarkPackageDirty();
-			FAssetRegistryModule::AssetCreated(NewAsset);
-			LoadPreset = NewAsset;
-
-			FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Saved: {0}")), FText::FromString(AssetName)));
-			Info.ExpireDuration = 3.0f;
-			FSlateNotificationManager::Get().AddNotification(Info);
-
-			UE_LOG(LogTemp, Log, TEXT("Fluid TOD: New preset created at %s"), *SaveObjectPath);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Fluid TOD: Preset creation cancelled by user."));
-	}
-#endif
+	EditorModule.SaveNewPreset(this);
 }
 
 void ATODManager::SaveCurrentPreset()
 {
-#if WITH_EDITOR
-	if (!LoadPreset)
-	{
-		FNotificationInfo ErrorInfo(FText::FromString(TEXT("Save Failed: No Preset loaded to overwrite!")));
-		ErrorInfo.ExpireDuration = 3.0f;
-		FSlateNotificationManager::Get().AddNotification(ErrorInfo);
-
-		UE_LOG(LogTemp, Warning, TEXT("Fluid TOD: Cannot overwrite preset because LoadPreset is null."));
-		return;
-	}
-
-	SortTODDataArray();
-
-	LoadPreset->TOD_DataArray = TOD_DataArray;
-
-	for (FTODMasterData& Data : LoadPreset->TOD_DataArray)
-	{
-		Data.PPV = nullptr;
-	}
-
-	LoadPreset->MarkPackageDirty();
-
-	FString AssetName = LoadPreset->GetName();
-	FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Overwrote: {0}")), FText::FromString(AssetName)));
-	Info.ExpireDuration = 3.0f;
-	FSlateNotificationManager::Get().AddNotification(Info);
-
-	UE_LOG(LogTemp, Log, TEXT("Fluid TOD: Preset '%s' save successfully."), *AssetName);
-#endif
+	EditorModule.SaveCurrentPreset(this);
 }
 
-// 프리셋 로드 다이얼로그
 void ATODManager::OpenPresetDialog()
 {
-#if WITH_EDITOR
-	FOpenAssetDialogConfig OpenAssetDialogConfig;
-	OpenAssetDialogConfig.DialogTitleOverride = FText::FromString(TEXT("Load TOD Preset"));
-	OpenAssetDialogConfig.DefaultPath = TEXT("/Game/TOD_Presets");
-	OpenAssetDialogConfig.bAllowMultipleSelection = false; // 단일 선택만 허용
-
-	OpenAssetDialogConfig.AssetClassNames.Add(UTODPresetData::StaticClass()->GetClassPathName());
-
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
-	TArray<FAssetData> SelectedAssets = ContentBrowserModule.Get().CreateModalOpenAssetDialog(OpenAssetDialogConfig);
-
-	if (SelectedAssets.Num() > 0)
-	{
-		UTODPresetData* SelectedPreset = Cast<UTODPresetData>(SelectedAssets[0].GetAsset());
-		if (SelectedPreset)
-		{
-			LoadPreset = SelectedPreset;
-			LoadSelectedPreset();
-
-			SortTODDataArray();
-			BakeTODCurves();
-			UpdateTOD(StartTime);
-
-			FNotificationInfo Info(FText::Format(FText::FromString(TEXT("Loaded: {0}")), FText::FromString(SelectedPreset->GetName())));
-			Info.ExpireDuration = 3.0f;
-			FSlateNotificationManager::Get().AddNotification(Info);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Fluid TOD: Preset loading cancelled by user."));
-	}
-#endif
+	EditorModule.OpenPresetDialog(this);
 }
 
 void ATODManager::LoadSelectedPreset()
 {
-	if (!LoadPreset) return;
-	if (LoadPreset->TOD_DataArray.Num() == 0) return;
+	EditorModule.LoadSelectedPreset(this);
+}
 
-	TOD_DataArray = LoadPreset->TOD_DataArray;
-	MarkPackageDirty();
-
-	UE_LOG(LogTemp, Warning, TEXT("Fluid_TOD: Preset '%s' loaded successfully!"), *LoadPreset->GetName());
+void ATODManager::ForceViewportRedraw()
+{
+	EditorModule.ForceViewportRedraw(this);
 }
 
 
@@ -528,18 +404,6 @@ void ATODManager::UpdateState(float CurrentTime)
 	{
 		CurrentState = ETODState::Night;
 	}
-}
-
-// ======= EUW 관련 =========
-
-void ATODManager::ForceViewportRedraw()
-{
-#if WITH_EDITOR
-	if (GEditor)
-	{
-		GEditor->RedrawLevelEditingViewports();
-	}
-#endif
 }
 
 // ======= Editor 기능 관련 =========
