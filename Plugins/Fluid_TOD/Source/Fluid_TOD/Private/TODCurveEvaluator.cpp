@@ -206,7 +206,7 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SkyLightCurves.IndirectIntensityCurve, T, Data.SkyLight_Settings.Sky_Indirect_Lighting_Intensity, Owner->SkyLightCurves.IndirectIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SkyLightCurves.VolumetricScatteringIntensityCurve, T, Data.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity, Owner->SkyLightCurves.VolumetricScatteringInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(Owner->SkyLightCurves.LightColorCurve, T, Data.SkyLight_Settings.Sky_Light_Color, Owner->SkyLightCurves.LightColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SkyLightCurves.TextureEmissiveIntensityCurve, T, Data.SkyLight_Settings.Sky_Texture_Emissive_Intensity, Owner->SkyLightCurves.TextureEmissiveIntensityInterpMode);
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SkyLightCurves.TextureEmissiveIntensityCurve, T, Data.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity, Owner->SkyLightCurves.TextureEmissiveIntensityInterpMode);
 
 		// Fog
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->FogCurves.DensityCurve, T, Data.Fog_Settings.Fog_Density, Owner->FogCurves.DensityInterpMode);

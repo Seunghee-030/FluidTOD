@@ -10,6 +10,7 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 {
 	if (!Owner) return;
 
+	// --- 1. Directional Light 찾기 (Sun / Moon) ---
 	TArray<UDirectionalLightComponent*> Lights;
 	Owner->GetComponents<UDirectionalLightComponent>(Lights);
 
@@ -18,13 +19,27 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 
 	for (UDirectionalLightComponent* Light : Lights)
 	{
-		if (Light->ComponentHasTag(TEXT("Moon")))
+		if (Light->ComponentHasTag(TEXT("Moon"))) Owner->MoonLightComponent = Light;
+		else if (Light->ComponentHasTag(TEXT("Sun"))) Owner->SunLightComponent = Light;
+	}
+
+	if (!IsValid(Owner->SkyMeshComponent))
+	{
+		TArray<UStaticMeshComponent*> Meshes;
+		Owner->GetComponents<UStaticMeshComponent>(Meshes);
+
+		for (UStaticMeshComponent* Mesh : Meshes)
 		{
-			Owner->MoonLightComponent = Light;
+			if (Mesh->ComponentHasTag(TEXT("SkyDome")))
+			{
+				Owner->SkyMeshComponent = Mesh;
+				break;
+			}
 		}
-		else if (Light->ComponentHasTag(TEXT("Sun")))
+
+		if (!IsValid(Owner->SkyMeshComponent) && Meshes.Num() > 0)
 		{
-			Owner->SunLightComponent = Light;
+			Owner->SkyMeshComponent = Meshes[0];
 		}
 	}
 
@@ -212,9 +227,31 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Owner->SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
 		Owner->SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
 		Owner->SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
+		
+		if (!IsValid(Owner->SkyMaterialInstance))
+		{
+			if (IsValid(Owner->SkyMeshComponent))
+			{
+				UMaterialInterface* BaseMaterial = Owner->SkyMeshComponent->GetMaterial(0);
+				if (BaseMaterial)
+				{
+					UMaterialInstanceDynamic* ExistingMID = Cast<UMaterialInstanceDynamic>(BaseMaterial);
+					if (ExistingMID)
+					{
+						Owner->SkyMaterialInstance = ExistingMID;
+					}
+					else
+					{
+						Owner->SkyMaterialInstance = UMaterialInstanceDynamic::Create(BaseMaterial, Owner);
+						Owner->SkyMeshComponent->SetMaterial(0, Owner->SkyMaterialInstance);
+					}
+				}
+			}
+		}
+
 		if (IsValid(Owner->SkyMaterialInstance))
 		{
-			Owner->SkyMaterialInstance->SetScalarParameterValue(TEXT("SkyTextureEmissiveIntensity"), Sky.Sky_Texture_Emissive_Intensity);
+			Owner->SkyMaterialInstance->SetScalarParameterValue(TEXT("SkyTextureEmissiveIntensity"), Sky.SkyDome_Texture_Emissive_Intensity);
 		}
 	}
 

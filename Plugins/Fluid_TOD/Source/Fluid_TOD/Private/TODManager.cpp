@@ -25,6 +25,15 @@ ATODManager::ATODManager()
 		RootComponent = RuntimePPVComponent;
 	}
 
+	// Sky Dome Mesh Component
+	SkyMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SkyMeshComponent"));
+	SkyMeshComponent->SetupAttachment(RootComponent);
+
+	// Sky Dome Mesh 기본 설정
+	SkyMeshComponent->SetCastShadow(false);
+	SkyMeshComponent->bReceivesDecals = false;
+	SkyMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	RuntimePPVComponent->bUnbound = true;
 	RuntimePPVComponent->Priority = 100;
 }
