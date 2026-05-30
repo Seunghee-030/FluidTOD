@@ -10,7 +10,7 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 {
 	if (!Owner) return;
 
-	// --- 1. Directional Light 찾기 (Sun / Moon) ---
+	// Sun & Moon
 	TArray<UDirectionalLightComponent*> Lights;
 	Owner->GetComponents<UDirectionalLightComponent>(Lights);
 
@@ -21,8 +21,10 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	{
 		if (Light->ComponentHasTag(TEXT("Moon"))) Owner->MoonLightComponent = Light;
 		else if (Light->ComponentHasTag(TEXT("Sun"))) Owner->SunLightComponent = Light;
+		if (IsValid(Owner->SunLightComponent) && IsValid(Owner->MoonLightComponent)) break;
 	}
-
+	/*
+	// SkyDome & Moon Mesh
 	if (!IsValid(Owner->SkyMeshComponent))
 	{
 		TArray<UStaticMeshComponent*> Meshes;
@@ -30,27 +32,18 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 
 		for (UStaticMeshComponent* Mesh : Meshes)
 		{
-			if (Mesh->ComponentHasTag(TEXT("SkyDome")))
-			{
-				Owner->SkyMeshComponent = Mesh;
-				break;
-			}
-		}
-
-		if (!IsValid(Owner->SkyMeshComponent) && Meshes.Num() > 0)
-		{
-			Owner->SkyMeshComponent = Meshes[0];
+			// SkyDome
+			if (Mesh->ComponentHasTag(TEXT("SkyDome"))) Owner->SkyMeshComponent = Mesh;
+			else if (Mesh->ComponentHasTag(TEXT("MoonMesh"))) Owner->MoonMeshComponent = Mesh;
+			if (IsValid(Owner->SkyMeshComponent) && IsValid(Owner->MoonMeshComponent)) break;
 		}
 	}
+	*/
 
-	Owner->SkyLightComponent =
-		Owner->FindComponentByClass<USkyLightComponent>();
-
-	Owner->FogComponent =
-		Owner->FindComponentByClass<UExponentialHeightFogComponent>();
-
-	Owner->SkyAtmosphereComponent =
-		Owner->FindComponentByClass<USkyAtmosphereComponent>();
+	// SkyLight, Fog, SkyAtmosphere
+	Owner->SkyLightComponent = Owner->FindComponentByClass<USkyLightComponent>();
+	Owner->FogComponent = Owner->FindComponentByClass<UExponentialHeightFogComponent>();
+	Owner->SkyAtmosphereComponent = Owner->FindComponentByClass<USkyAtmosphereComponent>();
 }
 
 void FTODSystem::UpdateSunTimes(ATODManager* Owner)
@@ -181,6 +174,7 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Atmos
 	);
 
+	// Sun
 	if (IsValid(Owner->SunLightComponent))
 	{
 		if (!Owner->SunLightComponent->bAtmosphereSunLight)
@@ -196,6 +190,7 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
 	}
 
+	// Moon
 	if (IsValid(Owner->MoonLightComponent))
 	{
 		// 달의 대기 산란 영향 차단 (붉은 달 방지)
@@ -212,49 +207,18 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
 		Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
 		Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
-
-		if (IsValid(Owner->MoonMaterialInstance))
-		{
-			//Owner->MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonEmissiveColor"), FinalMoonSourceScale);
-			Owner->MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonSourceEmissiveIntensity"), Moon.Moon_Source_Emissive_Intensity);
-		}
 	}
 
-	// 공통 환경
+	// Sky Light
 	if (IsValid(Owner->SkyLightComponent))
 	{
 		Owner->SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
 		Owner->SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
 		Owner->SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
 		Owner->SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
-		
-		if (!IsValid(Owner->SkyMaterialInstance))
-		{
-			if (IsValid(Owner->SkyMeshComponent))
-			{
-				UMaterialInterface* BaseMaterial = Owner->SkyMeshComponent->GetMaterial(0);
-				if (BaseMaterial)
-				{
-					UMaterialInstanceDynamic* ExistingMID = Cast<UMaterialInstanceDynamic>(BaseMaterial);
-					if (ExistingMID)
-					{
-						Owner->SkyMaterialInstance = ExistingMID;
-					}
-					else
-					{
-						Owner->SkyMaterialInstance = UMaterialInstanceDynamic::Create(BaseMaterial, Owner);
-						Owner->SkyMeshComponent->SetMaterial(0, Owner->SkyMaterialInstance);
-					}
-				}
-			}
-		}
-
-		if (IsValid(Owner->SkyMaterialInstance))
-		{
-			Owner->SkyMaterialInstance->SetScalarParameterValue(TEXT("SkyTextureEmissiveIntensity"), Sky.SkyDome_Texture_Emissive_Intensity);
-		}
 	}
 
+	// Fog
 	if (IsValid(Owner->FogComponent))
 	{
 		Owner->FogComponent->SetFogDensity(Fog.Fog_Density);
@@ -263,6 +227,7 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Owner->FogComponent->SetDirectionalInscatteringColor(Fog.Fog_Directional_Inscattering);
 	}
 
+	// Sky Atmosphere
 	if (IsValid(Owner->SkyAtmosphereComponent))
 	{
 		Owner->SkyAtmosphereComponent->SetMieScatteringScale(Atmos.Mie_Scattering_Scale);
@@ -273,6 +238,7 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Owner->SkyAtmosphereComponent->SetSkyLuminanceFactor(Atmos.Sky_Luminance_Factor);
 	}
 
+	// Custom Material Updates
 	Owner->OnUpdateCustomMaterials(CurrentTime);
 
 }

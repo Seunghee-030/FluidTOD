@@ -63,7 +63,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 	Owner->RuntimePPVComponent->bEnabled = true;
 	Owner->RuntimePPVComponent->bUnbound = true;
-	Owner->RuntimePPVComponent->Priority = 0;
+	Owner->RuntimePPVComponent->Priority = 0;	// 고정된 PPV Priority
 	Owner->RuntimePPVComponent->BlendWeight = 1.0f;
 
 	// ---보간용 매크로
@@ -198,8 +198,12 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceSoftAngleCurve, T, Data.Moon_Settings.Source_Soft_Angle, Owner->MoonCurves.SourceSoftAngleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.IndirectIntensityCurve, T, Data.Moon_Settings.Indirect_Light_Intensity, Owner->MoonCurves.IndirectIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(Owner->MoonCurves.LightColorCurve, T, Data.Moon_Settings.Light_Color, Owner->MoonCurves.LightColorInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceScaleCurve, T, Data.Moon_Settings.Moon_Source_Scale, Owner->MoonCurves.SourceScaleInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceEmissiveIntensityCurve, T, Data.Moon_Settings.Moon_Source_Emissive_Intensity, Owner->MoonCurves.SourceEmissiveIntensityInterpMode);
+		
+		float TargetMoonScale = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Source_Scale;
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceScaleCurve, T, TargetMoonScale, Owner->MoonCurves.SourceScaleInterpMode);
+		
+		float TargetMoonEmissive = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Source_Emissive_Intensity;
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceEmissiveIntensityCurve, T, TargetMoonEmissive, Owner->MoonCurves.SourceEmissiveIntensityInterpMode);
 
 		// SkyLight
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SkyLightCurves.IntensityCurve, T, Data.SkyLight_Settings.Sky_Light_Intensity, Owner->SkyLightCurves.IntensityInterpMode);

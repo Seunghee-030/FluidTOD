@@ -72,7 +72,7 @@ struct FTODMoonSettings : public FTODSunMoonSettings
 	float Moon_Source_Scale = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "11"))
-	float Moon_Source_Emissive_Intensity = 300.0f;
+	float Moon_Source_Emissive_Intensity = 1.0f;
 };
 
 USTRUCT(BlueprintType)

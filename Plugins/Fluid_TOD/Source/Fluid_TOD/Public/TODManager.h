@@ -58,18 +58,19 @@ public:
     UPROPERTY()
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
 
+    // Mesh
+    //UPROPERTY(BlueprintReadWrite, Category = "TOD|System")
+    //TObjectPtr<UStaticMeshComponent> SkyMeshComponent;
+
+    //UPROPERTY(BlueprintReadWrite, Category = "TOD|System")
+    //TObjectPtr<UStaticMeshComponent> MoonMeshComponent;
+
+	// Material Instances
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> MoonMaterialInstance;
 
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> SkyMaterialInstance;
-
-    // Mesh
-    UPROPERTY(BlueprintReadWrite, Category = "TOD|System")
-    TObjectPtr<UStaticMeshComponent> SkyMeshComponent;
-
-    UPROPERTY(BlueprintReadWrite, Category = "TOD|System")
-    TObjectPtr<UStaticMeshComponent> MoonMeshComponent;
 
     // =========================================================================
     // Properties: TOD Base Settings

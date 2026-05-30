@@ -16,23 +16,8 @@ ATODManager::ATODManager()
 
 	RuntimePPVComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("RuntimePPVComponent"));
 
-	if (RootComponent)
-	{
-		RuntimePPVComponent->SetupAttachment(RootComponent);
-	}
-	else
-	{
-		RootComponent = RuntimePPVComponent;
-	}
-
-	// Sky Dome Mesh Component
-	SkyMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SkyMeshComponent"));
-	SkyMeshComponent->SetupAttachment(RootComponent);
-
-	// Sky Dome Mesh 기본 설정
-	SkyMeshComponent->SetCastShadow(false);
-	SkyMeshComponent->bReceivesDecals = false;
-	SkyMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (RootComponent) RuntimePPVComponent->SetupAttachment(RootComponent);
+	else RootComponent = RuntimePPVComponent;
 
 	RuntimePPVComponent->bUnbound = true;
 	RuntimePPVComponent->Priority = 100;
@@ -279,70 +264,76 @@ FRotator ATODManager::CalculatePivotRotation(float InTime) const
 // ======= Editor 기능 관련 =========
 
 #if WITH_EDITOR
+
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	const FName PropertyName = (PropertyChangedEvent.Property != nullptr)
+	const FName PropertyName = PropertyChangedEvent.Property
 		? PropertyChangedEvent.Property->GetFName()
 		: NAME_None;
+
+	const bool bIsInteractive =
+		!!(PropertyChangedEvent.ChangeType & EPropertyChangeType::Interactive);
 
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
 		LoadSelectedPreset();
 		SortTODDataArray();
 		BakeTODCurves();
-		UpdateTOD(StartTime);
 	}
-
-	// 위도,경도 관련
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
+	else if (
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
 	{
 		UpdateSunTimes();
-		UpdateTOD(StartTime);
 	}
-
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
+	else if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
-		if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)
+		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
+	}
+	else
+	{
+		if (!bIsInteractive)
 		{
 			SortTODDataArray();
 		}
 
-		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
-
-		UpdateTOD(StartTime);
-	}
-
-	if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)
-	{
 		BakeTODCurves();
-		UpdateTOD(StartTime);
 	}
+
+	UpdateTOD(StartTime);
+	ForceViewportRedraw();
 }
 
 void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 
+	const bool bIsInteractive =
+		!!(PropertyChangedEvent.ChangeType & EPropertyChangeType::Interactive);
+
 	if (PropertyChangedEvent.PropertyChain.GetActiveMemberNode())
 	{
-		const FName ActiveMemberName = PropertyChangedEvent.PropertyChain.GetActiveMemberNode()->GetValue()->GetFName();
+		const FName ActiveMemberName =
+			PropertyChangedEvent.PropertyChain
+			.GetActiveMemberNode()
+			->GetValue()
+			->GetFName();
 
 		if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
 		{
-			// 배열 내부 값이 변경될 때
+			if (!bIsInteractive)
+			{
+				SortTODDataArray();
+			}
+
+			BakeTODCurves();
 			UpdateTOD(StartTime);
+			ForceViewportRedraw();
 		}
 	}
 
-	if (PropertyChangedEvent.ChangeType != EPropertyChangeType::Interactive)
-	{
-		BakeTODCurves();
-	}
-
-	// TOD 데이터 변경 시 브로드캐스트
 	OnTODDataChanged.Broadcast();
 }
 
@@ -350,34 +341,44 @@ void ATODManager::PostInitProperties()
 {
 	Super::PostInitProperties();
 
-	// 엔진 시작 시 등록
 	if (!HasAnyFlags(RF_ClassDefaultObject))
 	{
-		PropertyChangeDelegateHandle = FCoreUObjectDelegates::OnObjectPropertyChanged.AddUObject(this, &ATODManager::OnExternalPropertyChanged);
+		PropertyChangeDelegateHandle =
+			FCoreUObjectDelegates::OnObjectPropertyChanged.AddUObject(
+				this,
+				&ATODManager::OnExternalPropertyChanged
+			);
 	}
 }
 
 void ATODManager::BeginDestroy()
 {
-	// 해제
 	if (PropertyChangeDelegateHandle.IsValid())
 	{
-		FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(PropertyChangeDelegateHandle);
+		FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(
+			PropertyChangeDelegateHandle
+		);
 	}
+
 	Super::BeginDestroy();
 }
 
-void ATODManager::OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent)
+void ATODManager::OnExternalPropertyChanged(
+	UObject* Object,
+	FPropertyChangedEvent& PropertyChangedEvent)
 {
-	if (Object && Object->IsA<APostProcessVolume>())
+	if (!Object || !Object->IsA<APostProcessVolume>())
 	{
-		for (const FTODMasterData& Data : TOD_DataArray)
+		return;
+	}
+
+	for (const FTODMasterData& Data : TOD_DataArray)
+	{
+		if (Data.PPV == Object)
 		{
-			if (Data.PPV == Object)
-			{
-				UpdateTOD(StartTime);
-				break;
-			}
+			UpdateTOD(StartTime);
+			ForceViewportRedraw();
+			break;
 		}
 	}
 }
