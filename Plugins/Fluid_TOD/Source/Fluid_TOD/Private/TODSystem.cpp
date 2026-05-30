@@ -23,22 +23,6 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		else if (Light->ComponentHasTag(TEXT("Sun"))) Owner->SunLightComponent = Light;
 		if (IsValid(Owner->SunLightComponent) && IsValid(Owner->MoonLightComponent)) break;
 	}
-	/*
-	// SkyDome & Moon Mesh
-	if (!IsValid(Owner->SkyMeshComponent))
-	{
-		TArray<UStaticMeshComponent*> Meshes;
-		Owner->GetComponents<UStaticMeshComponent>(Meshes);
-
-		for (UStaticMeshComponent* Mesh : Meshes)
-		{
-			// SkyDome
-			if (Mesh->ComponentHasTag(TEXT("SkyDome"))) Owner->SkyMeshComponent = Mesh;
-			else if (Mesh->ComponentHasTag(TEXT("MoonMesh"))) Owner->MoonMeshComponent = Mesh;
-			if (IsValid(Owner->SkyMeshComponent) && IsValid(Owner->MoonMeshComponent)) break;
-		}
-	}
-	*/
 
 	// SkyLight, Fog, SkyAtmosphere
 	Owner->SkyLightComponent = Owner->FindComponentByClass<USkyLightComponent>();
@@ -62,12 +46,17 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 		Owner->GetFormattedTimeAsString(Owner->CalculatedSunsetTime);
 }
 
+float FTODSystem::NormalizeTime(float Time)
+{
+	float SafeTime = FMath::Fmod(Time, 24.0f);
+	return SafeTime < 0.f ? SafeTime + 24.f : SafeTime;
+}
+
 FRotator FTODSystem::CalculatePivotRotation(
 	const ATODManager* Owner,
 	float InTime) const
 {
-	float SafeTime = FMath::Fmod(InTime, 24.0f);
-	if (SafeTime < 0.0f) SafeTime += 24.0f;
+	const float SafeTime = NormalizeTime(InTime);
 
 	float PitchAngle = 0.0f;
 
@@ -109,8 +98,7 @@ void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner) return;
 
-	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
-	if (SafeTime < 0.0f) SafeTime += 24.0f;
+	const float SafeTime = NormalizeTime(CurrentTime);
 
 	float DawnStart = Owner->CalculatedSunriseTime - Owner->TransitionDuration;
 	float SunriseEnd = Owner->CalculatedSunriseTime + Owner->TransitionDuration;
@@ -152,7 +140,13 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 
 	UpdateState(Owner, CurrentTime);
 
-	if (!Owner->SkyLightComponent)
+	if (
+		!IsValid(Owner->SunLightComponent) ||
+		!IsValid(Owner->MoonLightComponent) ||
+		!IsValid(Owner->SkyLightComponent) ||
+		!IsValid(Owner->FogComponent) ||
+		!IsValid(Owner->SkyAtmosphereComponent)
+		)
 	{
 		FindComponents(Owner);
 	}

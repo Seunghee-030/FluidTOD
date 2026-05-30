@@ -248,18 +248,67 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 		SafeTime += 24.0f;
 	}
 
+	// ===== Sun =====
 	if (const FRichCurve* Curve = Owner->SunCurves.IntensityCurve.GetRichCurveConst())
-	{
 		OutSun.Intensity = Curve->Eval(SafeTime);
-	}
 
+	if (const FRichCurve* Curve = Owner->SunCurves.SourceAngleCurve.GetRichCurveConst())
+		OutSun.Source_Angle = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->SunCurves.SourceSoftAngleCurve.GetRichCurveConst())
+		OutSun.Source_Soft_Angle = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->SunCurves.IndirectIntensityCurve.GetRichCurveConst())
+		OutSun.Indirect_Light_Intensity = Curve->Eval(SafeTime);
+
+
+	// ===== Moon =====
 	if (const FRichCurve* Curve = Owner->MoonCurves.IntensityCurve.GetRichCurveConst())
-	{
 		OutMoon.Intensity = Curve->Eval(SafeTime);
-	}
 
+	if (const FRichCurve* Curve = Owner->MoonCurves.SourceAngleCurve.GetRichCurveConst())
+		OutMoon.Source_Angle = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->MoonCurves.SourceSoftAngleCurve.GetRichCurveConst())
+		OutMoon.Source_Soft_Angle = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->MoonCurves.IndirectIntensityCurve.GetRichCurveConst())
+		OutMoon.Indirect_Light_Intensity = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->MoonCurves.SourceScaleCurve.GetRichCurveConst())
+		OutMoon.Moon_Source_Scale = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->MoonCurves.SourceEmissiveIntensityCurve.GetRichCurveConst())
+		OutMoon.Moon_Source_Emissive_Intensity = Curve->Eval(SafeTime);
+
+
+	// ===== SkyLight =====
 	if (const FRichCurve* Curve = Owner->SkyLightCurves.IntensityCurve.GetRichCurveConst())
-	{
 		OutSkyLight.Sky_Light_Intensity = Curve->Eval(SafeTime);
-	}
+
+	if (const FRichCurve* Curve = Owner->SkyLightCurves.IndirectIntensityCurve.GetRichCurveConst())
+		OutSkyLight.Sky_Indirect_Lighting_Intensity = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->SkyLightCurves.VolumetricScatteringIntensityCurve.GetRichCurveConst())
+		OutSkyLight.Sky_Volumetric_Scattering_Intensity = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->SkyLightCurves.TextureEmissiveIntensityCurve.GetRichCurveConst())
+		OutSkyLight.SkyDome_Texture_Emissive_Intensity = Curve->Eval(SafeTime);
+
+	// ===== Fog =====
+	if (const FRichCurve* Curve = Owner->FogCurves.DensityCurve.GetRichCurveConst())
+		OutFog.Fog_Density = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->FogCurves.HeightFalloffCurve.GetRichCurveConst())
+		OutFog.Fog_Height_Falloff = Curve->Eval(SafeTime);
+
+	// ===== Atmosphere =====
+	if (const FRichCurve* Curve = Owner->SkyAtmosphereCurves.MieScatteringScaleCurve.GetRichCurveConst())
+		OutSkyAtmosphere.Mie_Scattering_Scale = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->SkyAtmosphereCurves.RayleighScatteringScaleCurve.GetRichCurveConst())
+		OutSkyAtmosphere.Rayleigh_Scattering_Scale = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve.GetRichCurveConst())
+		OutSkyAtmosphere.Aerial_Perspective_Distance_Scale = Curve->Eval(SafeTime);
 }

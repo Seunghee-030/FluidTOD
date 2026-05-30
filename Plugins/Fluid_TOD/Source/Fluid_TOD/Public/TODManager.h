@@ -10,7 +10,6 @@
 #include "TODSystem.h"
 #include "TODManager.generated.h"
 
-class UStaticMeshComponent;       // 메쉬 컴포넌트
 class UMaterialInstanceDynamic;   // MID
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTODDataChangedSignature);
@@ -57,13 +56,6 @@ public:
 
     UPROPERTY()
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
-
-    // Mesh
-    //UPROPERTY(BlueprintReadWrite, Category = "TOD|System")
-    //TObjectPtr<UStaticMeshComponent> SkyMeshComponent;
-
-    //UPROPERTY(BlueprintReadWrite, Category = "TOD|System")
-    //TObjectPtr<UStaticMeshComponent> MoonMeshComponent;
 
 	// Material Instances
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
@@ -151,11 +143,11 @@ public:
 
     // Moon Source Scale 오버라이드
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Texture")
-    bool bOverrideMoonSourceScale = false;
+    bool bOverrideMoonSourceScale = true;
 
     // 고정 Moon Source Scale 값
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Texture")
-    float OverriddenMoonSourceScale = 1.0f;
+    float OverriddenMoonSourceScale = 0.5f;
 
     // =========================================================================
     // Properties: Preset

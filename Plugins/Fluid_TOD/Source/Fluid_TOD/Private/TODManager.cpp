@@ -8,6 +8,7 @@
 #include "Engine/Engine.h"
 #include "TimerManager.h"
 #include "TODCurveEvaluator.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 
 ATODManager::ATODManager()
@@ -37,7 +38,7 @@ void ATODManager::BeginPlay()
 
 	UpdateTOD(StartTime);
 
-	GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
+	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
 
 // 디버그 출력
@@ -54,6 +55,10 @@ void ATODManager::PrintTODDebugInfo()
 
 	float ActualMoonEmissive = 0.f;
 	float ActualSkyEmissive = 0.f;
+	float ActualMoonScale =
+		bOverrideMoonSourceScale
+		? OverriddenMoonSourceScale
+		: Moon.Moon_Source_Scale;
 
 	if (IsValid(MoonMaterialInstance))
 	{
@@ -63,6 +68,7 @@ void ATODManager::PrintTODDebugInfo()
 		);
 	}
 
+
 	if (IsValid(SkyMaterialInstance))
 	{
 		SkyMaterialInstance->GetScalarParameterValue(
@@ -70,6 +76,7 @@ void ATODManager::PrintTODDebugInfo()
 			ActualSkyEmissive
 		);
 	}
+
 	float CurrentBloom = 0.0f;
 	float CurrentExpMin = 0.0f;
 	float CurrentExpMax = 0.0f;
@@ -91,7 +98,7 @@ void ATODManager::PrintTODDebugInfo()
 		"--------------------------------------------------\n"
 		"[Sun] Intensity %.2f | Angle %.1f\n"
 		"[Moon] Intensity %.2f | Angle %.1f \n"
-		"[MoonSource] Source Scale %.1f | Emissive Intensity %.1f\n"
+		"[MoonSource] Scale %.1f | Emissive Intensity %.1f\n"
 		"[SkyLight] %.2f | Emissive Intensity %.1f\n"
 		"[SkyIndirect] %.2f\n"
 		"[Fog] Density %.5f\n"
@@ -105,7 +112,7 @@ void ATODManager::PrintTODDebugInfo()
 		*GetFormattedTimeAsString(CurrentSystemTime),
 		Sun.Intensity, Sun.Source_Angle,
 		Moon.Intensity, Moon.Source_Angle, 
-		Moon.Moon_Source_Scale, ActualMoonEmissive,
+		ActualMoonScale, ActualMoonEmissive,
 		Sky.Sky_Light_Intensity, ActualSkyEmissive,
 		Sky.Sky_Indirect_Lighting_Intensity,
 		Fog.Fog_Density,
@@ -168,50 +175,6 @@ void ATODManager::GetTODSettingsAtTime(
 		OutFog,
 		OutSkyAtmosphere
 	);
-}
-
-// ======= Day/Night State =========
-void ATODManager::UpdateState(float CurrentTime)
-{
-	float SafeTime = FMath::Fmod(CurrentTime, 24.0f);
-	if (SafeTime < 0.0f) SafeTime += 24.0f;
-
-	float DawnStart = CalculatedSunriseTime - TransitionDuration;
-	float SunriseEnd = CalculatedSunriseTime + TransitionDuration;
-
-	float SunsetStart = CalculatedSunsetTime - TransitionDuration;
-	float DuskEnd = CalculatedSunsetTime + TransitionDuration;
-
-	// 일출 전
-	if (SafeTime >= DawnStart && SafeTime < CalculatedSunriseTime)
-	{
-		CurrentState = ETODState::Dawn;
-	}
-	// 일출
-	else if (SafeTime >= CalculatedSunriseTime && SafeTime < SunriseEnd)
-	{
-		CurrentState = ETODState::Sunrise;
-	}
-	// 낮
-	else if (SafeTime >= SunriseEnd && SafeTime < SunsetStart)
-	{
-		CurrentState = ETODState::Day;
-	}
-	// 일몰
-	else if (SafeTime >= SunsetStart && SafeTime < CalculatedSunsetTime)
-	{
-		CurrentState = ETODState::Sunset;
-	}
-	// 일몰 후
-	else if (SafeTime >= CalculatedSunsetTime && SafeTime < DuskEnd)
-	{
-		CurrentState = ETODState::Dusk;
-	}
-	// Night
-	else
-	{
-		CurrentState = ETODState::Night;
-	}
 }
 
 // ======= Presets: Editor =========
