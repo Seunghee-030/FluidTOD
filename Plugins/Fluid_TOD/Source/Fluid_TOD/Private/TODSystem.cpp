@@ -5,6 +5,8 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 void FTODSystem::FindComponents(ATODManager* Owner)
 {
@@ -24,10 +26,43 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		if (IsValid(Owner->SunLightComponent) && IsValid(Owner->MoonLightComponent)) break;
 	}
 
+	// SkyDome & Moon Mesh
+	TArray<UStaticMeshComponent*> Meshes;
+	Owner->GetComponents<UStaticMeshComponent>(Meshes);
+
+	Owner->SkyDomeMesh = nullptr;
+	Owner->MoonMesh = nullptr;
+
+	for (UStaticMeshComponent* Mesh : Meshes)
+	{
+		if (Mesh->ComponentHasTag(TEXT("SkyDome")))
+		{
+			Owner->SkyDomeMesh = Mesh;
+		}
+		else if (Mesh->ComponentHasTag(TEXT("MoonMesh")))
+		{
+			Owner->MoonMesh = Mesh;
+		}
+	}
+
 	// SkyLight, Fog, SkyAtmosphere
 	Owner->SkyLightComponent = Owner->FindComponentByClass<USkyLightComponent>();
 	Owner->FogComponent = Owner->FindComponentByClass<UExponentialHeightFogComponent>();
 	Owner->SkyAtmosphereComponent = Owner->FindComponentByClass<USkyAtmosphereComponent>();
+
+	if (IsValid(Owner->SkyDomeMesh) &&
+		!IsValid(Owner->SkyMaterialInstance))
+	{
+		Owner->SkyMaterialInstance =
+			Owner->SkyDomeMesh->CreateAndSetMaterialInstanceDynamic(0);
+	}
+
+	if (IsValid(Owner->MoonMesh) &&
+		!IsValid(Owner->MoonMaterialInstance))
+	{
+		Owner->MoonMaterialInstance =
+			Owner->MoonMesh->CreateAndSetMaterialInstanceDynamic(0);
+	}
 }
 
 void FTODSystem::UpdateSunTimes(ATODManager* Owner)
@@ -167,6 +202,27 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Fog,
 		Atmos
 	);
+
+	if (IsValid(Owner->SkyMaterialInstance))
+	{
+		Owner->SkyMaterialInstance->SetScalarParameterValue(
+			TEXT("SkyTextureEmissiveIntensity"),
+			Sky.SkyDome_Texture_Emissive_Intensity
+		);
+	}
+
+	if (IsValid(Owner->MoonMaterialInstance))
+	{
+		/*Owner->MoonMaterialInstance->SetScalarParameterValue(
+			TEXT("MoonSourceScale"),
+			Moon.Moon_Source_Scale
+		);*/
+
+		Owner->MoonMaterialInstance->SetScalarParameterValue(
+			TEXT("MoonSourceEmissiveIntensity"),
+			Moon.Moon_Source_Emissive_Intensity
+		);
+	}
 
 	// Sun
 	if (IsValid(Owner->SunLightComponent))

@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "TOD_Types.h"
 #include "Curves/CurveFloat.h"
 #include "Curves/CurveLinearColor.h"
+#include "Components/StaticMeshComponent.h"
+
+#include "TOD_Types.h"
 #include "TODCurveEvaluator.h"
 #include "TODEditor.h"
 #include "TODSystem.h"
@@ -57,12 +59,33 @@ public:
     UPROPERTY()
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
 
+    // Mesh Components
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
+    TObjectPtr<UStaticMeshComponent> SkyDomeMesh;
+
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
+    TObjectPtr<UStaticMeshComponent> MoonMesh;
+
 	// Material Instances
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> MoonMaterialInstance;
 
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> SkyMaterialInstance;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Material")
+    void SetMaterialScalarByName(
+        FName ParameterName,
+        float Value,
+        bool bSkyDome
+    );
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Material")
+    void SetMaterialVectorByName(
+        FName ParameterName,
+        FLinearColor Value,
+        bool bSkyDome
+    );
 
     // =========================================================================
     // Properties: TOD Base Settings

@@ -31,14 +31,49 @@ void ATODManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+	FindComponents();
 	UpdateSunTimes();
-
 	SortTODDataArray();
 	BakeTODCurves();
-
 	UpdateTOD(StartTime);
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
+}
+
+void ATODManager::SetMaterialScalarByName(
+	FName ParameterName,
+	float Value,
+	bool bSkyDome)
+{
+	UMaterialInstanceDynamic* MID =
+		bSkyDome
+		? SkyMaterialInstance
+		: MoonMaterialInstance;
+
+	if (!IsValid(MID))
+	{
+		return;
+	}
+
+	MID->SetScalarParameterValue(ParameterName, Value);
+}
+
+void ATODManager::SetMaterialVectorByName(
+	FName ParameterName,
+	FLinearColor Value,
+	bool bSkyDome)
+{
+	UMaterialInstanceDynamic* MID =
+		bSkyDome
+		? SkyMaterialInstance
+		: MoonMaterialInstance;
+
+	if (!IsValid(MID))
+	{
+		return;
+	}
+
+	MID->SetVectorParameterValue(ParameterName, Value);
 }
 
 // 디버그 출력
