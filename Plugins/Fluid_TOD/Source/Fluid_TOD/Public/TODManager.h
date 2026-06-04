@@ -123,7 +123,7 @@ public:
         meta = (
             DisplayPriority = "3",
             TitleProperty = "Name",
-            ToolTip = "Collection of time-of-day presets used by the TOD system."
+            ToolTip = "TOD Data array containing all time-of-day settings."
             )
     )
     TArray<FTODMasterData> TOD_DataArray;

@@ -129,20 +129,24 @@ void ATODManager::PrintTODDebugInfo()
 
 	FString DebugMsg = FString::Printf(TEXT(
 		"=========== TOD System Debug ===========\n"
-		"Time   %s\n"
+		"	Time   %s\n"
 		"--------------------------------------------------\n"
 		"[Sun] Intensity %.2f | Angle %.1f\n"
+		"\n"
 		"[Moon] Intensity %.2f | Angle %.1f \n"
 		"[MoonSource] Scale %.1f | Emissive Intensity %.1f\n"
-		"[SkyLight] %.2f | Emissive Intensity %.1f\n"
-		"[SkyIndirect] %.2f\n"
+		"\n"
+		"[SkyLight] Intensity %.2f | Emissive Intensity %.1f\n"
+		"[SkyIndirectLighting] Intensity %.2f\n"
+		"\n"
 		"[Fog] Density %.5f\n"
 		"[Atmos] Mie Scattering Scale %.5f\n"
 		"--------------------------------------------------\n"
 		"[PPV] Bloom: %.2f\n"
 		"[PPV] Min EV100: % .2f | Max EV100: % .2f\n"
 		"[PPV] White Temp: %.0fK\n"
-		"[PPV] Saturation: (R:%.2f, G:%.2f, B:%.2f)"
+		"[PPV] Saturation: (R:%.2f, G:%.2f, B:%.2f)\n"
+		"--------------------------------------------------"
 	),
 		*GetFormattedTimeAsString(CurrentSystemTime),
 		Sun.Intensity, Sun.Source_Angle,
@@ -180,7 +184,6 @@ void ATODManager::SortTODDataArray()
 	if (TOD_DataArray.Num() < 2) return;
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
-
 
 // ======== Curve Evaluation =========
 void ATODManager::BakeTODCurves()
@@ -280,6 +283,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		SortTODDataArray();
 		BakeTODCurves();
 	}
+
 	else if (
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
@@ -289,14 +293,13 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	else if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
 		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
-	}
-	else
-	{
 		if (!bIsInteractive)
 		{
 			SortTODDataArray();
 		}
-
+	}
+	else
+	{
 		BakeTODCurves();
 	}
 
@@ -308,9 +311,6 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 
-	const bool bIsInteractive =
-		!!(PropertyChangedEvent.ChangeType & EPropertyChangeType::Interactive);
-
 	if (PropertyChangedEvent.PropertyChain.GetActiveMemberNode())
 	{
 		const FName ActiveMemberName =
@@ -321,7 +321,16 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 
 		if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
 		{
-			if (!bIsInteractive)
+			const EPropertyChangeType::Type ChangeType =
+				PropertyChangedEvent.ChangeType;
+
+			const bool bArrayChanged =
+				(ChangeType & EPropertyChangeType::ArrayAdd) ||
+				(ChangeType & EPropertyChangeType::ArrayRemove) ||
+				(ChangeType & EPropertyChangeType::ArrayClear) ||
+				(ChangeType & EPropertyChangeType::Duplicate);
+
+			if (bArrayChanged)
 			{
 				SortTODDataArray();
 			}

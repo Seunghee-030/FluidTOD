@@ -9,20 +9,11 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	TArray<FTODMasterData> ValidPPVs;
 	for (const FTODMasterData& Data : Owner->TOD_DataArray)
 	{
-		if (IsValid(Data.PPV))
-			ValidPPVs.Add(Data);
+		if (IsValid(Data.PPV)) ValidPPVs.Add(Data);
 	}
 
 	const int32 Num = ValidPPVs.Num();
-
-	if (Num == 0)
-	{
-		Owner->RuntimePPVComponent->bEnabled = false;
-		Owner->RuntimePPVComponent->Settings = FPostProcessSettings();
-		return;
-	}
-
-	Owner->RuntimePPVComponent->bEnabled = true;
+	if (Num == 0) return;
 
 	ValidPPVs.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
 		return A.Time < B.Time;
@@ -31,7 +22,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	for (const FTODMasterData& Data : ValidPPVs)
 	{
 		Data.PPV->BlendWeight = 0.0f;
-		Data.PPV->Priority = -10;
+		Data.PPV->Priority = 1.0f;
 	}
 
 	float SafeTime = CurrentTime;
@@ -72,7 +63,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 	Owner->RuntimePPVComponent->bEnabled = true;
 	Owner->RuntimePPVComponent->bUnbound = true;
-	Owner->RuntimePPVComponent->Priority = 0;	// 고정된 PPV Priority
+	Owner->RuntimePPVComponent->Priority = 1.0f;	// 고정된 PPV Priority
 	Owner->RuntimePPVComponent->BlendWeight = 1.0f;
 
 	// ---보간용 매크로
