@@ -91,13 +91,41 @@ public:
     // Properties: TOD Base Settings
     // =========================================================================
 
-    UPROPERTY(VisibleAnywhere, Category = "TOD", meta = (DisplayPriority = "1"))
+    UPROPERTY(
+        VisibleAnywhere,
+        Category = "TOD",
+        meta = (
+            DisplayPriority = "1",
+            ToolTip = "Read-only display of the configured start time."
+            )
+    )
     FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (UIMin = "0.0", UIMax = "24.0", ClampMin = "0.0", ClampMax = "24.0", DisplayPriority = "2"))
+    UPROPERTY(
+        EditAnywhere,
+        BlueprintReadWrite,
+        Category = "TOD",
+        meta = (
+            UIMin = "0.0",
+            UIMax = "24.0",
+            ClampMin = "0.0",
+            ClampMax = "24.0",
+            DisplayPriority = "2",
+            ToolTip = "Initial time of day when the game starts. The TOD system will be initialized using this value."
+            )
+    )
     float StartTime = 12.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3", TitleProperty = "Name"))
+    UPROPERTY(
+        EditAnywhere,
+        BlueprintReadWrite,
+        Category = "TOD",
+        meta = (
+            DisplayPriority = "3",
+            TitleProperty = "Name",
+            ToolTip = "Collection of time-of-day presets used by the TOD system."
+            )
+    )
     TArray<FTODMasterData> TOD_DataArray;
 
     // =========================================================================
@@ -121,7 +149,18 @@ public:
     // =========================================================================
 
     // 지리적 설정
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography")
+    UPROPERTY(
+        EditAnywhere,
+        BlueprintReadWrite,
+        Category = "TOD|Geography",
+        meta = (
+            ClampMin = "-90.0",
+            ClampMax = "90.0",
+            UIMin = "-60.0",
+            UIMax = "60.0",
+            ToolTip = "Controls sunrise and sunset timing based on an artistic latitude setting. Not intended for physically accurate astronomical calculations."
+            )
+    )
     float Latitude = 45.0f;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
@@ -134,10 +173,24 @@ public:
     float CalculatedSunsetTime = 18.0f;
 
     // 일출/일몰 시간
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(
+        VisibleAnywhere,
+        BlueprintReadOnly,
+        Category = "TOD|Geography",
+        meta = (
+            ToolTip = "Calculated sunrise time based on the current latitude setting."
+            )
+    )
     FString SunriseTime = TEXT("[ 06 : 00 ]");
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(
+        VisibleAnywhere,
+        BlueprintReadOnly,
+        Category = "TOD|Geography",
+        meta = (
+            ToolTip = "Calculated sunset time based on the current latitude setting."
+            )
+    )
     FString SunsetTime = TEXT("[ 18 : 00 ]");
 
     // =========================================================================
@@ -169,7 +222,16 @@ public:
     bool bOverrideMoonSourceScale = true;
 
     // 고정 Moon Source Scale 값
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Texture")
+    UPROPERTY(
+        EditAnywhere,
+        BlueprintReadWrite,
+        Category = "TOD|Texture",
+        meta = (
+            ClampMin = "0.0",
+            UIMin = "0.0",
+            UIMax = "10.0"
+            )
+    )
     float OverriddenMoonSourceScale = 0.5f;
 
     // =========================================================================
@@ -184,13 +246,29 @@ public:
     // Properties: Debug
     // =========================================================================
 
-
-    // 디버그 텍스트 출력
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug")
+    // Debug text output
+    UPROPERTY(
+        EditAnywhere,
+        BlueprintReadWrite,
+        Category = "TOD|Debug",
+        meta = (
+            ToolTip = "Enables on-screen debug information for the TOD system."
+            )
+    )
     bool bEnableDebugPrint = false;
 
-    // 출력 갱신 간격
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Debug", meta = (EditCondition = "bEnableDebugPrint"))
+    // Debug update interval
+    UPROPERTY(
+        EditAnywhere,
+        BlueprintReadWrite,
+        Category = "TOD|Debug",
+        meta = (
+            EditCondition = "bEnableDebugPrint",
+            ClampMin = "0.1",
+            UIMin = "0.1",
+            ToolTip = "Interval in seconds between debug updates."
+            )
+    )
     float DebugPrintInterval = 1.0f;
 
     // =========================================================================

@@ -213,15 +213,26 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 
 	if (IsValid(Owner->MoonMaterialInstance))
 	{
-		/*Owner->MoonMaterialInstance->SetScalarParameterValue(
-			TEXT("MoonSourceScale"),
-			Moon.Moon_Source_Scale
-		);*/
-
 		Owner->MoonMaterialInstance->SetScalarParameterValue(
 			TEXT("MoonSourceEmissiveIntensity"),
 			Moon.Moon_Source_Emissive_Intensity
 		);
+
+		if (IsValid(Owner->SunLightComponent))
+		{
+			const FVector SunDirection =
+				-Owner->SunLightComponent->GetForwardVector();
+
+			Owner->MoonMaterialInstance->SetVectorParameterValue(
+				TEXT("SunDirection"),
+				FLinearColor(
+					SunDirection.X,
+					SunDirection.Y,
+					SunDirection.Z,
+					0.0f
+				)
+			);
+		}
 	}
 
 	// Sun

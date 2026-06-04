@@ -9,11 +9,20 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	TArray<FTODMasterData> ValidPPVs;
 	for (const FTODMasterData& Data : Owner->TOD_DataArray)
 	{
-		if (IsValid(Data.PPV)) ValidPPVs.Add(Data);
+		if (IsValid(Data.PPV))
+			ValidPPVs.Add(Data);
 	}
 
 	const int32 Num = ValidPPVs.Num();
-	if (Num == 0) return;
+
+	if (Num == 0)
+	{
+		Owner->RuntimePPVComponent->bEnabled = false;
+		Owner->RuntimePPVComponent->Settings = FPostProcessSettings();
+		return;
+	}
+
+	Owner->RuntimePPVComponent->bEnabled = true;
 
 	ValidPPVs.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
 		return A.Time < B.Time;

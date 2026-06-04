@@ -47,16 +47,20 @@ struct FTODSunMoonSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "1", ClampMin = "0.0", UIMin = "0.0"))
 	float Intensity = 8000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "2"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "2", ClampMin = "0.0", UIMin = "0.0", UIMax = "20.0"))
 	float Source_Angle = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "3"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "3", ClampMin = "0.0", UIMin = "0.0", UIMax = "20.0"))
 	float Source_Soft_Angle = 0.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "4"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "4", ClampMin = "0.0", UIMin = "0.0"))
 	float Indirect_Light_Intensity = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "5"))
@@ -68,10 +72,12 @@ struct FTODMoonSettings : public FTODSunMoonSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "10"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "10", ClampMin = "0.0", UIMin = "0.0", UIMax = "10.0"))
 	float Moon_Source_Scale = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (DisplayPriority = "11"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "11", ClampMin = "0.0", UIMin = "0.0"))
 	float Moon_Source_Emissive_Intensity = 1.0f;
 };
 
@@ -80,19 +86,23 @@ struct FTODSkyLightSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Sky_Light_Intensity = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FLinearColor Sky_Light_Color = FLinearColor::White;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Sky_Indirect_Lighting_Intensity = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Sky_Volumetric_Scattering_Intensity = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float SkyDome_Texture_Emissive_Intensity = 1.0f;
 };
 
@@ -101,10 +111,12 @@ struct FTODFogSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Fog_Density = 0.02f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Fog_Height_Falloff = 0.2f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
@@ -120,7 +132,8 @@ struct FTODSkyAtmosphereSettings
 	GENERATED_BODY()
 
 	// 미 산란 (빛 번짐, 먼지 밀도)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Mie_Scattering_Scale = 0.003996f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
@@ -131,11 +144,13 @@ struct FTODSkyAtmosphereSettings
 	FLinearColor Absorption_Color = FLinearColor(0.345561f, 1.000000f, 0.045189f, 531.632080f);
 
 	// 레일리 산란 (기본 하늘 톤)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Rayleigh_Scattering_Scale = 0.0331f;
 
 	// 공기 원근법 (거리에 따른 포그화 강도)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float Aerial_Perspective_Distance_Scale = 1.0f;
 
 	// 산란광 제어
@@ -153,7 +168,9 @@ struct FTODMasterData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
 	FString Name = TEXT("New Time Slot");
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", ClampMax = "24.0",
+			UIMin = "0.0", UIMax = "24.0"))
 	float Time = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
