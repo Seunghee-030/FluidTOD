@@ -21,8 +21,19 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 	for (const FTODMasterData& Data : ValidPPVs)
 	{
-		Data.PPV->BlendWeight = 0.0f;
+		Data.PPV->bEnabled = true;
+		Data.PPV->bUnbound = true;
 		Data.PPV->Priority = 1.0f;
+		Data.PPV->BlendWeight = 0.0f;
+
+		FPostProcessSettings& Settings = Data.PPV->Settings;
+
+		Settings.bOverride_AutoExposureMinBrightness = true;
+		Settings.bOverride_AutoExposureMaxBrightness = true;
+		Settings.bOverride_AutoExposureBias = true;
+		Settings.bOverride_AutoExposureSpeedUp = true;
+		Settings.bOverride_AutoExposureSpeedDown = true;
+
 	}
 
 	float SafeTime = CurrentTime;
