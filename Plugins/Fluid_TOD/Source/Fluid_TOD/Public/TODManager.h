@@ -363,6 +363,8 @@ protected:
     virtual void BeginDestroy() override;
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
     virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+    virtual void OnConstruction(const FTransform& Transform) override;
+    virtual void PostEditMove(bool bFinished) override;
 
 private:
     // 외부 액터(PPV)의 변경을 감지할 함수

@@ -390,4 +390,27 @@ void ATODManager::OnExternalPropertyChanged(
 	}
 }
 
+void ATODManager::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (GetWorld() &&
+		GetWorld()->WorldType == EWorldType::Editor)
+	{
+		SetActorLocation(FVector::ZeroVector);
+		SetActorRotation(FRotator::ZeroRotator);
+		SetActorScale3D(FVector::OneVector);
+	}
+
+	PostEditMove(true);
+}
+
+void ATODManager::PostEditMove(bool bFinished)
+{
+	Super::PostEditMove(bFinished);
+
+	UpdateTOD(StartTime);
+	ForceViewportRedraw();
+}
+
 #endif
