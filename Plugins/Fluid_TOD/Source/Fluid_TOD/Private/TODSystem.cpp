@@ -180,7 +180,9 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		!IsValid(Owner->MoonLightComponent) ||
 		!IsValid(Owner->SkyLightComponent) ||
 		!IsValid(Owner->FogComponent) ||
-		!IsValid(Owner->SkyAtmosphereComponent)
+		!IsValid(Owner->SkyAtmosphereComponent) ||
+		!IsValid(Owner->SkyDomeMesh) ||
+		!IsValid(Owner->MoonMesh)
 		)
 	{
 		FindComponents(Owner);

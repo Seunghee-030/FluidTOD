@@ -182,7 +182,7 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 	};
 
 	TArray<FRuntimeCurveLinearColor*> ColorCurves = {
-		&Owner->SunCurves.ColorCurve, &Owner->MoonCurves.LightColorCurve, &Owner->SkyLightCurves.LightColorCurve, &Owner->FogCurves.InscatteringColorCurve, &Owner->FogCurves.DirectionalColorCurve,
+		&Owner->SunCurves.LightColorCurve, &Owner->MoonCurves.LightColorCurve, &Owner->SkyLightCurves.LightColorCurve, &Owner->FogCurves.InscatteringColorCurve, &Owner->FogCurves.DirectionalColorCurve,
 		&Owner->SkyAtmosphereCurves.MieScatteringColorCurve, &Owner->SkyAtmosphereCurves.AbsorptionColorCurve, &Owner->SkyAtmosphereCurves.SkyLuminanceFactorCurve
 	};
 
@@ -201,7 +201,7 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SunCurves.SourceAngleCurve, T, Data.Sun_Settings.Source_Angle, Owner->SunCurves.SourceAngleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SunCurves.SourceSoftAngleCurve, T, Data.Sun_Settings.Source_Soft_Angle, Owner->SunCurves.SourceSoftAngleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->SunCurves.IndirectIntensityCurve, T, Data.Sun_Settings.Indirect_Light_Intensity, Owner->SunCurves.IndirectIntensityInterpMode);
-		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(Owner->SunCurves.ColorCurve, T, Data.Sun_Settings.Light_Color, Owner->SunCurves.ColorInterpMode);
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(Owner->SunCurves.LightColorCurve, T, Data.Sun_Settings.Light_Color, Owner->SunCurves.ColorInterpMode);
 
 		// Moon
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.IntensityCurve, T, FinalMoonIntensity, Owner->MoonCurves.IntensityInterpMode);
@@ -272,6 +272,7 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 	if (const FRichCurve* Curve = Owner->SunCurves.IndirectIntensityCurve.GetRichCurveConst())
 		OutSun.Indirect_Light_Intensity = Curve->Eval(SafeTime);
 
+	OutSun.Light_Color = Owner->SunCurves.LightColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== Moon =====
 	if (const FRichCurve* Curve = Owner->MoonCurves.IntensityCurve.GetRichCurveConst())
@@ -292,6 +293,7 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 	if (const FRichCurve* Curve = Owner->MoonCurves.SourceEmissiveIntensityCurve.GetRichCurveConst())
 		OutMoon.Moon_Source_Emissive_Intensity = Curve->Eval(SafeTime);
 
+	OutMoon.Light_Color = Owner->MoonCurves.LightColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== SkyLight =====
 	if (const FRichCurve* Curve = Owner->SkyLightCurves.IntensityCurve.GetRichCurveConst())
@@ -306,12 +308,17 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 	if (const FRichCurve* Curve = Owner->SkyLightCurves.TextureEmissiveIntensityCurve.GetRichCurveConst())
 		OutSkyLight.SkyDome_Texture_Emissive_Intensity = Curve->Eval(SafeTime);
 
+	OutSkyLight.Sky_Light_Color = Owner->SkyLightCurves.LightColorCurve.GetLinearColorValue(SafeTime);
+
 	// ===== Fog =====
 	if (const FRichCurve* Curve = Owner->FogCurves.DensityCurve.GetRichCurveConst())
 		OutFog.Fog_Density = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->FogCurves.HeightFalloffCurve.GetRichCurveConst())
 		OutFog.Fog_Height_Falloff = Curve->Eval(SafeTime);
+
+	OutFog.Fog_Inscattering_Color = Owner->FogCurves.InscatteringColorCurve.GetLinearColorValue(SafeTime);
+	OutFog.Fog_Directional_Inscattering = Owner->FogCurves.DirectionalColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== Atmosphere =====
 	if (const FRichCurve* Curve = Owner->SkyAtmosphereCurves.MieScatteringScaleCurve.GetRichCurveConst())
@@ -322,4 +329,8 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 
 	if (const FRichCurve* Curve = Owner->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve.GetRichCurveConst())
 		OutSkyAtmosphere.Aerial_Perspective_Distance_Scale = Curve->Eval(SafeTime);
+
+	OutSkyAtmosphere.Mie_Scattering_Color = Owner->SkyAtmosphereCurves.MieScatteringColorCurve.GetLinearColorValue(SafeTime);
+	OutSkyAtmosphere.Absorption_Color = Owner->SkyAtmosphereCurves.AbsorptionColorCurve.GetLinearColorValue(SafeTime);
+	OutSkyAtmosphere.Sky_Luminance_Factor = Owner->SkyAtmosphereCurves.SkyLuminanceFactorCurve.GetLinearColorValue(SafeTime);
 }

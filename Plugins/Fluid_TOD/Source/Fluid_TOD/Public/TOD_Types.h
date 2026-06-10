@@ -216,7 +216,7 @@ struct FTODSunCurveData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeFloatCurve IndirectIntensityCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> IndirectIntensityInterpMode = RCIM_Linear;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeCurveLinearColor ColorCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") FRuntimeCurveLinearColor LightColorCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sun Curves") TEnumAsByte<ERichCurveInterpMode> ColorInterpMode = RCIM_Linear;
 };
 
