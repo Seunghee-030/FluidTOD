@@ -30,6 +30,10 @@ class FLUID_TOD_API ALightBlockerActor : public AActor
 public:
     ALightBlockerActor();
 
+    ELightBlockerShape GetBlockerShape() const { return BlockerShape; }
+    ELightBlockerMaterialType GetMaterialType() const { return MaterialType; }
+    class UStaticMesh* GetCustomMesh() const { return CustomMesh; }
+
 protected:
     virtual void OnConstruction(const FTransform& Transform) override;
 

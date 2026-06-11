@@ -10,6 +10,7 @@ ALightBlockerActor::ALightBlockerActor()
     PrimaryActorTick.bCanEverTick = false;
 
     RootComp = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+    RootComp->SetMobility(EComponentMobility::Static);
     SetRootComponent(RootComp);
 
     BlockerMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockerMesh"));
