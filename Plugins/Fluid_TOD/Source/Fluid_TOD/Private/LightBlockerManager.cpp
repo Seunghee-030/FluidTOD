@@ -4,6 +4,8 @@
 #include "Engine/CollisionProfile.h"
 #include "Materials/MaterialInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Engine/StaticMesh.h"
 
 ALightBlockerManager::ALightBlockerManager()
 {

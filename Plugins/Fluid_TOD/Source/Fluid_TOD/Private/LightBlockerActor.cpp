@@ -4,6 +4,7 @@
 #include "Engine/CollisionProfile.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Materials/MaterialInterface.h"
+#include "Engine/StaticMesh.h"
 
 ALightBlockerActor::ALightBlockerActor()
 {
