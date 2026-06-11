@@ -48,7 +48,7 @@ private:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Light Blocker|Settings", meta = (AllowPrivateAccess = "true"))
     ELightBlockerShape BlockerShape;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Light Blocker|Settings", meta = (EditCondition = "BlockerShape == ELightBlockerShape::Custom", AllowPrivateAccess = "true"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Light Blocker|Settings", meta = (EditCondition = "BlockerShape == ELightBlockerShape::Custom", EditConditionHides, AllowPrivateAccess = "true"))
     class UStaticMesh* CustomMesh;
 
     // --- Material Settings ---
