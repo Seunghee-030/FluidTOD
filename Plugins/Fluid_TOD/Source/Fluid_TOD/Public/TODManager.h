@@ -38,7 +38,7 @@ public:
     // Components
     // =========================================================================
 
-    UPROPERTY()
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<class UPostProcessComponent> RuntimePPVComponent;
 
     UPROPERTY()
@@ -183,6 +183,12 @@ public:
     // =========================================================================
     // Functions: System
     // =========================================================================
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Cinematic")
+    bool bIsCinematicOverride = false;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Cinematic")
+    void SetCinematicMode(bool bEnable) { bIsCinematicOverride = bEnable; }
 
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void BakeTODCurves();

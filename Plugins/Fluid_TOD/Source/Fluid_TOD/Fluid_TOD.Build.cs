@@ -39,6 +39,8 @@ public class Fluid_TOD : ModuleRules
 				"Slate",
 				"SlateCore",
         		"InputCore",
+				"LevelSequence", 
+				"MovieScene"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
@@ -48,8 +50,8 @@ public class Fluid_TOD : ModuleRules
     			PrivateDependencyModuleNames.AddRange(
         			new string[]
         			{
-            				"UnrealEd",
-					"AssetTools",
+            			"UnrealEd",
+						"AssetTools",
 				        "ContentBrowser"
         			}
     			);

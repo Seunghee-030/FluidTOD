@@ -244,6 +244,8 @@ void ATODManager::ForceViewportRedraw()
 // ========= System ===========
 void ATODManager::UpdateTOD(float CurrentTime)
 {
+	if (bIsCinematicOverride) return;
+
 	TODSystem.UpdateTOD(this, CurrentTime);
 }
 
