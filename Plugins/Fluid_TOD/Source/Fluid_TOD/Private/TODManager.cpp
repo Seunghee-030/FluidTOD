@@ -5,6 +5,7 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PostProcessComponent.h"
+#include "Engine/PostProcessVolume.h"
 #include "Engine/Engine.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
@@ -12,7 +13,6 @@
 #include "LevelSequencePlayer.h"
 #include "EngineUtils.h"
 
-#include "MyBlueprintFunctionLibrary.h"
 #include "TODCurveEvaluator.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
@@ -105,17 +105,26 @@ void ATODManager::EvaluateCinematicState()
 	// 재생 중인 컷신 확인
 	for (const FTODCinematicSetting& Setting : TargetCinematics)
 	{
-		if (IsValid(Setting.SequenceActor) && Setting.SequenceActor->GetSequencePlayer()->IsPlaying())
+		if (!IsValid(Setting.SequenceActor)) continue;
+
+		if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
 		{
-			if (Setting.bPauseTime) bIsTimePaused = true;
-			if (Setting.bOverrideVisuals) bIsVisualOverridden = true;
+			if (SeqPlayer->IsPlaying())
+			{
+				if (Setting.bPauseTime) bIsTimePaused = true;
+				if (Setting.bOverrideVisuals) bIsVisualOverridden = true;
+			}
 		}
 	}
 }
 
 float ATODManager::CalculateCycleSpeed(float InTime)
 {
+#if WITH_EDITOR
 	FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurve();
+#else
+	const FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurveConst();
+#endif
 	if (RichCurve && RichCurve->GetNumKeys() == 0)
 	{
 		RichCurve->Reset();
@@ -462,11 +471,17 @@ void ATODManager::OnExternalPropertyChanged(
 	}
 	
 	// 시퀀서 관련 객체는 무시
-	if (Object->GetOutermost()->GetName().StartsWith(TEXT("/Temp/")) ||
-		Object->GetName().Contains(TEXT("MovieScene")) ||
-		Object->GetName().Contains(TEXT("Track")))
+	APostProcessVolume* PPV = Cast<APostProcessVolume>(Object);
+	if (!PPV) return;
+
+	for (const FTODMasterData& Data : TOD_DataArray)
 	{
-		return;
+		if (Data.PPV == PPV)
+		{
+			UpdateTOD(StartTime);
+			ForceViewportRedraw();
+			return;
+		}
 	}
 
 	for (const FTODMasterData& Data : TOD_DataArray)
