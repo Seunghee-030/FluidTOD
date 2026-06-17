@@ -34,12 +34,22 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "TOD|Events")
     void OnUpdateCustomMaterials(float CurrentTime);
 
+public:
+    UFUNCTION()
+    void OnCinematicStarted();
+
+    UFUNCTION()
+    void OnCinematicFinished();
+
     // =========================================================================
 	// Sequence Override
     // =========================================================================
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "TOD|Sequencer")
     bool bSequencerOverride = false;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Sequencer")
+    void SetSequencerOverride(bool bIsOverride);
 
     // =========================================================================
     // Components

@@ -8,6 +8,9 @@
 #include "Engine/Engine.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
+#include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
+#include "EngineUtils.h"
 
 #include "MyBlueprintFunctionLibrary.h"
 #include "TODCurveEvaluator.h"
@@ -27,12 +30,44 @@ ATODManager::ATODManager()
 	RuntimePPVComponent->Priority = 100;
 }
 
+void ATODManager::SetSequencerOverride(bool bIsOverride)
+{
+	bIsCinematicOverride = bIsOverride;
+
+	if (bIsOverride)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("시퀀서가 TOD 제어권을 가져갔습니다."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("시퀀서 종료. TOD가 다시 일상으로 복귀합니다."));
+	}
+}
+
 // ======= System =========
 
 // 게임 시작
 void ATODManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 맵에 배치된 모든 레벨 시퀀스 액터를 1회 스캔합니다.
+	for (TActorIterator<ALevelSequenceActor> It(GetWorld()); It; ++It)
+	{
+		ALevelSequenceActor* SeqActor = *It;
+
+		// [중요 필터링] 배경의 새, 깃발 등 '가짜 컷신'과 진짜 연출을 구분하기 위해 태그 사용
+		if (SeqActor && SeqActor->ActorHasTag(TEXT("StopTOD")))
+		{
+			if (ULevelSequencePlayer* SeqPlayer = SeqActor->GetSequencePlayer())
+			{
+				// 시퀀서의 재생/정지 이벤트에 TOD의 함수를 몰래 연결(Binding)해둡니다.
+				SeqPlayer->OnPlay.AddDynamic(this, &ATODManager::OnCinematicStarted);
+				SeqPlayer->OnStop.AddDynamic(this, &ATODManager::OnCinematicFinished);
+				SeqPlayer->OnPause.AddDynamic(this, &ATODManager::OnCinematicFinished);
+			}
+		}
+	}
 
 	FindComponents();
 	UpdateSunTimes();
@@ -79,6 +114,18 @@ void ATODManager::SetMaterialVectorByName(
 	MID->SetVectorParameterValue(ParameterName, Value);
 }
 
+void ATODManager::OnCinematicStarted()
+{
+	bIsCinematicOverride = true;
+	UE_LOG(LogTemp, Warning, TEXT("[자동 감지] 컷신 재생 시작! TOD 정지."));
+}
+
+void ATODManager::OnCinematicFinished()
+{
+	bIsCinematicOverride = false;
+	UE_LOG(LogTemp, Warning, TEXT("[자동 감지] 컷신 종료! TOD 복귀."));
+}
+
 float ATODManager::CalculateCycleSpeed(float InTime)
 {
 	FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurve();
@@ -89,6 +136,11 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 		RichCurve->AddKey(24.0f, 1.0f);
 		RichCurve->PreInfinityExtrap = RCCE_Cycle;
 		RichCurve->PostInfinityExtrap = RCCE_Cycle;
+	}
+
+	if (bIsCinematicOverride)
+	{
+		return 0.0f;
 	}
 
 	float SafeTime = FMath::Fmod(InTime, 24.0f);

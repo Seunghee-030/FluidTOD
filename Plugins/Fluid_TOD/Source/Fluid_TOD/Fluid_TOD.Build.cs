@@ -26,6 +26,8 @@ public class Fluid_TOD : ModuleRules
 			new string[]
 			{
 				"Core",
+				"LevelSequence",
+				"MovieScene"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
