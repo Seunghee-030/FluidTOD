@@ -35,9 +35,16 @@ public:
     void OnUpdateCustomMaterials(float CurrentTime);
 
     // =========================================================================
+	// Sequence Override
+    // =========================================================================
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "TOD|Sequencer")
+    bool bSequencerOverride = false;
+
+    // =========================================================================
     // Components
     // =========================================================================
-
+public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<class UPostProcessComponent> RuntimePPVComponent;
 

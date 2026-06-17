@@ -380,6 +380,14 @@ void ATODManager::OnExternalPropertyChanged(
 	{
 		return;
 	}
+	
+	// 시퀀서 관련 객체는 무시
+	if (Object->GetOutermost()->GetName().StartsWith(TEXT("/Temp/")) ||
+		Object->GetName().Contains(TEXT("MovieScene")) ||
+		Object->GetName().Contains(TEXT("Track")))
+	{
+		return;
+	}
 
 	for (const FTODMasterData& Data : TOD_DataArray)
 	{
