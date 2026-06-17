@@ -356,7 +356,6 @@ FRotator ATODManager::CalculatePivotRotation(float InTime) const
 // ======= Editor 기능 관련 =========
 
 #if WITH_EDITOR
-
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -374,7 +373,6 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		SortTODDataArray();
 		BakeTODCurves();
 	}
-
 	else if (
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
@@ -461,16 +459,12 @@ void ATODManager::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void ATODManager::OnExternalPropertyChanged(
-	UObject* Object,
-	FPropertyChangedEvent& PropertyChangedEvent)
+void ATODManager::OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent)
 {
-	if (!Object || !Object->IsA<APostProcessVolume>())
-	{
-		return;
-	}
-	
-	// 시퀀서 관련 객체는 무시
+	if (!IsValid(Object)) return;
+
+	if (!Object->IsA<APostProcessVolume>()) return;
+
 	APostProcessVolume* PPV = Cast<APostProcessVolume>(Object);
 	if (!PPV) return;
 
@@ -481,16 +475,6 @@ void ATODManager::OnExternalPropertyChanged(
 			UpdateTOD(StartTime);
 			ForceViewportRedraw();
 			return;
-		}
-	}
-
-	for (const FTODMasterData& Data : TOD_DataArray)
-	{
-		if (Data.PPV == Object)
-		{
-			UpdateTOD(StartTime);
-			ForceViewportRedraw();
-			break;
 		}
 	}
 }
