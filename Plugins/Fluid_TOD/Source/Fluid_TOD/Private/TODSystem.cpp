@@ -171,8 +171,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || Owner->TOD_DataArray.Num() == 0) return;
 
-	if (Owner->bSequencerOverride) return;
-
 	Owner->CurrentSystemTime = CurrentTime;
 
 	UpdateState(Owner, CurrentTime);

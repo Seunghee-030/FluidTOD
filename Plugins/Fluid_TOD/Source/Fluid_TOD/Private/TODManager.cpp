@@ -30,20 +30,6 @@ ATODManager::ATODManager()
 	RuntimePPVComponent->Priority = 100;
 }
 
-void ATODManager::SetSequencerOverride(bool bIsOverride)
-{
-	bIsCinematicOverride = bIsOverride;
-
-	if (bIsOverride)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("시퀀서가 TOD 제어권을 가져갔습니다."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("시퀀서 종료. TOD가 다시 일상으로 복귀합니다."));
-	}
-}
-
 // ======= System =========
 
 // 게임 시작
@@ -51,20 +37,16 @@ void ATODManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 맵에 배치된 모든 레벨 시퀀스 액터를 1회 스캔합니다.
-	for (TActorIterator<ALevelSequenceActor> It(GetWorld()); It; ++It)
+	for (FTODCinematicSetting& Setting : TargetCinematics)
 	{
-		ALevelSequenceActor* SeqActor = *It;
-
-		// [중요 필터링] 배경의 새, 깃발 등 '가짜 컷신'과 진짜 연출을 구분하기 위해 태그 사용
-		if (SeqActor && SeqActor->ActorHasTag(TEXT("StopTOD")))
+		if (IsValid(Setting.SequenceActor))
 		{
-			if (ULevelSequencePlayer* SeqPlayer = SeqActor->GetSequencePlayer())
+			if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
 			{
-				// 시퀀서의 재생/정지 이벤트에 TOD의 함수를 몰래 연결(Binding)해둡니다.
-				SeqPlayer->OnPlay.AddDynamic(this, &ATODManager::OnCinematicStarted);
-				SeqPlayer->OnStop.AddDynamic(this, &ATODManager::OnCinematicFinished);
-				SeqPlayer->OnPause.AddDynamic(this, &ATODManager::OnCinematicFinished);
+				// 모든 컷신 재생/정지/일시정지 될 때마다 상태 평가 함수 호출
+				SeqPlayer->OnPlay.AddDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnStop.AddDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnPause.AddDynamic(this, &ATODManager::EvaluateCinematicState);
 			}
 		}
 	}
@@ -114,16 +96,21 @@ void ATODManager::SetMaterialVectorByName(
 	MID->SetVectorParameterValue(ParameterName, Value);
 }
 
-void ATODManager::OnCinematicStarted()
+// 컷신 재생 상태에 따라 시간 흐름과 시각 요소 갱신 여부 결정
+void ATODManager::EvaluateCinematicState()
 {
-	bIsCinematicOverride = true;
-	UE_LOG(LogTemp, Warning, TEXT("[자동 감지] 컷신 재생 시작! TOD 정지."));
-}
+	bIsTimePaused = false;
+	bIsVisualOverridden = false;
 
-void ATODManager::OnCinematicFinished()
-{
-	bIsCinematicOverride = false;
-	UE_LOG(LogTemp, Warning, TEXT("[자동 감지] 컷신 종료! TOD 복귀."));
+	// 재생 중인 컷신 확인
+	for (const FTODCinematicSetting& Setting : TargetCinematics)
+	{
+		if (IsValid(Setting.SequenceActor) && Setting.SequenceActor->GetSequencePlayer()->IsPlaying())
+		{
+			if (Setting.bPauseTime) bIsTimePaused = true;
+			if (Setting.bOverrideVisuals) bIsVisualOverridden = true;
+		}
+	}
 }
 
 float ATODManager::CalculateCycleSpeed(float InTime)
@@ -138,7 +125,7 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 		RichCurve->PostInfinityExtrap = RCCE_Cycle;
 	}
 
-	if (bIsCinematicOverride)
+	if (bIsTimePaused)
 	{
 		return 0.0f;
 	}
@@ -337,7 +324,7 @@ void ATODManager::ForceViewportRedraw()
 // ========= System ===========
 void ATODManager::UpdateTOD(float CurrentTime)
 {
-	if (bIsCinematicOverride) return;
+	if (bIsVisualOverridden) return;
 
 	TODSystem.UpdateTOD(this, CurrentTime);
 }

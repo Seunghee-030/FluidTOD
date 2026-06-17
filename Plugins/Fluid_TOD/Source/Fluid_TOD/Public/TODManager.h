@@ -16,6 +16,22 @@ class UMaterialInstanceDynamic;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTODDataChangedSignature);
 
+// 시퀀서별 TOD 제어 옵션 설정 구조체
+USTRUCT(BlueprintType)
+struct FTODCinematicSetting
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic")
+    TObjectPtr<class ALevelSequenceActor> SequenceActor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Pauses TOD time progression during sequence playback."))
+    bool bPauseTime = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Stops TOD visual updates to allow sequence-based overrides."))
+    bool bOverrideVisuals = true;
+};
+
 UCLASS(BlueprintType)
 class FLUID_TOD_API ATODManager : public AActor
 {
@@ -34,22 +50,22 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "TOD|Events")
     void OnUpdateCustomMaterials(float CurrentTime);
 
-public:
-    UFUNCTION()
-    void OnCinematicStarted();
-
-    UFUNCTION()
-    void OnCinematicFinished();
-
     // =========================================================================
 	// Sequence Override
     // =========================================================================
-public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "TOD|Sequencer")
-    bool bSequencerOverride = false;
+protected:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Sequencer")
+    TArray<FTODCinematicSetting> TargetCinematics;
 
-    UFUNCTION(BlueprintCallable, Category = "TOD|Sequencer")
-    void SetSequencerOverride(bool bIsOverride);
+    bool bIsTimePaused = false;
+    bool bIsVisualOverridden = false;
+
+public:
+    UFUNCTION()
+    void EvaluateCinematicState();
+
+    bool IsVisualOverridden() const { return bIsVisualOverridden; }
+    bool IsTimePaused() const { return bIsTimePaused; }
 
     // =========================================================================
     // Components
@@ -230,12 +246,6 @@ public:
     // =========================================================================
     // Functions: System
     // =========================================================================
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Cinematic")
-    bool bIsCinematicOverride = false;
-
-    UFUNCTION(BlueprintCallable, Category = "TOD|Cinematic")
-    void SetCinematicMode(bool bEnable) { bIsCinematicOverride = bEnable; }
 
     UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void BakeTODCurves();
