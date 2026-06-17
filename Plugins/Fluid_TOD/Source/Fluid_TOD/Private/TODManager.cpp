@@ -1,5 +1,5 @@
 #include "TODManager.h"
-#include "MyBlueprintFunctionLibrary.h"
+
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
@@ -7,6 +7,9 @@
 #include "Components/PostProcessComponent.h"
 #include "Engine/Engine.h"
 #include "TimerManager.h"
+#include "GameFramework/Character.h"
+
+#include "MyBlueprintFunctionLibrary.h"
 #include "TODCurveEvaluator.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
@@ -74,6 +77,38 @@ void ATODManager::SetMaterialVectorByName(
 	}
 
 	MID->SetVectorParameterValue(ParameterName, Value);
+}
+
+float ATODManager::CalculateCycleSpeed(float InTime)
+{
+	if (IsValid(PlayerRef) && PlayerRef->GetVelocity().SizeSquared() > 0.0)
+	{
+		TargetSpeed = ActiveDaySpeed;
+	}
+	else
+	{
+		TargetSpeed = IdleDaySpeed;
+	}
+
+	float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f;
+	CurrentSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, InterpSpeed);
+
+	float BaseMultiplier = 0.0f;
+	if (DayCycleDuration > 0.0f)
+	{
+		BaseMultiplier = 24.0f / (DayCycleDuration * 60.0f);
+	}
+
+	float CurveValue = 0.0f;
+	if (const FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurveConst())
+	{
+		CurveValue = RichCurve->Eval(InTime);
+	}
+
+	// 최종 속도 (CurrentSpeed * Multiplier * CurveValue)
+	float OutSpeed = CurrentSpeed * BaseMultiplier * CurveValue;
+
+	return OutSpeed;
 }
 
 // 디버그 출력

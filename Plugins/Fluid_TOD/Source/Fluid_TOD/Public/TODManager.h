@@ -100,9 +100,39 @@ public:
     TArray<FTODMasterData> TOD_DataArray;
 
     // =========================================================================
+    // Properties: Speed
+    // =========================================================================
+public:
+    UFUNCTION(BlueprintCallable, Category = "TOD|Time")
+    float CalculateCycleSpeed(float InTime);
+
+protected:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    TObjectPtr<class ACharacter> PlayerRef;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    float ActiveDaySpeed = 2.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    float IdleDaySpeed = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    float InterpSpeed = 2.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    float DayCycleDuration = 20.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    FRuntimeFloatCurve CycleSpeedCurve;
+
+private:
+    float TargetSpeed = 0.0f;
+    float CurrentSpeed = 0.0f;
+
+    // =========================================================================
     // Properties: State
     // =========================================================================
-
+public:
     float CurrentSystemTime = 0.0f;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
