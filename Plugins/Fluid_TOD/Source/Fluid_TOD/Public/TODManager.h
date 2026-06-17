@@ -107,27 +107,27 @@ public:
     float CalculateCycleSpeed(float InTime);
 
 protected:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    UPROPERTY(BlueprintReadWrite, Category = "TOD|Speed", meta = (AllowPrivateAccess = "true", Tooltip = "Reference to the player character to track movement state."))
     TObjectPtr<class ACharacter> PlayerRef;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed", meta = (Tooltip = "Time multiplier when the player is moving.", ClampMin = "0.1", ClampMax = "50.0"))
     float ActiveDaySpeed = 2.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed", meta = (Tooltip = "Time multiplier when the player is idle.", ClampMin = "0.0", ClampMax = "50.0"))
     float IdleDaySpeed = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed", meta = (Tooltip = "Interpolation speed. \nHigher values make the transition faster\nLower values make the transition smoother.", ClampMin = "0.01", UIMax = "10.0"))
     float InterpSpeed = 2.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed", meta = (Tooltip = "Total duration of one full day cycle in minutes.", ClampMin = "0.1", ClampMax = "360.0", Units = "min"))
     float DayCycleDuration = 20.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Speed", meta = (Tooltip = "Custom curve to modulate speed over the 24-hour cycle."))
     FRuntimeFloatCurve CycleSpeedCurve;
 
 private:
     float TargetSpeed = 0.0f;
-    float CurrentSpeed = 0.0f;
+    float CurrentSpeed = 1.0f;
 
     // =========================================================================
     // Properties: State

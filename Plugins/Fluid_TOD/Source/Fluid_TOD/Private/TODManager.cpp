@@ -81,6 +81,19 @@ void ATODManager::SetMaterialVectorByName(
 
 float ATODManager::CalculateCycleSpeed(float InTime)
 {
+	FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurve();
+	if (RichCurve && RichCurve->GetNumKeys() == 0)
+	{
+		RichCurve->Reset();
+		RichCurve->AddKey(0.0f, 1.0f);
+		RichCurve->AddKey(24.0f, 1.0f);
+		RichCurve->PreInfinityExtrap = RCCE_Cycle;
+		RichCurve->PostInfinityExtrap = RCCE_Cycle;
+	}
+
+	float SafeTime = FMath::Fmod(InTime, 24.0f);
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+
 	if (IsValid(PlayerRef) && PlayerRef->GetVelocity().SizeSquared() > 0.0)
 	{
 		TargetSpeed = ActiveDaySpeed;
@@ -93,22 +106,15 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 	float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f;
 	CurrentSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, InterpSpeed);
 
-	float BaseMultiplier = 0.0f;
-	if (DayCycleDuration > 0.0f)
+	float BaseMultiplier = (DayCycleDuration > 0.0f) ? (24.0f / (DayCycleDuration * 60.0f)) : 0.0f;
+
+	float CurveValue = 1.0f;
+	if (const FRichCurve* EvalCurve = CycleSpeedCurve.GetRichCurveConst())
 	{
-		BaseMultiplier = 24.0f / (DayCycleDuration * 60.0f);
+		CurveValue = EvalCurve->Eval(SafeTime);
 	}
 
-	float CurveValue = 0.0f;
-	if (const FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurveConst())
-	{
-		CurveValue = RichCurve->Eval(InTime);
-	}
-
-	// 최종 속도 (CurrentSpeed * Multiplier * CurveValue)
-	float OutSpeed = CurrentSpeed * BaseMultiplier * CurveValue;
-
-	return OutSpeed;
+	return CurrentSpeed * BaseMultiplier * CurveValue;
 }
 
 // 디버그 출력
