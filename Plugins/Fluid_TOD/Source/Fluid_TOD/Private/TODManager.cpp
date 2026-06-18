@@ -110,7 +110,6 @@ void ATODManager::EvaluateCinematicState()
 			continue;
 		}
 
-		// 시퀀스 에셋이 비어있거나 아직 플레이어가 생성되지 않은 경우 nullptr일 수 있음
 		ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer();
 		if (!IsValid(SeqPlayer) || !SeqPlayer->IsPlaying())
 		{
