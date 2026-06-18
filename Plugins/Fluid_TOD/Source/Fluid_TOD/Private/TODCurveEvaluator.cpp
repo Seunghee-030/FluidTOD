@@ -165,13 +165,6 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 {
 	Owner->FindComponents();
 
-	if (Owner->TOD_DataArray.Num() == 0) return;
-
-	TArray<FTODMasterData> SortedCopy = Owner->TOD_DataArray;
-	SortedCopy.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
-		return A.Time < B.Time;
-		});
-
 	// 구조체 내부 커브 포인터 매핑
 	TArray<FRuntimeFloatCurve*> FloatCurves = {
 		&Owner->SunCurves.IntensityCurve, &Owner->SunCurves.SourceAngleCurve, &Owner->SunCurves.SourceSoftAngleCurve, & Owner->SunCurves.IndirectIntensityCurve,
@@ -188,6 +181,13 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(*Curve); }
+
+	if (Owner->TOD_DataArray.Num() == 0) return;
+
+	TArray<FTODMasterData> SortedCopy = Owner->TOD_DataArray;
+	SortedCopy.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
+		return A.Time < B.Time;
+		});
 
 	for (const FTODMasterData& Data : SortedCopy)
 	{

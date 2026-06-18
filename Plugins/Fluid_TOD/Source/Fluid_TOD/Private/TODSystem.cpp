@@ -172,8 +172,12 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	if (!Owner || Owner->TOD_DataArray.Num() == 0) return;
 
 	Owner->CurrentSystemTime = CurrentTime;
-
 	UpdateState(Owner, CurrentTime);
+
+	if (Owner->IsVisualOverridden())
+	{
+		return;
+	}
 
 	if (
 		!IsValid(Owner->SunLightComponent) ||

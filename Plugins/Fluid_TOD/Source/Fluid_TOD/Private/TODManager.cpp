@@ -5,8 +5,8 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PostProcessComponent.h"
-#include "Engine/PostProcessVolume.h"
 #include "Engine/Engine.h"
+#include "Engine/PostProcessVolume.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
 #include "LevelSequenceActor.h"
@@ -105,34 +105,38 @@ void ATODManager::EvaluateCinematicState()
 	// 재생 중인 컷신 확인
 	for (const FTODCinematicSetting& Setting : TargetCinematics)
 	{
-		if (!IsValid(Setting.SequenceActor)) continue;
-
-		if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
+		if (!IsValid(Setting.SequenceActor))
 		{
-			if (SeqPlayer->IsPlaying())
-			{
-				if (Setting.bPauseTime) bIsTimePaused = true;
-				if (Setting.bOverrideVisuals) bIsVisualOverridden = true;
-			}
+			continue;
 		}
+
+		// 시퀀스 에셋이 비어있거나 아직 플레이어가 생성되지 않은 경우 nullptr일 수 있음
+		ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer();
+		if (!IsValid(SeqPlayer) || !SeqPlayer->IsPlaying())
+		{
+			continue;
+		}
+
+		if (Setting.bPauseTime) bIsTimePaused = true;
+		if (Setting.bOverrideVisuals) bIsVisualOverridden = true;
 	}
 }
 
 float ATODManager::CalculateCycleSpeed(float InTime)
 {
 #if WITH_EDITOR
-	FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurve();
-#else
-	const FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurveConst();
-#endif
-	if (RichCurve && RichCurve->GetNumKeys() == 0)
+	if (FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurve())
 	{
-		RichCurve->Reset();
-		RichCurve->AddKey(0.0f, 1.0f);
-		RichCurve->AddKey(24.0f, 1.0f);
-		RichCurve->PreInfinityExtrap = RCCE_Cycle;
-		RichCurve->PostInfinityExtrap = RCCE_Cycle;
+		if (RichCurve->GetNumKeys() == 0)
+		{
+			RichCurve->Reset();
+			RichCurve->AddKey(0.0f, 1.0f);
+			RichCurve->AddKey(24.0f, 1.0f);
+			RichCurve->PreInfinityExtrap = RCCE_Cycle;
+			RichCurve->PostInfinityExtrap = RCCE_Cycle;
+		}
 	}
+#endif
 
 	if (bIsTimePaused)
 	{
@@ -161,6 +165,17 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 	{
 		CurveValue = EvalCurve->Eval(SafeTime);
 	}
+#if !WITH_EDITOR
+	else if (!CycleSpeedCurve.ExternalCurve)
+	{
+		static bool bWarnedMissingCycleSpeedCurve = false;
+		if (!bWarnedMissingCycleSpeedCurve)
+		{
+			bWarnedMissingCycleSpeedCurve = true;
+			UE_LOG(LogTemp, Warning, TEXT("[TODManager] CycleSpeedCurve에 ExternalCurve(UCurveFloat 에셋)가 할당되어 있지 않아 패키징 빌드에서는 커브 형태가 적용되지 않고 기본값(1.0)으로 동작합니다. 빌드에 반영하려면 외부 UCurveFloat 에셋을 만들어 CycleSpeedCurve에 연결해 주세요."));
+		}
+	}
+#endif
 
 	return CurrentSpeed * BaseMultiplier * CurveValue;
 }
@@ -333,8 +348,6 @@ void ATODManager::ForceViewportRedraw()
 // ========= System ===========
 void ATODManager::UpdateTOD(float CurrentTime)
 {
-	if (bIsVisualOverridden) return;
-
 	TODSystem.UpdateTOD(this, CurrentTime);
 }
 
@@ -356,6 +369,7 @@ FRotator ATODManager::CalculatePivotRotation(float InTime) const
 // ======= Editor 기능 관련 =========
 
 #if WITH_EDITOR
+
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -373,6 +387,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		SortTODDataArray();
 		BakeTODCurves();
 	}
+
 	else if (
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
@@ -459,24 +474,48 @@ void ATODManager::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void ATODManager::OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent)
+void ATODManager::OnExternalPropertyChanged(
+	UObject* Object,
+	FPropertyChangedEvent& PropertyChangedEvent)
 {
-	if (!IsValid(Object)) return;
+	if (!Object || !Object->IsA<APostProcessVolume>())
+	{
+		return;
+	}
 
-	if (!Object->IsA<APostProcessVolume>()) return;
-
-	APostProcessVolume* PPV = Cast<APostProcessVolume>(Object);
-	if (!PPV) return;
-
+	bool bIsRelevant = false;
 	for (const FTODMasterData& Data : TOD_DataArray)
 	{
-		if (Data.PPV == PPV)
+		if (Data.PPV == Object)
 		{
-			UpdateTOD(StartTime);
-			ForceViewportRedraw();
-			return;
+			bIsRelevant = true;
+			break;
 		}
 	}
+
+	if (!bIsRelevant)
+	{
+		return;
+	}
+
+	if (bPendingPPVUpdate)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	bPendingPPVUpdate = true;
+	World->GetTimerManager().SetTimerForNextTick([this]()
+	{
+		bPendingPPVUpdate = false;
+		UpdateTOD(StartTime);
+		ForceViewportRedraw();
+	});
 }
 
 void ATODManager::OnConstruction(const FTransform& Transform)

@@ -325,5 +325,7 @@ protected:
 private:
     void OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent);
     FDelegateHandle PropertyChangeDelegateHandle;
+
+    bool bPendingPPVUpdate = false;
 #endif
 };
