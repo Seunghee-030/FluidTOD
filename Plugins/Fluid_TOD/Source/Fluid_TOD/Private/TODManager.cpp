@@ -129,7 +129,16 @@ float ATODManager::GetStartTime() const
 void ATODManager::SetStartTime(float NewTime)
 {
 	StartTime = NewTime;
+	CurrentSystemTime = NewTime;
+	UE_LOG(LogTemp, Warning,
+		TEXT("CurrentSystemTime Before = %f"),
+		CurrentSystemTime);
 
+	UpdateTOD(StartTime);
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("CurrentSystemTime After = %f"),
+		CurrentSystemTime);
 	StartTimeDisplay = GetFormattedTimeAsString(StartTime);
 
 	UpdateTOD(StartTime);
