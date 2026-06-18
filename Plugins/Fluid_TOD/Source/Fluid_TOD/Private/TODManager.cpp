@@ -121,6 +121,24 @@ void ATODManager::EvaluateCinematicState()
 	}
 }
 
+float ATODManager::GetStartTime() const
+{
+	return StartTime;
+}
+
+void ATODManager::SetStartTime(float NewTime)
+{
+	StartTime = NewTime;
+
+	StartTimeDisplay = GetFormattedTimeAsString(StartTime);
+
+	UpdateTOD(StartTime);
+
+#if WITH_EDITOR
+	ForceViewportRedraw();
+#endif
+}
+
 float ATODManager::CalculateCycleSpeed(float InTime)
 {
 #if WITH_EDITOR

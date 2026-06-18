@@ -110,7 +110,7 @@ public:
     // =========================================================================
     // Properties: TOD Base Settings
     // =========================================================================
-
+public:
     UPROPERTY(VisibleAnywhere, Category = "TOD",
         meta = (DisplayPriority = "1", ToolTip = "Read-only display of the configured start time."))
     FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
@@ -125,8 +125,14 @@ public:
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
 
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    float GetStartTime() const;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Time")
+    void SetStartTime(float NewTime);
+
     // =========================================================================
-    // Properties: Speed
+	// Properties: Speed, Time, and Cycle
     // =========================================================================
 public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
