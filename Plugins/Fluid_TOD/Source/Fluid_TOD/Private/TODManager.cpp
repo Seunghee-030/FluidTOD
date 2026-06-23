@@ -27,7 +27,14 @@ ATODManager::ATODManager()
 	else RootComponent = RuntimePPVComponent;
 
 	RuntimePPVComponent->bUnbound = true;
-	RuntimePPVComponent->Priority = 100;
+	RuntimePPVComponent->Priority = 1;
+
+	FTODTimePoint DawnPoint; DawnPoint.State = ETODState::Dawn; DawnPoint.StartTime = 2.0f; TOD_State.Add(DawnPoint);
+	FTODTimePoint SunrisePoint; SunrisePoint.State = ETODState::Sunrise; SunrisePoint.StartTime = 6.0f; TOD_State.Add(SunrisePoint);
+	FTODTimePoint DayPoint; DayPoint.State = ETODState::Day; DayPoint.StartTime = 10.0f; TOD_State.Add(DayPoint);
+	FTODTimePoint SunsetPoint; SunsetPoint.State = ETODState::Sunset; SunsetPoint.StartTime = 14.0f; TOD_State.Add(SunsetPoint);
+	FTODTimePoint DuskPoint; DuskPoint.State = ETODState::Dusk; DuskPoint.StartTime = 18.0f; TOD_State.Add(DuskPoint);
+	FTODTimePoint NightPoint; NightPoint.State = ETODState::Night; NightPoint.StartTime = 20.0f; TOD_State.Add(NightPoint);
 }
 
 // ======= System =========

@@ -41,6 +41,7 @@ FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSkyLightCurveData();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSkyLightSettings();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSunCurveData();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSunMoonSettings();
+FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODTimePoint();
 UPackage* Z_Construct_UPackage__Script_Fluid_TOD();
 // ********** End Cross Module References **********************************************************
 
@@ -239,6 +240,86 @@ UEnum* Z_Construct_UEnum_Fluid_TOD_ETODComponentCategory()
 	return Z_Registration_Info_UEnum_ETODComponentCategory.InnerSingleton;
 }
 // ********** End Enum ETODComponentCategory *******************************************************
+
+// ********** Begin ScriptStruct FTODTimePoint *****************************************************
+struct Z_Construct_UScriptStruct_FTODTimePoint_Statics
+{
+	static inline consteval int32 GetStructSize() { return sizeof(FTODTimePoint); }
+	static inline consteval int16 GetStructAlignment() { return alignof(FTODTimePoint); }
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Struct_MetaDataParams[] = {
+		{ "BlueprintType", "true" },
+		{ "Comment", "// \xec\x82\xac\xec\x9a\xa9\xec\x9e\x90\xec\xa7\x80\xec\xa0\x95 \xec\x8b\x9c\xea\xb0\x84 \xeb\xb2\x94\xec\x9c\x84 \xea\xb5\xac\xec\xa1\xb0\xec\xb2\xb4\n" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+		{ "ToolTip", "\xec\x82\xac\xec\x9a\xa9\xec\x9e\x90\xec\xa7\x80\xec\xa0\x95 \xec\x8b\x9c\xea\xb0\x84 \xeb\xb2\x94\xec\x9c\x84 \xea\xb5\xac\xec\xa1\xb0\xec\xb2\xb4" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_State_MetaData[] = {
+		{ "Category", "TOD" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_StartTime_MetaData[] = {
+		{ "Category", "TOD" },
+		{ "ClampMax", "24.0" },
+		{ "ClampMin", "0.0" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin ScriptStruct FTODTimePoint constinit property declarations *********************
+	static const UECodeGen_Private::FBytePropertyParams NewProp_State_Underlying;
+	static const UECodeGen_Private::FEnumPropertyParams NewProp_State;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_StartTime;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End ScriptStruct FTODTimePoint constinit property declarations ***********************
+	static void* NewStructOps()
+	{
+		return (UScriptStruct::ICppStructOps*)new UScriptStruct::TCppStructOps<FTODTimePoint>();
+	}
+	static const UECodeGen_Private::FStructParams StructParams;
+}; // struct Z_Construct_UScriptStruct_FTODTimePoint_Statics
+static FStructRegistrationInfo Z_Registration_Info_UScriptStruct_FTODTimePoint;
+class UScriptStruct* FTODTimePoint::StaticStruct()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODTimePoint.OuterSingleton)
+	{
+		Z_Registration_Info_UScriptStruct_FTODTimePoint.OuterSingleton = GetStaticStruct(Z_Construct_UScriptStruct_FTODTimePoint, (UObject*)Z_Construct_UPackage__Script_Fluid_TOD(), TEXT("TODTimePoint"));
+	}
+	return Z_Registration_Info_UScriptStruct_FTODTimePoint.OuterSingleton;
+	}
+
+// ********** Begin ScriptStruct FTODTimePoint Property Definitions ********************************
+const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewProp_State_Underlying = { "UnderlyingType", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, nullptr, METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FEnumPropertyParams Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewProp_State = { "State", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Enum, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODTimePoint, State), Z_Construct_UEnum_Fluid_TOD_ETODState, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_State_MetaData), NewProp_State_MetaData) }; // 2526692313
+const UECodeGen_Private::FFloatPropertyParams Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewProp_StartTime = { "StartTime", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODTimePoint, StartTime), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_StartTime_MetaData), NewProp_StartTime_MetaData) };
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODTimePoint_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewProp_State_Underlying,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewProp_State,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewProp_StartTime,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODTimePoint_Statics::PropPointers) < 2048);
+// ********** End ScriptStruct FTODTimePoint Property Definitions **********************************
+const UECodeGen_Private::FStructParams Z_Construct_UScriptStruct_FTODTimePoint_Statics::StructParams = {
+	(UObject* (*)())Z_Construct_UPackage__Script_Fluid_TOD,
+	nullptr,
+	&NewStructOps,
+	"TODTimePoint",
+	Z_Construct_UScriptStruct_FTODTimePoint_Statics::PropPointers,
+	UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODTimePoint_Statics::PropPointers),
+	sizeof(FTODTimePoint),
+	alignof(FTODTimePoint),
+	RF_Public|RF_Transient|RF_MarkAsNative,
+	EStructFlags(0x00000001),
+	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODTimePoint_Statics::Struct_MetaDataParams), Z_Construct_UScriptStruct_FTODTimePoint_Statics::Struct_MetaDataParams)
+};
+UScriptStruct* Z_Construct_UScriptStruct_FTODTimePoint()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODTimePoint.InnerSingleton)
+	{
+		UECodeGen_Private::ConstructUScriptStruct(Z_Registration_Info_UScriptStruct_FTODTimePoint.InnerSingleton, Z_Construct_UScriptStruct_FTODTimePoint_Statics::StructParams);
+	}
+	return CastChecked<UScriptStruct>(Z_Registration_Info_UScriptStruct_FTODTimePoint.InnerSingleton);
+}
+// ********** End ScriptStruct FTODTimePoint *******************************************************
 
 // ********** Begin ScriptStruct FTODSunMoonSettings ***********************************************
 struct Z_Construct_UScriptStruct_FTODSunMoonSettings_Statics
@@ -1839,7 +1920,7 @@ UTODPresetData::~UTODPresetData() {}
 // ********** End Class UTODPresetData *************************************************************
 
 // ********** Begin Registration *******************************************************************
-struct Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics
+struct Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics
 {
 	static constexpr FEnumRegisterCompiledInInfo EnumInfo[] = {
 		{ ETODState_StaticEnum, TEXT("ETODState"), &Z_Registration_Info_UEnum_ETODState, CONSTRUCT_RELOAD_VERSION_INFO(FEnumReloadVersionInfo, 2526692313U) },
@@ -1847,6 +1928,7 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_
 		{ ETODComponentCategory_StaticEnum, TEXT("ETODComponentCategory"), &Z_Registration_Info_UEnum_ETODComponentCategory, CONSTRUCT_RELOAD_VERSION_INFO(FEnumReloadVersionInfo, 3871998882U) },
 	};
 	static constexpr FStructRegisterCompiledInInfo ScriptStructInfo[] = {
+		{ FTODTimePoint::StaticStruct, Z_Construct_UScriptStruct_FTODTimePoint_Statics::NewStructOps, TEXT("TODTimePoint"),&Z_Registration_Info_UScriptStruct_FTODTimePoint, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODTimePoint), 3289068517U) },
 		{ FTODSunMoonSettings::StaticStruct, Z_Construct_UScriptStruct_FTODSunMoonSettings_Statics::NewStructOps, TEXT("TODSunMoonSettings"),&Z_Registration_Info_UScriptStruct_FTODSunMoonSettings, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSunMoonSettings), 216167566U) },
 		{ FTODMoonSettings::StaticStruct, Z_Construct_UScriptStruct_FTODMoonSettings_Statics::NewStructOps, TEXT("TODMoonSettings"),&Z_Registration_Info_UScriptStruct_FTODMoonSettings, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODMoonSettings), 2446821375U) },
 		{ FTODSkyLightSettings::StaticStruct, Z_Construct_UScriptStruct_FTODSkyLightSettings_Statics::NewStructOps, TEXT("TODSkyLightSettings"),&Z_Registration_Info_UScriptStruct_FTODSkyLightSettings, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSkyLightSettings), 3156703963U) },
@@ -1864,12 +1946,12 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_
 		{ Z_Construct_UClass_UTODSinglePreset, UTODSinglePreset::StaticClass, TEXT("UTODSinglePreset"), &Z_Registration_Info_UClass_UTODSinglePreset, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODSinglePreset), 4207087516U) },
 		{ Z_Construct_UClass_UTODPresetData, UTODPresetData::StaticClass, TEXT("UTODPresetData"), &Z_Registration_Info_UClass_UTODPresetData, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODPresetData), 1028413884U) },
 	};
-}; // Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_1004395825{
+}; // Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics 
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_2635346789{
 	TEXT("/Script/Fluid_TOD"),
-	Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo),
-	Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo),
-	Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::EnumInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::EnumInfo),
+	Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo),
+	Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo),
+	Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::EnumInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::EnumInfo),
 };
 // ********** End Registration *********************************************************************
 

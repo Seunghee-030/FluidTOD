@@ -16,9 +16,19 @@
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
+// ********** Begin ScriptStruct FTODTimePoint *****************************************************
+struct Z_Construct_UScriptStruct_FTODTimePoint_Statics;
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_49_GENERATED_BODY \
+	friend struct ::Z_Construct_UScriptStruct_FTODTimePoint_Statics; \
+	FLUID_TOD_API static class UScriptStruct* StaticStruct();
+
+
+struct FTODTimePoint;
+// ********** End ScriptStruct FTODTimePoint *******************************************************
+
 // ********** Begin ScriptStruct FTODSunMoonSettings ***********************************************
 struct Z_Construct_UScriptStruct_FTODSunMoonSettings_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_48_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_60_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODSunMoonSettings_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -28,7 +38,7 @@ struct FTODSunMoonSettings;
 
 // ********** Begin ScriptStruct FTODMoonSettings **************************************************
 struct Z_Construct_UScriptStruct_FTODMoonSettings_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_73_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_85_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODMoonSettings_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct(); \
 	typedef FTODSunMoonSettings Super;
@@ -39,7 +49,7 @@ struct FTODMoonSettings;
 
 // ********** Begin ScriptStruct FTODSkyLightSettings **********************************************
 struct Z_Construct_UScriptStruct_FTODSkyLightSettings_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_87_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_99_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODSkyLightSettings_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -49,7 +59,7 @@ struct FTODSkyLightSettings;
 
 // ********** Begin ScriptStruct FTODFogSettings ***************************************************
 struct Z_Construct_UScriptStruct_FTODFogSettings_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_112_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_124_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODFogSettings_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -59,7 +69,7 @@ struct FTODFogSettings;
 
 // ********** Begin ScriptStruct FTODSkyAtmosphereSettings *****************************************
 struct Z_Construct_UScriptStruct_FTODSkyAtmosphereSettings_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_132_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_144_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODSkyAtmosphereSettings_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -69,7 +79,7 @@ struct FTODSkyAtmosphereSettings;
 
 // ********** Begin ScriptStruct FTODMasterData ****************************************************
 struct Z_Construct_UScriptStruct_FTODMasterData_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_166_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_178_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODMasterData_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -79,7 +89,7 @@ struct FTODMasterData;
 
 // ********** Begin ScriptStruct FTODSunCurveData **************************************************
 struct Z_Construct_UScriptStruct_FTODSunCurveData_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_205_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_217_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODSunCurveData_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -89,7 +99,7 @@ struct FTODSunCurveData;
 
 // ********** Begin ScriptStruct FTODMoonCurveData *************************************************
 struct Z_Construct_UScriptStruct_FTODMoonCurveData_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_226_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_238_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODMoonCurveData_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -99,7 +109,7 @@ struct FTODMoonCurveData;
 
 // ********** Begin ScriptStruct FTODSkyLightCurveData *********************************************
 struct Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_253_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_265_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -109,7 +119,7 @@ struct FTODSkyLightCurveData;
 
 // ********** Begin ScriptStruct FTODFogCurveData **************************************************
 struct Z_Construct_UScriptStruct_FTODFogCurveData_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_274_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_286_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODFogCurveData_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -119,7 +129,7 @@ struct FTODFogCurveData;
 
 // ********** Begin ScriptStruct FTODSkyAtmosphereCurveData ****************************************
 struct Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_292_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_304_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -131,7 +141,7 @@ struct FTODSkyAtmosphereCurveData;
 struct Z_Construct_UClass_UTOD_Types_Statics;
 FLUID_TOD_API UClass* Z_Construct_UClass_UTOD_Types_NoRegister();
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_316_INCLASS_NO_PURE_DECLS \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_328_INCLASS_NO_PURE_DECLS \
 private: \
 	static void StaticRegisterNativesUTOD_Types(); \
 	friend struct ::Z_Construct_UClass_UTOD_Types_Statics; \
@@ -142,7 +152,7 @@ public: \
 	DECLARE_SERIALIZER(UTOD_Types)
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_316_ENHANCED_CONSTRUCTORS \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_328_ENHANCED_CONSTRUCTORS \
 	/** Standard constructor, called after all reflected properties have been initialized */ \
 	NO_API UTOD_Types(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get()); \
 	/** Deleted move- and copy-constructors, should never be used */ \
@@ -154,12 +164,12 @@ public: \
 	NO_API virtual ~UTOD_Types();
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_313_PROLOG
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_316_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_325_PROLOG
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_328_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_316_INCLASS_NO_PURE_DECLS \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_316_ENHANCED_CONSTRUCTORS \
+	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_328_INCLASS_NO_PURE_DECLS \
+	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_328_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -172,7 +182,7 @@ class UTOD_Types;
 struct Z_Construct_UClass_UTODSinglePreset_Statics;
 FLUID_TOD_API UClass* Z_Construct_UClass_UTODSinglePreset_NoRegister();
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_322_INCLASS_NO_PURE_DECLS \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_334_INCLASS_NO_PURE_DECLS \
 private: \
 	static void StaticRegisterNativesUTODSinglePreset(); \
 	friend struct ::Z_Construct_UClass_UTODSinglePreset_Statics; \
@@ -183,7 +193,7 @@ public: \
 	DECLARE_SERIALIZER(UTODSinglePreset)
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_322_ENHANCED_CONSTRUCTORS \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_334_ENHANCED_CONSTRUCTORS \
 	/** Standard constructor, called after all reflected properties have been initialized */ \
 	NO_API UTODSinglePreset(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get()); \
 	/** Deleted move- and copy-constructors, should never be used */ \
@@ -195,12 +205,12 @@ public: \
 	NO_API virtual ~UTODSinglePreset();
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_319_PROLOG
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_322_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_331_PROLOG
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_334_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_322_INCLASS_NO_PURE_DECLS \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_322_ENHANCED_CONSTRUCTORS \
+	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_334_INCLASS_NO_PURE_DECLS \
+	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_334_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -213,7 +223,7 @@ class UTODSinglePreset;
 struct Z_Construct_UClass_UTODPresetData_Statics;
 FLUID_TOD_API UClass* Z_Construct_UClass_UTODPresetData_NoRegister();
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_332_INCLASS_NO_PURE_DECLS \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_344_INCLASS_NO_PURE_DECLS \
 private: \
 	static void StaticRegisterNativesUTODPresetData(); \
 	friend struct ::Z_Construct_UClass_UTODPresetData_Statics; \
@@ -224,7 +234,7 @@ public: \
 	DECLARE_SERIALIZER(UTODPresetData)
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_332_ENHANCED_CONSTRUCTORS \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_344_ENHANCED_CONSTRUCTORS \
 	/** Standard constructor, called after all reflected properties have been initialized */ \
 	NO_API UTODPresetData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get()); \
 	/** Deleted move- and copy-constructors, should never be used */ \
@@ -236,12 +246,12 @@ public: \
 	NO_API virtual ~UTODPresetData();
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_329_PROLOG
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_332_GENERATED_BODY \
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_341_PROLOG
+#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_344_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_332_INCLASS_NO_PURE_DECLS \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_332_ENHANCED_CONSTRUCTORS \
+	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_344_INCLASS_NO_PURE_DECLS \
+	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h_344_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -251,7 +261,7 @@ class UTODPresetData;
 // ********** End Class UTODPresetData *************************************************************
 
 #undef CURRENT_FILE_ID
-#define CURRENT_FILE_ID FID_Users_laeum_Desktop_Plugin_Pakege_260618_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h
+#define CURRENT_FILE_ID FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h
 
 // ********** Begin Enum ETODState *****************************************************************
 #define FOREACH_ENUM_ETODSTATE(op) \

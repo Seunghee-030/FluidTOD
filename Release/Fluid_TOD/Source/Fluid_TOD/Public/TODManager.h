@@ -125,18 +125,35 @@ public:
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
 
+    // =========================================================================
+	// Properties: Speed, Time, and Cycle
+    // =========================================================================
+public:
+    float CurrentSystemTime = 0.0f;
+
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
     float GetStartTime() const;
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     void SetStartTime(float NewTime);
 
-    // =========================================================================
-	// Properties: Speed, Time, and Cycle
-    // =========================================================================
-public:
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    float GetCurrentTime() const;
+    
+    UFUNCTION(BlueprintCallable, Category = "TOD|Time")
+    void SetCurrentTime(float NewTime);
+
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     float CalculateCycleSpeed(float InTime);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State Setting", meta = (TitleProperty = "State"))
+    TArray<FTODTimePoint> TOD_State;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    ETODState GetCurrentTODState(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    bool IsTimeInState(float InTime, ETODState TargetState) const;
 
 protected:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Speed", meta = (AllowPrivateAccess = "true", Tooltip = "Reference to the player character to track movement state."))
@@ -165,8 +182,6 @@ private:
     // Properties: State
     // =========================================================================
 public:
-    float CurrentSystemTime = 0.0f;
-
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
     ETODState CurrentState;
 
