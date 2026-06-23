@@ -138,6 +138,22 @@ void ATODManager::SetStartTime(float NewTime)
 #endif
 }
 
+float ATODManager::GetCurrentTime() const
+{
+	return CurrentSystemTime;
+}
+
+void ATODManager::SetCurrentTime(float NewTime)
+{
+	CurrentSystemTime = NewTime;
+
+	UpdateTOD(StartTime);
+
+#if WITH_EDITOR
+	ForceViewportRedraw();
+#endif
+}
+
 float ATODManager::CalculateCycleSpeed(float InTime)
 {
 #if WITH_EDITOR

@@ -125,16 +125,24 @@ public:
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
 
+    // =========================================================================
+	// Properties: Speed, Time, and Cycle
+    // =========================================================================
+public:
+    float CurrentSystemTime = 0.0f;
+
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
     float GetStartTime() const;
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     void SetStartTime(float NewTime);
 
-    // =========================================================================
-	// Properties: Speed, Time, and Cycle
-    // =========================================================================
-public:
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    float GetCurrentTime() const;
+    
+    UFUNCTION(BlueprintCallable, Category = "TOD|Time")
+    void SetCurrentTime(float NewTime);
+
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     float CalculateCycleSpeed(float InTime);
 
@@ -165,8 +173,6 @@ private:
     // Properties: State
     // =========================================================================
 public:
-    float CurrentSystemTime = 0.0f;
-
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography")
     ETODState CurrentState;
 
