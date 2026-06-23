@@ -212,7 +212,29 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 	return CurrentSpeed * BaseMultiplier * CurveValue;
 }
 
-// 디버그 출력
+ETODState ATODManager::GetCurrentTODState(float InTime) const
+{
+	if (TOD_State.IsEmpty())
+	{
+		return ETODState::Day;
+	}
+
+	for (int32 i = TOD_State.Num() - 1; i >= 0; --i)
+	{
+		if (InTime >= TOD_State[i].StartTime)
+		{
+			return TOD_State[i].State;
+		}
+	}
+
+	return TOD_State.Last().State;
+}
+
+bool ATODManager::IsTimeInState(float InTime, ETODState TargetState) const
+{
+	return GetCurrentTODState(InTime) == TargetState;
+}
+
 void ATODManager::PrintTODDebugInfo()
 {
 	if (!bEnableDebugPrint || !GEngine) return;
@@ -239,7 +261,6 @@ void ATODManager::PrintTODDebugInfo()
 		);
 	}
 
-
 	if (IsValid(SkyMaterialInstance))
 	{
 		SkyMaterialInstance->GetScalarParameterValue(
@@ -263,9 +284,11 @@ void ATODManager::PrintTODDebugInfo()
 		CurrentSaturation = RuntimePPVComponent->Settings.ColorSaturation;
 	}
 
+	FString StateStr = StaticEnum<ETODState>()->GetNameStringByValue(static_cast<int64>(GetCurrentTODState(CurrentSystemTime)));
+
 	FString DebugMsg = FString::Printf(TEXT(
 		"=========== TOD System Debug ===========\n"
-		"	Time   %s\n"
+		"	Time   %s [%s]\n"
 		"--------------------------------------------------\n"
 		"[Sun] Intensity %.2f | Angle %.1f\n"
 		"\n"
@@ -285,8 +308,9 @@ void ATODManager::PrintTODDebugInfo()
 		"--------------------------------------------------"
 	),
 		*GetFormattedTimeAsString(CurrentSystemTime),
+		*StateStr,
 		Sun.Intensity, Sun.Source_Angle,
-		Moon.Intensity, Moon.Source_Angle, 
+		Moon.Intensity, Moon.Source_Angle,
 		ActualMoonScale, ActualMoonEmissive,
 		Sky.Sky_Light_Intensity, ActualSkyEmissive,
 		Sky.Sky_Indirect_Lighting_Intensity,
@@ -442,7 +466,6 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	UpdateTOD(StartTime);
 	ForceViewportRedraw();
 }
-
 void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
@@ -474,6 +497,72 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 			BakeTODCurves();
 			UpdateTOD(StartTime);
 			ForceViewportRedraw();
+		}
+		else if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_State))
+		{
+			const int32 MaxStates = 6;
+
+			if (TOD_State.Num() > MaxStates)
+			{
+				TOD_State.SetNum(MaxStates);
+			}
+
+			const int32 ChangedIndex = PropertyChangedEvent.GetArrayIndex(GET_MEMBER_NAME_CHECKED(ATODManager, TOD_State).ToString());
+			TSet<ETODState> UsedStates;
+
+			for (int32 i = 0; i < TOD_State.Num(); ++i)
+			{
+				if (i == ChangedIndex)
+				{
+					continue;
+				}
+
+				if (UsedStates.Contains(TOD_State[i].State))
+				{
+					ETODState AlternativeState = TOD_State[i].State;
+					for (uint8 StateIdx = 0; StateIdx < MaxStates; ++StateIdx)
+					{
+						ETODState TestState = static_cast<ETODState>(StateIdx);
+						if (!UsedStates.Contains(TestState))
+						{
+							AlternativeState = TestState;
+							break;
+						}
+					}
+					TOD_State[i].State = AlternativeState;
+				}
+				UsedStates.Add(TOD_State[i].State);
+			}
+
+			if (TOD_State.IsValidIndex(ChangedIndex))
+			{
+				if (UsedStates.Contains(TOD_State[ChangedIndex].State))
+				{
+					ETODState AlternativeState = TOD_State[ChangedIndex].State;
+					for (uint8 StateIdx = 0; StateIdx < MaxStates; ++StateIdx)
+					{
+						ETODState TestState = static_cast<ETODState>(StateIdx);
+						if (!UsedStates.Contains(TestState))
+						{
+							AlternativeState = TestState;
+							break;
+						}
+					}
+					TOD_State[ChangedIndex].State = AlternativeState;
+				}
+			}
+
+			TOD_State.Sort([](const FTODTimePoint& A, const FTODTimePoint& B) {
+				return A.StartTime < B.StartTime;
+				});
+
+			for (int32 i = 1; i < TOD_State.Num(); ++i)
+			{
+				if (TOD_State[i].StartTime <= TOD_State[i - 1].StartTime)
+				{
+					TOD_State[i].StartTime = FMath::Min(TOD_State[i - 1].StartTime + 0.1f, 24.0f);
+				}
+			}
 		}
 	}
 

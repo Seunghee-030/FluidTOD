@@ -42,6 +42,18 @@ enum class ETODComponentCategory : uint8
 	PostProcessVolume     UMETA(DisplayName = "PostProcessVolume")
 };
 
+// 사용자지정 시간 범위 구조체
+USTRUCT(BlueprintType)
+struct FTODTimePoint
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
+	ETODState State = ETODState::Day;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (ClampMin = "0.0", ClampMax = "24.0"))
+	float StartTime = 0.0f;
+};
 USTRUCT(BlueprintType)
 struct FTODSunMoonSettings
 {

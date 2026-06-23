@@ -146,6 +146,15 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     float CalculateCycleSpeed(float InTime);
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State Setting", meta = (TitleProperty = "State"))
+    TArray<FTODTimePoint> TOD_State;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    ETODState GetCurrentTODState(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Time")
+    bool IsTimeInState(float InTime, ETODState TargetState) const;
+
 protected:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Speed", meta = (AllowPrivateAccess = "true", Tooltip = "Reference to the player character to track movement state."))
     TObjectPtr<class ACharacter> PlayerRef;
