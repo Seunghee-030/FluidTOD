@@ -168,7 +168,11 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	while (Elapsed < 0.0f) Elapsed += TODHours;
 
 	const float RawAlpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
-	const float Alpha = RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha); // SmoothStep easing for softer PPV transitions
+
+	// PPV exposure is authored as exact time-profile values, so keep the blend
+	// linear. SmoothStep can look like exposure is holding and then catching up
+	// across short ranges such as 4.0h -> 4.5h.
+	const float Alpha = RawAlpha;
 
 	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
 	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
@@ -196,6 +200,15 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #define LERP_VEC4_PPV(Prop) LERP_PPV(Prop)
 
+	// Exposure values should always be driven by the runtime TOD PPV.
+	// This restores the stable behavior of the older implementation without
+	// modifying the source PostProcessVolumes every frame.
+#define LERP_PPV_FORCE_OVERRIDE(Prop) \
+	{ \
+		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = true; \
+		Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+	}
+
 #define LERP_COLOR_PPV(Prop) \
 	{ \
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
@@ -207,12 +220,12 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		} \
 	}
 
-	// Exposure
-	LERP_PPV(AutoExposureMinBrightness);
-	LERP_PPV(AutoExposureMaxBrightness);
-	LERP_PPV(AutoExposureBias);
-	LERP_PPV(AutoExposureSpeedUp);
-	LERP_PPV(AutoExposureSpeedDown);
+	// Exposure / EV100
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureMinBrightness);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureMaxBrightness);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureBias);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedUp);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedDown);
 
 	// Bloom
 	LERP_PPV(BloomIntensity);
@@ -271,6 +284,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #undef LERP_PPV
 #undef LERP_VEC4_PPV
+#undef LERP_PPV_FORCE_OVERRIDE
 #undef LERP_COLOR_PPV
 }
 

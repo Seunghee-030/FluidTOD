@@ -160,7 +160,7 @@ void ATODManager::SetCurrentTime(float NewTime)
 {
 	CurrentSystemTime = NewTime;
 
-	UpdateTOD(StartTime);
+	UpdateTOD(CurrentSystemTime);
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
@@ -514,8 +514,6 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 
 			if (bArrayChanged)
 			{
-				// Keep editor array order stable while authoring.
-				// Sorting is intentionally deferred to BeginPlay or StartTime changes.
 			}
 			else if (
 				PropertyChangedEvent.Property &&

@@ -168,7 +168,8 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	while (Elapsed < 0.0f) Elapsed += TODHours;
 
 	const float RawAlpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
-	const float Alpha = RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha); // SmoothStep easing for softer PPV transitions
+
+	const float Alpha = RawAlpha;
 
 	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
 	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
@@ -180,9 +181,6 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	Owner->RuntimePPVComponent->Priority = 1.0f;
 	Owner->RuntimePPVComponent->BlendWeight = 1.0f;
 
-	// Blend the listed PPV values continuously, but only enable the runtime override
-	// when at least one source PPV actually overrides that property.
-	// This keeps sparse PPV tracks smooth without reintroducing a hard 24h -> 0h seam.
 #define LERP_PPV(Prop) \
 	{ \
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
@@ -196,6 +194,12 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #define LERP_VEC4_PPV(Prop) LERP_PPV(Prop)
 
+#define LERP_PPV_FORCE_OVERRIDE(Prop) \
+	{ \
+		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = true; \
+		Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+	}
+
 #define LERP_COLOR_PPV(Prop) \
 	{ \
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
@@ -207,12 +211,12 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		} \
 	}
 
-	// Exposure
-	LERP_PPV(AutoExposureMinBrightness);
-	LERP_PPV(AutoExposureMaxBrightness);
-	LERP_PPV(AutoExposureBias);
-	LERP_PPV(AutoExposureSpeedUp);
-	LERP_PPV(AutoExposureSpeedDown);
+	// Exposure / EV100
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureMinBrightness);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureMaxBrightness);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureBias);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedUp);
+	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedDown);
 
 	// Bloom
 	LERP_PPV(BloomIntensity);
@@ -271,6 +275,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #undef LERP_PPV
 #undef LERP_VEC4_PPV
+#undef LERP_PPV_FORCE_OVERRIDE
 #undef LERP_COLOR_PPV
 }
 

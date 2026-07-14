@@ -160,7 +160,10 @@ void ATODManager::SetCurrentTime(float NewTime)
 {
 	CurrentSystemTime = NewTime;
 
-	UpdateTOD(StartTime);
+	// Use the time that was actually requested. Calling UpdateTOD(StartTime) here
+	// makes timeline scrubbing or external time driving appear to jump back to the
+	// start-time visual state.
+	UpdateTOD(CurrentSystemTime);
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
