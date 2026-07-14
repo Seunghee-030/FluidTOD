@@ -16,6 +16,11 @@
 #include "TODCurveEvaluator.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
+#if WITH_EDITOR
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#endif
+
 
 ATODManager::ATODManager()
 {
@@ -138,6 +143,7 @@ void ATODManager::SetStartTime(float NewTime)
 	StartTime = NewTime;
 	CurrentSystemTime = NewTime;
 
+	SortTODDataArray();
 	UpdateTOD(StartTime);
 
 #if WITH_EDITOR
@@ -211,7 +217,7 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 		if (!bWarnedMissingCycleSpeedCurve)
 		{
 			bWarnedMissingCycleSpeedCurve = true;
-			UE_LOG(LogTemp, Warning, TEXT("[TODManager] CycleSpeedCurve에 ExternalCurve(UCurveFloat 에셋)가 할당되어 있지 않아 패키징 빌드에서는 커브 형태가 적용되지 않고 기본값(1.0)으로 동작합니다. 빌드에 반영하려면 외부 UCurveFloat 에셋을 만들어 CycleSpeedCurve에 연결해 주세요."));
+			UE_LOG(LogTemp, Warning, TEXT("[TODManager] CycleSpeedCurve has no ExternalCurve (UCurveFloat) assigned. Defaulting to 1.0."));
 		}
 	}
 #endif
@@ -447,7 +453,6 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
 		LoadSelectedPreset();
-		SortTODDataArray();
 		BakeTODCurves();
 	}
 
@@ -473,6 +478,17 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	UpdateTOD(StartTime);
 	ForceViewportRedraw();
 }
+void ATODManager::PreEditChange(FProperty* PropertyAboutToChange)
+{
+	Super::PreEditChange(PropertyAboutToChange);
+
+	if (PropertyAboutToChange &&
+		PropertyAboutToChange->GetFName() == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
+	{
+		PreEditTOD_DataArray = TOD_DataArray;
+	}
+}
+
 void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
@@ -498,7 +514,60 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 
 			if (bArrayChanged)
 			{
-				SortTODDataArray();
+				// Keep editor array order stable while authoring.
+				// Sorting is intentionally deferred to BeginPlay or StartTime changes.
+			}
+			else if (
+				PropertyChangedEvent.Property &&
+				PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(FTODMasterData, Time))
+			{
+				const int32 ChangedIndex = PropertyChangedEvent.GetArrayIndex(
+					GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray).ToString());
+
+				if (TOD_DataArray.IsValidIndex(ChangedIndex))
+				{
+					const float BoundaryTolerance = 0.001f;
+					const float NewTime = TOD_DataArray[ChangedIndex].Time;
+
+					const bool bIsZero = FMath::IsNearlyEqual(NewTime, 0.0f, BoundaryTolerance);
+					const bool bIsTwentyFour = FMath::IsNearlyEqual(NewTime, 24.0f, BoundaryTolerance);
+
+					if (bIsZero || bIsTwentyFour)
+					{
+						const float OppositeBoundary = bIsZero ? 24.0f : 0.0f;
+
+						bool bConflict = false;
+						for (int32 i = 0; i < TOD_DataArray.Num(); ++i)
+						{
+							if (i == ChangedIndex) continue;
+
+							if (FMath::IsNearlyEqual(TOD_DataArray[i].Time, OppositeBoundary, BoundaryTolerance))
+							{
+								bConflict = true;
+								break;
+							}
+						}
+
+						if (bConflict)
+						{
+							if (PreEditTOD_DataArray.IsValidIndex(ChangedIndex))
+							{
+								TOD_DataArray[ChangedIndex].Time = PreEditTOD_DataArray[ChangedIndex].Time;
+							}
+							else
+							{
+								TOD_DataArray[ChangedIndex].Time = bIsZero ? 0.01f : 23.99f;
+							}
+
+							FNotificationInfo Info(FText::FromString(TEXT(
+								"0 and 24 represent the same time and cannot coexist. "
+								"Input reverted because the opposite boundary already exists.")));
+							Info.ExpireDuration = 4.0f;
+							FSlateNotificationManager::Get().AddNotification(Info);
+						}
+					}
+				}
+
 			}
 
 			BakeTODCurves();
@@ -639,11 +708,11 @@ void ATODManager::OnExternalPropertyChanged(
 
 	bPendingPPVUpdate = true;
 	World->GetTimerManager().SetTimerForNextTick([this]()
-	{
-		bPendingPPVUpdate = false;
-		UpdateTOD(StartTime);
-		ForceViewportRedraw();
-	});
+		{
+			bPendingPPVUpdate = false;
+			UpdateTOD(StartTime);
+			ForceViewportRedraw();
+		});
 }
 
 void ATODManager::OnConstruction(const FTransform& Transform)

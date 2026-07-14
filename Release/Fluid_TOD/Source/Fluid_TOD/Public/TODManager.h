@@ -51,7 +51,7 @@ public:
     void OnUpdateCustomMaterials(float CurrentTime);
 
     // =========================================================================
-	// Sequence Override
+    // Sequence Override
     // =========================================================================
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Sequencer")
@@ -126,7 +126,7 @@ public:
     TArray<FTODMasterData> TOD_DataArray;
 
     // =========================================================================
-	// Properties: Speed, Time, and Cycle
+    // Properties: Speed, Time, and Cycle
     // =========================================================================
 public:
     float CurrentSystemTime = 0.0f;
@@ -139,7 +139,7 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
     float GetCurrentTime() const;
-    
+
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     void SetCurrentTime(float NewTime);
 
@@ -339,6 +339,7 @@ protected:
     virtual void PostInitProperties() override;
     virtual void BeginDestroy() override;
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+    virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
     virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
     virtual void OnConstruction(const FTransform& Transform) override;
     virtual void PostEditMove(bool bFinished) override;
@@ -348,5 +349,8 @@ private:
     FDelegateHandle PropertyChangeDelegateHandle;
 
     bool bPendingPPVUpdate = false;
+
+    // TOD_DataArray의 Time 필드가 바뀌기 직전 상태를 캐시
+    TArray<FTODMasterData> PreEditTOD_DataArray;
 #endif
 };

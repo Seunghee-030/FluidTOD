@@ -78,8 +78,6 @@ void FTODEditor::SaveCurrentPreset(ATODManager* Owner)
 #if WITH_EDITOR
 	if (!Owner || !Owner->LoadPreset) return;
 
-	Owner->SortTODDataArray();
-
 	Owner->LoadPreset->TOD_DataArray = Owner->TOD_DataArray;
 
 	for (FTODMasterData& Data : Owner->LoadPreset->TOD_DataArray)
@@ -131,7 +129,6 @@ void FTODEditor::OpenPresetDialog(ATODManager* Owner)
 
 			LoadSelectedPreset(Owner);
 
-			Owner->SortTODDataArray();
 			Owner->BakeTODCurves();
 			Owner->UpdateTOD(Owner->StartTime);
 		}

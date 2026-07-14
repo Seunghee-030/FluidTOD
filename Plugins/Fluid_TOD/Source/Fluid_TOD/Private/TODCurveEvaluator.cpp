@@ -2,43 +2,142 @@
 #include "TODManager.h"
 #include "MyBlueprintFunctionLibrary.h"
 
+#if WITH_EDITOR
+#include "Editor.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#endif
+
+namespace
+{
+	constexpr float TODHours = 24.0f;
+	constexpr float TODBoundaryTolerance = 0.001f;
+
+	float NormalizeTODTimeForBake(float Time)
+	{
+		float SafeTime = FMath::Fmod(Time, TODHours);
+		if (SafeTime < 0.0f)
+		{
+			SafeTime += TODHours;
+		}
+
+		if (FMath::IsNearlyEqual(SafeTime, TODHours, TODBoundaryTolerance) ||
+			FMath::IsNearlyEqual(SafeTime, 0.0f, TODBoundaryTolerance))
+		{
+			return 0.0f;
+		}
+
+		return SafeTime;
+	}
+
+	bool IsTwentyFourBoundary(float Time)
+	{
+		return FMath::IsNearlyEqual(Time, TODHours, TODBoundaryTolerance);
+	}
+
+	TArray<FTODMasterData> BuildCanonicalTODData(
+		const TArray<FTODMasterData>& SourceData,
+		bool bRequireValidPPV)
+	{
+		struct FCanonicalEntry
+		{
+			FTODMasterData Data;
+			bool bCameFromTwentyFour = false;
+		};
+
+		TArray<FCanonicalEntry> Entries;
+
+		for (const FTODMasterData& Source : SourceData)
+		{
+			if (bRequireValidPPV && !IsValid(Source.PPV))
+			{
+				continue;
+			}
+
+			FTODMasterData Copy = Source;
+			const bool bCameFromTwentyFour = IsTwentyFourBoundary(Copy.Time);
+			Copy.Time = NormalizeTODTimeForBake(Copy.Time);
+
+			const int32 ExistingIndex = Entries.IndexOfByPredicate(
+				[&Copy](const FCanonicalEntry& Entry)
+				{
+					return FMath::IsNearlyEqual(Entry.Data.Time, Copy.Time, TODBoundaryTolerance);
+				});
+
+			if (ExistingIndex == INDEX_NONE)
+			{
+				FCanonicalEntry NewEntry;
+				NewEntry.Data = Copy;
+				NewEntry.bCameFromTwentyFour = bCameFromTwentyFour;
+				Entries.Add(NewEntry);
+			}
+			else if (Entries[ExistingIndex].bCameFromTwentyFour && !bCameFromTwentyFour)
+			{
+				// 0h and 24h are the same instant. If both exist, 0h is the editable source of truth.
+				Entries[ExistingIndex].Data = Copy;
+				Entries[ExistingIndex].bCameFromTwentyFour = false;
+			}
+		}
+
+		TArray<FTODMasterData> Result;
+		for (const FCanonicalEntry& Entry : Entries)
+		{
+			Result.Add(Entry.Data);
+		}
+
+		Result.Sort([](const FTODMasterData& A, const FTODMasterData& B)
+			{
+				return A.Time < B.Time;
+			});
+
+		return Result;
+	}
+
+	void AddTwentyFourBoundaryFromZero(TArray<FTODMasterData>& DataArray)
+	{
+		const int32 ZeroIndex = DataArray.IndexOfByPredicate(
+			[](const FTODMasterData& Data)
+			{
+				return FMath::IsNearlyEqual(Data.Time, 0.0f, TODBoundaryTolerance);
+			});
+
+		if (ZeroIndex == INDEX_NONE)
+		{
+			return;
+		}
+
+		FTODMasterData EndBoundary = DataArray[ZeroIndex];
+		EndBoundary.Time = TODHours;
+		DataArray.Add(EndBoundary);
+
+		DataArray.Sort([](const FTODMasterData& A, const FTODMasterData& B)
+			{
+				return A.Time < B.Time;
+			});
+	}
+}
+
 void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
-	TArray<FTODMasterData> ValidPPVs;
-	for (const FTODMasterData& Data : Owner->TOD_DataArray)
-	{
-		if (IsValid(Data.PPV)) ValidPPVs.Add(Data);
-	}
+	TArray<FTODMasterData> ValidPPVs = BuildCanonicalTODData(Owner->TOD_DataArray, true);
+	AddTwentyFourBoundaryFromZero(ValidPPVs);
 
 	const int32 Num = ValidPPVs.Num();
 	if (Num == 0) return;
 
-	ValidPPVs.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
-		return A.Time < B.Time;
-		});
-
 	for (const FTODMasterData& Data : ValidPPVs)
 	{
+		if (!IsValid(Data.PPV)) continue;
+
 		Data.PPV->bEnabled = true;
 		Data.PPV->bUnbound = true;
 		Data.PPV->Priority = 1.0f;
 		Data.PPV->BlendWeight = 0.0f;
-
-		FPostProcessSettings& Settings = Data.PPV->Settings;
-
-		Settings.bOverride_AutoExposureMinBrightness = true;
-		Settings.bOverride_AutoExposureMaxBrightness = true;
-		Settings.bOverride_AutoExposureBias = true;
-		Settings.bOverride_AutoExposureSpeedUp = true;
-		Settings.bOverride_AutoExposureSpeedDown = true;
-
 	}
 
-	float SafeTime = CurrentTime;
-	while (SafeTime >= 24.0f) SafeTime -= 24.0f;
-	while (SafeTime < 0.0f) SafeTime += 24.0f;
+	const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
 
 	int32 PrevIndex = Num - 1;
 	int32 NextIndex = 0;
@@ -52,6 +151,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 			break;
 		}
 	}
+
 	if (SafeTime >= ValidPPVs[Num - 1].Time)
 	{
 		PrevIndex = Num - 1;
@@ -62,39 +162,52 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	float NextTime = ValidPPVs[NextIndex].Time;
 
 	float Range = NextTime - PrevTime;
-	while (Range <= 0.0f) Range += 24.0f;
+	while (Range <= 0.0f) Range += TODHours;
 
 	float Elapsed = SafeTime - PrevTime;
-	while (Elapsed < 0.0f) Elapsed += 24.0f;
+	while (Elapsed < 0.0f) Elapsed += TODHours;
 
-	float Alpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
+	const float RawAlpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
+	const float Alpha = RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha); // SmoothStep easing for softer PPV transitions
 
 	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
 	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
 
+	if (!IsValid(PrevPPV) || !IsValid(NextPPV)) return;
+
 	Owner->RuntimePPVComponent->bEnabled = true;
 	Owner->RuntimePPVComponent->bUnbound = true;
-	Owner->RuntimePPVComponent->Priority = 1.0f;	// 고정된 PPV Priority
+	Owner->RuntimePPVComponent->Priority = 1.0f;
 	Owner->RuntimePPVComponent->BlendWeight = 1.0f;
 
-	// ---보간용 매크로
-
-	// float
+	// Blend the listed PPV values continuously, but only enable the runtime override
+	// when at least one source PPV actually overrides that property.
+	// This keeps sparse PPV tracks smooth without reintroducing a hard 24h -> 0h seam.
 #define LERP_PPV(Prop) \
-		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
-		Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
+	{ \
+		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
+		const bool bNextOverride = NextPPV->Settings.bOverride_##Prop; \
+		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
+		if (bPrevOverride || bNextOverride) \
+		{ \
+			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+		} \
+	}
 
-	// FVector4
-#define LERP_VEC4_PPV(Prop) \
-		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
-		Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
+#define LERP_VEC4_PPV(Prop) LERP_PPV(Prop)
 
-	// FLinearColor
 #define LERP_COLOR_PPV(Prop) \
-		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = PrevPPV->Settings.bOverride_##Prop || NextPPV->Settings.bOverride_##Prop; \
-		Owner->RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha);
+	{ \
+		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
+		const bool bNextOverride = NextPPV->Settings.bOverride_##Prop; \
+		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
+		if (bPrevOverride || bNextOverride) \
+		{ \
+			Owner->RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+		} \
+	}
 
-// Exposure
+	// Exposure
 	LERP_PPV(AutoExposureMinBrightness);
 	LERP_PPV(AutoExposureMaxBrightness);
 	LERP_PPV(AutoExposureBias);
@@ -167,11 +280,11 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 
 	// 구조체 내부 커브 포인터 매핑
 	TArray<FRuntimeFloatCurve*> FloatCurves = {
-		&Owner->SunCurves.IntensityCurve, &Owner->SunCurves.SourceAngleCurve, &Owner->SunCurves.SourceSoftAngleCurve, & Owner->SunCurves.IndirectIntensityCurve,
-		& Owner->MoonCurves.IntensityCurve, & Owner->MoonCurves.SourceAngleCurve, & Owner->MoonCurves.SourceSoftAngleCurve, & Owner->MoonCurves.SourceScaleCurve, &Owner->MoonCurves.SourceEmissiveIntensityCurve,
-		& Owner->SkyLightCurves.IntensityCurve, & Owner->SkyLightCurves.IndirectIntensityCurve, & Owner->SkyLightCurves.VolumetricScatteringIntensityCurve, &Owner->SkyLightCurves.TextureEmissiveIntensityCurve,
-		& Owner->FogCurves.DensityCurve, & Owner->FogCurves.HeightFalloffCurve,
-		& Owner->SkyAtmosphereCurves.MieScatteringScaleCurve, & Owner->SkyAtmosphereCurves.RayleighScatteringScaleCurve, & Owner->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
+		&Owner->SunCurves.IntensityCurve, &Owner->SunCurves.SourceAngleCurve, &Owner->SunCurves.SourceSoftAngleCurve, &Owner->SunCurves.IndirectIntensityCurve,
+		&Owner->MoonCurves.IntensityCurve, &Owner->MoonCurves.SourceAngleCurve, &Owner->MoonCurves.SourceSoftAngleCurve, &Owner->MoonCurves.SourceScaleCurve, &Owner->MoonCurves.SourceEmissiveIntensityCurve,
+		&Owner->SkyLightCurves.IntensityCurve, &Owner->SkyLightCurves.IndirectIntensityCurve, &Owner->SkyLightCurves.VolumetricScatteringIntensityCurve, &Owner->SkyLightCurves.TextureEmissiveIntensityCurve,
+		&Owner->FogCurves.DensityCurve, &Owner->FogCurves.HeightFalloffCurve,
+		&Owner->SkyAtmosphereCurves.MieScatteringScaleCurve, &Owner->SkyAtmosphereCurves.RayleighScatteringScaleCurve, &Owner->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
 	};
 
 	TArray<FRuntimeCurveLinearColor*> ColorCurves = {
@@ -184,10 +297,12 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 
 	if (Owner->TOD_DataArray.Num() == 0) return;
 
-	TArray<FTODMasterData> SortedCopy = Owner->TOD_DataArray;
-	SortedCopy.Sort([](const FTODMasterData& A, const FTODMasterData& B) {
-		return A.Time < B.Time;
-		});
+	TArray<FTODMasterData> SortedCopy = BuildCanonicalTODData(Owner->TOD_DataArray, false);
+	if (SortedCopy.Num() == 0) return;
+
+	// If the artist authored 0h or 24h, bake both boundaries from the same full data.
+	// This copies every hidden struct field, not only the visible/intensity fields.
+	AddTwentyFourBoundaryFromZero(SortedCopy);
 
 	for (const FTODMasterData& Data : SortedCopy)
 	{
@@ -209,10 +324,10 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceSoftAngleCurve, T, Data.Moon_Settings.Source_Soft_Angle, Owner->MoonCurves.SourceSoftAngleInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.IndirectIntensityCurve, T, Data.Moon_Settings.Indirect_Light_Intensity, Owner->MoonCurves.IndirectIntensityInterpMode);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(Owner->MoonCurves.LightColorCurve, T, Data.Moon_Settings.Light_Color, Owner->MoonCurves.LightColorInterpMode);
-		
+
 		float TargetMoonScale = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Source_Scale;
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceScaleCurve, T, TargetMoonScale, Owner->MoonCurves.SourceScaleInterpMode);
-		
+
 		float TargetMoonEmissive = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Source_Emissive_Intensity;
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->MoonCurves.SourceEmissiveIntensityCurve, T, TargetMoonEmissive, Owner->MoonCurves.SourceEmissiveIntensityInterpMode);
 
@@ -253,11 +368,7 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 {
 	if (!Owner) return;
 
-	float SafeTime = FMath::Fmod(InTime, 24.0f);
-	if (SafeTime < 0.0f)
-	{
-		SafeTime += 24.0f;
-	}
+	const float SafeTime = NormalizeTODTimeForBake(InTime);
 
 	// ===== Sun =====
 	if (const FRichCurve* Curve = Owner->SunCurves.IntensityCurve.GetRichCurveConst())
