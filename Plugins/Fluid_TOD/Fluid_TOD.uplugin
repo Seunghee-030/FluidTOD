@@ -3,16 +3,16 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "Fluid TOD System",
-	"Description": "Time of Day system featuring smooth Post Process Volume blending and intuitive artist controls.",
+	"Description": "A dynamic Time of Day system featuring seamless Post Process Volume blending and intuitive controls for artists.",
 	"Category": "TOD",
 	"CreatedBy": "Seunghee Lee",
-	"CreatedByURL": "",
+	"CreatedByURL": "https://linktr.ee/SeungheeLee",
 	"DocsURL": "",
 	"MarketplaceURL": "",
-	"SupportURL": "",
+	"SupportURL": "https://linktr.ee/SeungheeLee",
 	"EngineVersion": "5.7.0",
 	"CanContainContent": true,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"Installed": true,
 	"Modules": [
 		{
@@ -20,5 +20,7 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
-	]
+	],
+	"NoCode": false,
+	"IsExperimentalVersion": false
 }

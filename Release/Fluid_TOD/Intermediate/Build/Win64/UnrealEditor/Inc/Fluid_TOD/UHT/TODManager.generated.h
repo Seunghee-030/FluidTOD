@@ -19,7 +19,7 @@ enum class ETODState : uint8;
 struct FLinearColor;
 
 // ********** Begin Delegate FOnTODDataChangedSignature ********************************************
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_17_DELEGATE \
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_17_DELEGATE \
 FLUID_TOD_API void FOnTODDataChangedSignature_DelegateWrapper(const FMulticastScriptDelegate& OnTODDataChangedSignature);
 
 
@@ -27,7 +27,7 @@ FLUID_TOD_API void FOnTODDataChangedSignature_DelegateWrapper(const FMulticastSc
 
 // ********** Begin ScriptStruct FTODCinematicSetting **********************************************
 struct Z_Construct_UScriptStruct_FTODCinematicSetting_Statics;
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_23_GENERATED_BODY \
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_23_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FTODCinematicSetting_Statics; \
 	FLUID_TOD_API static class UScriptStruct* StaticStruct();
 
@@ -36,7 +36,7 @@ struct FTODCinematicSetting;
 // ********** End ScriptStruct FTODCinematicSetting ************************************************
 
 // ********** Begin Class ATODManager **************************************************************
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_RPC_WRAPPERS_NO_PURE_DECLS \
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_RPC_WRAPPERS_NO_PURE_DECLS \
 	DECLARE_FUNCTION(execPrintTODDebugInfo); \
 	DECLARE_FUNCTION(execGetFormattedTimeAsString); \
 	DECLARE_FUNCTION(execForceViewportRedraw); \
@@ -60,11 +60,11 @@ struct FTODCinematicSetting;
 	DECLARE_FUNCTION(execEvaluateCinematicState);
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_CALLBACK_WRAPPERS
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_CALLBACK_WRAPPERS
 struct Z_Construct_UClass_ATODManager_Statics;
 FLUID_TOD_API UClass* Z_Construct_UClass_ATODManager_NoRegister();
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_INCLASS_NO_PURE_DECLS \
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_INCLASS_NO_PURE_DECLS \
 private: \
 	static void StaticRegisterNativesATODManager(); \
 	friend struct ::Z_Construct_UClass_ATODManager_Statics; \
@@ -75,7 +75,7 @@ public: \
 	DECLARE_SERIALIZER(ATODManager)
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_ENHANCED_CONSTRUCTORS \
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_ENHANCED_CONSTRUCTORS \
 	/** Deleted move- and copy-constructors, should never be used */ \
 	ATODManager(ATODManager&&) = delete; \
 	ATODManager(const ATODManager&) = delete; \
@@ -85,14 +85,14 @@ public: \
 	NO_API virtual ~ATODManager();
 
 
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_35_PROLOG
-#define FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_GENERATED_BODY \
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_35_PROLOG
+#define FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_RPC_WRAPPERS_NO_PURE_DECLS \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_CALLBACK_WRAPPERS \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_INCLASS_NO_PURE_DECLS \
-	FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_ENHANCED_CONSTRUCTORS \
+	FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_RPC_WRAPPERS_NO_PURE_DECLS \
+	FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_CALLBACK_WRAPPERS \
+	FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_INCLASS_NO_PURE_DECLS \
+	FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h_38_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -102,6 +102,6 @@ class ATODManager;
 // ********** End Class ATODManager ****************************************************************
 
 #undef CURRENT_FILE_ID
-#define CURRENT_FILE_ID FID_Users_laeum_Desktop_Plugin_Pakege_260623_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h
+#define CURRENT_FILE_ID FID_Users_laeum_Documents_GitHub_FluidTOD_Release_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
