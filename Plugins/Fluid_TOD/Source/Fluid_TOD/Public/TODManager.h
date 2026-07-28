@@ -33,7 +33,7 @@ struct FTODCinematicSetting
     bool bOverrideVisuals = true;
 };
 
-UCLASS(BlueprintType)
+UCLASS(BlueprintType, meta = (HideFunctions = "SetStartTime, SetTOD_State"))
 class FLUID_TOD_API ATODManager : public AActor
 {
     GENERATED_BODY()
@@ -120,8 +120,8 @@ public:
     FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
-        meta = (UIMin = "0.0", UIMax = "24.0", ClampMin = "0.0", ClampMax = "24.0",
-            DisplayPriority = "2", ToolTip = "Initial time of day when the game starts."))
+        meta = (UIMin = "0.0", UIMax = "24.0",
+            DisplayPriority = "2", NonInterp, ToolTip = "Initial time of day when the game starts. 0-24"))
     float StartTime = 12.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
@@ -150,7 +150,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     float CalculateCycleSpeed(float InTime);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State Setting", meta = (TitleProperty = "State"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State Setting", meta = (TitleProperty = "State", NonInterp))
     TArray<FTODTimePoint> TOD_State;
 
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
@@ -276,8 +276,18 @@ public:
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere);
 
+	// getter for print debug info
     UFUNCTION(BlueprintPure, Category = "TOD|Moon")
     float GetMoonSourceScaleAtTime(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
+    float GetMoonIntensity(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Sun")
+    float GetSunIntensity(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Speed")
+    float GetFinalSpeed(float InTime);
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void UpdatePivotRotation(float InTime);
@@ -336,6 +346,9 @@ private:
 
     UFUNCTION()
     void PrintTODDebugInfo();
+
+    // StartTime이 0~24 범위를 벗어나면 순환(wrap)시켜 되돌린다.
+    static float WrapStartTime(float InTime);
 
 #if WITH_EDITOR
 protected:

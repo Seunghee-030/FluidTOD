@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "TOD_Types.h"
+#include "TODCurveContainer.h"
 #include "TODCurveEvaluator.h"
 #include "TODEditor.h"
 #include "TODSystem.h"
@@ -32,7 +33,7 @@ struct FTODCinematicSetting
     bool bOverrideVisuals = true;
 };
 
-UCLASS(BlueprintType)
+UCLASS(BlueprintType, meta = (HideFunctions = "SetStartTime, SetTOD_State"))
 class FLUID_TOD_API ATODManager : public AActor
 {
     GENERATED_BODY()
@@ -89,6 +90,9 @@ public:
     UPROPERTY()
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
 
+    UPROPERTY()
+    TObjectPtr<class USceneComponent> PivotSunMoonComponent;
+
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
     TObjectPtr<UStaticMeshComponent> SkyDomeMesh;
 
@@ -116,8 +120,8 @@ public:
     FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
-        meta = (UIMin = "0.0", UIMax = "24.0", ClampMin = "0.0", ClampMax = "24.0",
-            DisplayPriority = "2", ToolTip = "Initial time of day when the game starts."))
+        meta = (UIMin = "0.0", UIMax = "24.0",
+            DisplayPriority = "2", NonInterp, ToolTip = "Initial time of day when the game starts. 0-24"))
     float StartTime = 12.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
@@ -146,7 +150,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     float CalculateCycleSpeed(float InTime);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State Setting", meta = (TitleProperty = "State"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|State Setting", meta = (TitleProperty = "State", NonInterp))
     TArray<FTODTimePoint> TOD_State;
 
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
@@ -214,24 +218,14 @@ public:
         meta = (ToolTip = "Calculated sunset time based on the current latitude setting."))
     FString SunsetTime = TEXT("[ 18 : 00 ]");
 
+    FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
+    float SunLatitudeTiltMultiplier = -1.0f;
+
     // =========================================================================
     // Properties: Curves
     // =========================================================================
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODSunCurveData SunCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODMoonCurveData MoonCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODSkyLightCurveData SkyLightCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODFogCurveData FogCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODSkyAtmosphereCurveData SkyAtmosphereCurves;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "TOD_Curves")
+    TObjectPtr<UTODCurveContainer> CurveData;
 
     // =========================================================================
     // Properties: Visual Overrides
@@ -282,6 +276,22 @@ public:
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere);
 
+	// getter for print debug info
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
+    float GetMoonSourceScaleAtTime(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
+    float GetMoonIntensity(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Sun")
+    float GetSunIntensity(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Speed")
+    float GetFinalSpeed(float InTime);
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    void UpdatePivotRotation(float InTime);
+
     void ApplyPPVBlending(float CurrentTime);
     void FindComponents();
     void SortTODDataArray();
@@ -300,10 +310,10 @@ public:
     // Functions: Preset
     // =========================================================================
 
-    UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD|Preset")
     void SaveNewPreset();
 
-    UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD|Preset")
     void SaveCurrentPreset();
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
@@ -324,6 +334,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 
 private:
     FTODCurveEvaluator CurveEvaluator;
@@ -331,8 +342,13 @@ private:
     FTODSystem TODSystem;
     FTimerHandle DebugTimerHandle;
 
+    void ApplyStaticSunMoonOffsets();
+
     UFUNCTION()
     void PrintTODDebugInfo();
+
+    // StartTime이 0~24 범위를 벗어나면 순환(wrap)시켜 되돌린다.
+    static float WrapStartTime(float InTime);
 
 #if WITH_EDITOR
 protected:
@@ -349,6 +365,10 @@ private:
     FDelegateHandle PropertyChangeDelegateHandle;
 
     bool bPendingPPVUpdate = false;
+
+    // 프레임당 1회로 묶어서 실행하기 위한 디바운스 플래그
+    bool bRebakeRequested = false;
+    void RequestDeferredRebake();
 
     // TOD_DataArray의 Time 필드가 바뀌기 직전 상태를 캐시
     TArray<FTODMasterData> PreEditTOD_DataArray;

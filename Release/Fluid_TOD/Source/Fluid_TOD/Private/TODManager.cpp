@@ -1,6 +1,7 @@
 #include "TODManager.h"
 
 #include "Components/DirectionalLightComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
@@ -17,6 +18,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 
 #if WITH_EDITOR
+#include "Editor.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
@@ -24,7 +26,7 @@
 
 ATODManager::ATODManager()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	RuntimePPVComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("RuntimePPVComponent"));
 
@@ -33,6 +35,8 @@ ATODManager::ATODManager()
 
 	RuntimePPVComponent->bUnbound = true;
 	RuntimePPVComponent->Priority = 1;
+
+	CurveData = CreateDefaultSubobject<UTODCurveContainer>(TEXT("CurveData"));
 
 	FTODTimePoint DawnPoint; DawnPoint.State = ETODState::Dawn; DawnPoint.StartTime = 2.0f; TOD_State.Add(DawnPoint);
 	FTODTimePoint SunrisePoint; SunrisePoint.State = ETODState::Sunrise; SunrisePoint.StartTime = 6.0f; TOD_State.Add(SunrisePoint);
@@ -66,10 +70,40 @@ void ATODManager::BeginPlay()
 	FindComponents();
 	UpdateSunTimes();
 	SortTODDataArray();
+	ApplyStaticSunMoonOffsets();
 	BakeTODCurves();
+	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
+}
+
+void ATODManager::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	const UWorld* World = GetWorld();
+	if (!World || !World->IsGameWorld())
+	{
+		return;
+	}
+
+	if (bIsTimePaused)
+	{
+		return;
+	}
+
+	const float Speed = CalculateCycleSpeed(CurrentSystemTime);
+
+	float NewTime = CurrentSystemTime + Speed * DeltaSeconds;
+	NewTime = FMath::Fmod(NewTime, 24.0f);
+	if (NewTime < 0.0f)
+	{
+		NewTime += 24.0f;
+	}
+
+	UpdatePivotRotation(NewTime);
+	UpdateTOD(NewTime);
 }
 
 void ATODManager::SetMaterialScalarByName(
@@ -140,10 +174,11 @@ float ATODManager::GetStartTime() const
 
 void ATODManager::SetStartTime(float NewTime)
 {
-	StartTime = NewTime;
-	CurrentSystemTime = NewTime;
+	StartTime = WrapStartTime(NewTime);
+	CurrentSystemTime = StartTime;
 
 	SortTODDataArray();
+	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
 
 #if WITH_EDITOR
@@ -160,9 +195,7 @@ void ATODManager::SetCurrentTime(float NewTime)
 {
 	CurrentSystemTime = NewTime;
 
-	// Use the time that was actually requested. Calling UpdateTOD(StartTime) here
-	// makes timeline scrubbing or external time driving appear to jump back to the
-	// start-time visual state.
+	UpdatePivotRotation(CurrentSystemTime);
 	UpdateTOD(CurrentSystemTime);
 
 #if WITH_EDITOR
@@ -391,6 +424,60 @@ void ATODManager::GetTODSettingsAtTime(
 	);
 }
 
+float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
+{
+	return CurveEvaluator.GetMoonSourceScaleAtTime(this, InTime);
+}
+
+float ATODManager::GetMoonIntensity(float InTime) const
+{
+	return CurveEvaluator.GetMoonIntensity(this, InTime);
+}
+
+float ATODManager::GetSunIntensity(float InTime) const
+{
+	return CurveEvaluator.GetSunIntensity(this, InTime);
+}
+
+float ATODManager::GetFinalSpeed(float InTime)
+{
+	return CalculateCycleSpeed(CurrentSystemTime)*50.0f;
+}
+
+// 기존 BP Timeline의 "Calculate Pivot Rotation -> Set Relative Rotation(PivotSunMoon)"을 대체
+void ATODManager::UpdatePivotRotation(float InTime)
+{
+	if (!IsValid(PivotSunMoonComponent))
+	{
+		return;
+	}
+
+	PivotSunMoonComponent->SetRelativeRotation(CalculatePivotRotation(InTime));
+}
+
+float ATODManager::WrapStartTime(float InTime)
+{
+	float Wrapped = FMath::Fmod(InTime, 24.0f);
+	if (Wrapped < 0.0f)
+	{
+		Wrapped += 24.0f;
+	}
+	return Wrapped;
+}
+
+void ATODManager::ApplyStaticSunMoonOffsets()
+{
+	if (IsValid(MoonLightComponent))
+	{
+		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
+	}
+
+	if (IsValid(SunLightComponent))
+	{
+		SunLightComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
+	}
+}
+
 // ======= Presets: Editor =========
 void ATODManager::SaveNewPreset()
 {
@@ -442,6 +529,44 @@ FRotator ATODManager::CalculatePivotRotation(float InTime) const
 
 #if WITH_EDITOR
 
+void ATODManager::RequestDeferredRebake()
+{
+	if (bRebakeRequested)
+	{
+		return;
+	}
+	bRebakeRequested = true;
+
+	if (GEditor)
+	{
+		GEditor->GetTimerManager()->SetTimerForNextTick([this]()
+			{
+				bRebakeRequested = false;
+
+				if (!IsValid(this))
+				{
+					return;
+				}
+
+				BakeTODCurves();
+				ApplyStaticSunMoonOffsets();
+				UpdatePivotRotation(StartTime);
+				UpdateTOD(StartTime);
+				ForceViewportRedraw();
+			});
+	}
+	else
+	{
+		// 에디터가 아닌 예외상황 안전장치
+		bRebakeRequested = false;
+		BakeTODCurves();
+		ApplyStaticSunMoonOffsets();
+		UpdatePivotRotation(StartTime);
+		UpdateTOD(StartTime);
+		ForceViewportRedraw();
+	}
+}
+
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -456,31 +581,49 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
 		LoadSelectedPreset();
-		BakeTODCurves();
+		RequestDeferredRebake();
+		return;
 	}
 
-	else if (
+	if (
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
 	{
 		UpdateSunTimes();
+		ApplyStaticSunMoonOffsets();
+		ForceViewportRedraw();
+		return;
 	}
-	else if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
+
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
+		// Start Time 슬라이더 순환
+		StartTime = WrapStartTime(StartTime);
+		CurrentSystemTime = StartTime;
+
 		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
 		if (!bIsInteractive)
 		{
 			SortTODDataArray();
 		}
-	}
-	else
-	{
-		BakeTODCurves();
+		UpdatePivotRotation(StartTime);
+		UpdateTOD(StartTime);
+		ForceViewportRedraw();
+		return;
 	}
 
-	UpdateTOD(StartTime);
-	ForceViewportRedraw();
+	if (
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonLocalRotationOffset) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunLatitudeTiltMultiplier))
+	{
+		ApplyStaticSunMoonOffsets();
+		ForceViewportRedraw();
+		return;
+	}
+
+	RequestDeferredRebake();
 }
+
 void ATODManager::PreEditChange(FProperty* PropertyAboutToChange)
 {
 	Super::PreEditChange(PropertyAboutToChange);
@@ -517,8 +660,6 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 
 			if (bArrayChanged)
 			{
-				// Keep editor array order stable while authoring.
-				// Sorting is intentionally deferred to BeginPlay or StartTime changes.
 			}
 			else if (
 				PropertyChangedEvent.Property &&
@@ -573,9 +714,7 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 
 			}
 
-			BakeTODCurves();
-			UpdateTOD(StartTime);
-			ForceViewportRedraw();
+			RequestDeferredRebake();
 		}
 		else if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_State))
 		{
@@ -730,15 +869,14 @@ void ATODManager::OnConstruction(const FTransform& Transform)
 		SetActorScale3D(FVector::OneVector);
 	}
 
-	PostEditMove(true);
+	RequestDeferredRebake();
 }
 
 void ATODManager::PostEditMove(bool bFinished)
 {
 	Super::PostEditMove(bFinished);
 
-	UpdateTOD(StartTime);
-	ForceViewportRedraw();
+	RequestDeferredRebake();
 }
 
 #endif

@@ -21,4 +21,8 @@ public:
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere
     );
+
+    float GetMoonSourceScaleAtTime(const class ATODManager* Owner, float InTime) const;
+    float GetMoonIntensity(const class ATODManager* Owner, float InTime) const;
+    float GetSunIntensity(const class ATODManager* Owner, float InTime) const;
 };

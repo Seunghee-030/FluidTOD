@@ -174,8 +174,8 @@ float ATODManager::GetStartTime() const
 
 void ATODManager::SetStartTime(float NewTime)
 {
-	StartTime = NewTime;
-	CurrentSystemTime = NewTime;
+	StartTime = WrapStartTime(NewTime);
+	CurrentSystemTime = StartTime;
 
 	SortTODDataArray();
 	UpdatePivotRotation(StartTime);
@@ -429,6 +429,21 @@ float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
 	return CurveEvaluator.GetMoonSourceScaleAtTime(this, InTime);
 }
 
+float ATODManager::GetMoonIntensity(float InTime) const
+{
+	return CurveEvaluator.GetMoonIntensity(this, InTime);
+}
+
+float ATODManager::GetSunIntensity(float InTime) const
+{
+	return CurveEvaluator.GetSunIntensity(this, InTime);
+}
+
+float ATODManager::GetFinalSpeed(float InTime)
+{
+	return CalculateCycleSpeed(CurrentSystemTime)*50.0f;
+}
+
 // 기존 BP Timeline의 "Calculate Pivot Rotation -> Set Relative Rotation(PivotSunMoon)"을 대체
 void ATODManager::UpdatePivotRotation(float InTime)
 {
@@ -438,6 +453,16 @@ void ATODManager::UpdatePivotRotation(float InTime)
 	}
 
 	PivotSunMoonComponent->SetRelativeRotation(CalculatePivotRotation(InTime));
+}
+
+float ATODManager::WrapStartTime(float InTime)
+{
+	float Wrapped = FMath::Fmod(InTime, 24.0f);
+	if (Wrapped < 0.0f)
+	{
+		Wrapped += 24.0f;
+	}
+	return Wrapped;
 }
 
 void ATODManager::ApplyStaticSunMoonOffsets()
@@ -572,6 +597,10 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
+		// Start Time 슬라이더 순환
+		StartTime = WrapStartTime(StartTime);
+		CurrentSystemTime = StartTime;
+
 		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
 		if (!bIsInteractive)
 		{
