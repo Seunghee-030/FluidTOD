@@ -17,6 +17,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 
 #if WITH_EDITOR
+#include "Editor.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
@@ -439,6 +440,40 @@ FRotator ATODManager::CalculatePivotRotation(float InTime) const
 
 #if WITH_EDITOR
 
+void ATODManager::RequestDeferredRebake()
+{
+	if (bRebakeRequested)
+	{
+		return;
+	}
+	bRebakeRequested = true;
+
+	if (GEditor)
+	{
+		GEditor->GetTimerManager()->SetTimerForNextTick([this]()
+			{
+				bRebakeRequested = false;
+
+				if (!IsValid(this))
+				{
+					return;
+				}
+
+				BakeTODCurves();
+				UpdateTOD(StartTime);
+				ForceViewportRedraw();
+			});
+	}
+	else
+	{
+		// 에디터가 아닌 예외상황 안전장치
+		bRebakeRequested = false;
+		BakeTODCurves();
+		UpdateTOD(StartTime);
+		ForceViewportRedraw();
+	}
+}
+
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -453,31 +488,34 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
 		LoadSelectedPreset();
-		BakeTODCurves();
+		RequestDeferredRebake();
+		return;
 	}
 
-	else if (
+	if (
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
 	{
 		UpdateSunTimes();
+		ForceViewportRedraw();
+		return;
 	}
-	else if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
+
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
 		StartTimeDisplay = GetFormattedTimeAsString(StartTime);
 		if (!bIsInteractive)
 		{
 			SortTODDataArray();
 		}
-	}
-	else
-	{
-		BakeTODCurves();
+		UpdateTOD(StartTime);
+		ForceViewportRedraw();
+		return;
 	}
 
-	UpdateTOD(StartTime);
-	ForceViewportRedraw();
+	RequestDeferredRebake();
 }
+
 void ATODManager::PreEditChange(FProperty* PropertyAboutToChange)
 {
 	Super::PreEditChange(PropertyAboutToChange);
@@ -568,9 +606,7 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 
 			}
 
-			BakeTODCurves();
-			UpdateTOD(StartTime);
-			ForceViewportRedraw();
+			RequestDeferredRebake();
 		}
 		else if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_State))
 		{
@@ -725,15 +761,14 @@ void ATODManager::OnConstruction(const FTransform& Transform)
 		SetActorScale3D(FVector::OneVector);
 	}
 
-	PostEditMove(true);
+	RequestDeferredRebake();
 }
 
 void ATODManager::PostEditMove(bool bFinished)
 {
 	Super::PostEditMove(bFinished);
 
-	UpdateTOD(StartTime);
-	ForceViewportRedraw();
+	RequestDeferredRebake();
 }
 
 #endif

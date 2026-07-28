@@ -349,6 +349,8 @@ private:
     FDelegateHandle PropertyChangeDelegateHandle;
 
     bool bPendingPPVUpdate = false;
+    bool bRebakeRequested = false;
+    void RequestDeferredRebake();
 
     // TOD_DataArray의 Time 필드가 바뀌기 직전 상태를 캐시
     TArray<FTODMasterData> PreEditTOD_DataArray;
