@@ -2,6 +2,7 @@
 #include "TODManager.h"
 
 #include "Components/DirectionalLightComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
@@ -25,6 +26,8 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		else if (Light->ComponentHasTag(TEXT("Sun"))) Owner->SunLightComponent = Light;
 		if (IsValid(Owner->SunLightComponent) && IsValid(Owner->MoonLightComponent)) break;
 	}
+
+	Owner->PivotSunMoonComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("PivotSunMoon"));
 
 	// SkyDome & Moon Mesh
 	TArray<UStaticMeshComponent*> Meshes;
@@ -186,7 +189,8 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		!IsValid(Owner->FogComponent) ||
 		!IsValid(Owner->SkyAtmosphereComponent) ||
 		!IsValid(Owner->SkyDomeMesh) ||
-		!IsValid(Owner->MoonMesh)
+		!IsValid(Owner->MoonMesh) ||
+		!IsValid(Owner->PivotSunMoonComponent)
 		)
 	{
 		FindComponents(Owner);

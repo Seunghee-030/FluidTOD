@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "TOD_Types.h"
+#include "TODCurveContainer.h"
 #include "TODCurveEvaluator.h"
 #include "TODEditor.h"
 #include "TODSystem.h"
@@ -88,6 +89,9 @@ public:
 
     UPROPERTY()
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
+
+    UPROPERTY()
+    TObjectPtr<class USceneComponent> PivotSunMoonComponent;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
     TObjectPtr<UStaticMeshComponent> SkyDomeMesh;
@@ -214,24 +218,19 @@ public:
         meta = (ToolTip = "Calculated sunset time based on the current latitude setting."))
     FString SunsetTime = TEXT("[ 18 : 00 ]");
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
+        meta = (ToolTip = "Moon 컴포넌트의 피벗 대비 로컬 오프셋 회전."))
+    FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
+        meta = (ToolTip = "Sun 컴포넌트의 로컬 Pitch = Latitude * 이 값."))
+    float SunLatitudeTiltMultiplier = -1.0f;
+
     // =========================================================================
     // Properties: Curves
     // =========================================================================
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODSunCurveData SunCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODMoonCurveData MoonCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODSkyLightCurveData SkyLightCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODFogCurveData FogCurves;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD_Curves")
-    FTODSkyAtmosphereCurveData SkyAtmosphereCurves;
+    UPROPERTY(VisibleAnywhere, Instanced, Category = "TOD_Curves")
+    TObjectPtr<UTODCurveContainer> CurveData;
 
     // =========================================================================
     // Properties: Visual Overrides
@@ -282,6 +281,13 @@ public:
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere);
 
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon",
+        meta = (ToolTip = "지정 시간의 달 SourceScale 커브 값을 반환합니다."))
+    float GetMoonSourceScaleAtTime(float InTime) const;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    void UpdatePivotRotation(float InTime);
+
     void ApplyPPVBlending(float CurrentTime);
     void FindComponents();
     void SortTODDataArray();
@@ -324,12 +330,15 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 
 private:
     FTODCurveEvaluator CurveEvaluator;
     FTODEditor EditorModule;
     FTODSystem TODSystem;
     FTimerHandle DebugTimerHandle;
+
+    void ApplyStaticSunMoonOffsets();
 
     UFUNCTION()
     void PrintTODDebugInfo();
@@ -349,6 +358,8 @@ private:
     FDelegateHandle PropertyChangeDelegateHandle;
 
     bool bPendingPPVUpdate = false;
+
+    // 프레임당 1회로 묶어서 실행하기 위한 디바운스 플래그
     bool bRebakeRequested = false;
     void RequestDeferredRebake();
 
