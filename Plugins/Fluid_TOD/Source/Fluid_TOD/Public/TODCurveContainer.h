@@ -11,18 +11,18 @@ class FLUID_TOD_API UTODCurveContainer : public UObject
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, Category = "Sun Curves")
+	UPROPERTY(EditAnywhere, Category = "Sun Curves")
 	FTODSunCurveData SunCurves;
 
-	UPROPERTY(VisibleAnywhere, Category = "Moon Curves")
+	UPROPERTY(EditAnywhere, Category = "Moon Curves")
 	FTODMoonCurveData MoonCurves;
 
-	UPROPERTY(VisibleAnywhere, Category = "SkyLight Curves")
+	UPROPERTY(EditAnywhere, Category = "SkyLight Curves")
 	FTODSkyLightCurveData SkyLightCurves;
 
-	UPROPERTY(VisibleAnywhere, Category = "Fog Curves")
+	UPROPERTY(EditAnywhere, Category = "Fog Curves")
 	FTODFogCurveData FogCurves;
 
-	UPROPERTY(VisibleAnywhere, Category = "SkyAtmosphere Curves")
+	UPROPERTY(EditAnywhere, Category = "SkyAtmosphere Curves")
 	FTODSkyAtmosphereCurveData SkyAtmosphereCurves;
 };

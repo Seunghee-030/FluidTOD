@@ -218,18 +218,13 @@ public:
         meta = (ToolTip = "Calculated sunset time based on the current latitude setting."))
     FString SunsetTime = TEXT("[ 18 : 00 ]");
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
-        meta = (ToolTip = "Moon 컴포넌트의 피벗 대비 로컬 오프셋 회전."))
     FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
-        meta = (ToolTip = "Sun 컴포넌트의 로컬 Pitch = Latitude * 이 값."))
     float SunLatitudeTiltMultiplier = -1.0f;
 
     // =========================================================================
     // Properties: Curves
     // =========================================================================
-    UPROPERTY(VisibleAnywhere, Instanced, Category = "TOD_Curves")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "TOD_Curves")
     TObjectPtr<UTODCurveContainer> CurveData;
 
     // =========================================================================
@@ -281,8 +276,7 @@ public:
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere);
 
-    UFUNCTION(BlueprintPure, Category = "TOD|Moon",
-        meta = (ToolTip = "지정 시간의 달 SourceScale 커브 값을 반환합니다."))
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
     float GetMoonSourceScaleAtTime(float InTime) const;
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
@@ -306,10 +300,10 @@ public:
     // Functions: Preset
     // =========================================================================
 
-    UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD|Preset")
     void SaveNewPreset();
 
-    UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
+    UFUNCTION(BlueprintCallable, CallInEditor, Category = "TOD|Preset")
     void SaveCurrentPreset();
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Preset")
