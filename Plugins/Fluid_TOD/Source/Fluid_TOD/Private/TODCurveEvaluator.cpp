@@ -137,6 +137,20 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Data.PPV->BlendWeight = 0.0f;
 	}
 
+	// PPV 1개뿐 일 때.
+	if (Num == 1)
+	{
+		APostProcessVolume* OnlyPPV = ValidPPVs[0].PPV;
+		if (!IsValid(OnlyPPV)) return;
+
+		Owner->RuntimePPVComponent->bEnabled = true;
+		Owner->RuntimePPVComponent->bUnbound = true;
+		Owner->RuntimePPVComponent->Priority = 1.0f;
+		Owner->RuntimePPVComponent->BlendWeight = 1.0f;
+		Owner->RuntimePPVComponent->Settings = OnlyPPV->Settings;
+		return;
+	}
+
 	const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
 
 	int32 PrevIndex = Num - 1;
