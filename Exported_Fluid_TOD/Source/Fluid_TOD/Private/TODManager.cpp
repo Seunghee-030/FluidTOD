@@ -539,25 +539,24 @@ void ATODManager::RequestDeferredRebake()
 
 	if (GEditor)
 	{
-		GEditor->GetTimerManager()->SetTimerForNextTick([this]()
+		TWeakObjectPtr<ATODManager> WeakThis(this);
+		GEditor->GetTimerManager()->SetTimerForNextTick([WeakThis]()
 			{
-				bRebakeRequested = false;
-
-				if (!IsValid(this))
+				if (!WeakThis.IsValid())
 				{
 					return;
 				}
 
-				BakeTODCurves();
-				ApplyStaticSunMoonOffsets();
-				UpdatePivotRotation(StartTime);
-				UpdateTOD(StartTime);
-				ForceViewportRedraw();
+				WeakThis->bRebakeRequested = false;
+				WeakThis->BakeTODCurves();
+				WeakThis->ApplyStaticSunMoonOffsets();
+				WeakThis->UpdatePivotRotation(WeakThis->StartTime);
+				WeakThis->UpdateTOD(WeakThis->StartTime);
+				WeakThis->ForceViewportRedraw();
 			});
 	}
 	else
 	{
-		// 에디터가 아닌 예외상황 안전장치
 		bRebakeRequested = false;
 		BakeTODCurves();
 		ApplyStaticSunMoonOffsets();
@@ -832,12 +831,7 @@ void ATODManager::OnExternalPropertyChanged(
 		}
 	}
 
-	if (!bIsRelevant)
-	{
-		return;
-	}
-
-	if (bPendingPPVUpdate)
+	if (!bIsRelevant || bPendingPPVUpdate)
 	{
 		return;
 	}
@@ -849,11 +843,18 @@ void ATODManager::OnExternalPropertyChanged(
 	}
 
 	bPendingPPVUpdate = true;
-	World->GetTimerManager().SetTimerForNextTick([this]()
+
+	TWeakObjectPtr<ATODManager> WeakThis(this);
+	World->GetTimerManager().SetTimerForNextTick([WeakThis]()
 		{
-			bPendingPPVUpdate = false;
-			UpdateTOD(StartTime);
-			ForceViewportRedraw();
+			if (!WeakThis.IsValid())
+			{
+				return;
+			}
+
+			WeakThis->bPendingPPVUpdate = false;
+			WeakThis->UpdateTOD(WeakThis->StartTime);
+			WeakThis->ForceViewportRedraw();
 		});
 }
 
