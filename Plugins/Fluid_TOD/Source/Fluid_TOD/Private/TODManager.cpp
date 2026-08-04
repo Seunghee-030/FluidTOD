@@ -394,28 +394,59 @@ void ATODManager::SortTODDataArray()
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
-// World Scale에 따른 Moon Distance 갱신
-void ATODManager::UpdateMoonDistance()
+float ATODManager::GetCalculatedMoonScale(float InTime) const
 {
-	if (!IsValid(MoonMesh)) return;
+	float TargetScale = bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(InTime);
 
-	float FinalDistance = MoonDistance;
+	TargetScale = FMath::Max(TargetScale, 0.001f);
 
-	if (bAutoScaleMoonDistanceByMeshSize)
+	const float ReferenceDistance = 10000.0f;
+	float DistanceRatio = GetScaledMoonDistance() / ReferenceDistance;
+
+	return TargetScale * DistanceRatio;
+}
+
+float ATODManager::GetScaledMoonDistance() const
+{
+	if (!bAutoScaleMoonDistanceByMeshSize || !IsValid(MoonMesh))
 	{
-		if (UStaticMesh* Mesh = MoonMesh->GetStaticMesh())
-		{
-			const float LocalRadius =
-				Mesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().GetMax();
-
-			if (LocalRadius > KINDA_SMALL_NUMBER && MoonMeshReferenceRadius > KINDA_SMALL_NUMBER)
-			{
-				FinalDistance = MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
-			}
-		}
+		return MoonDistance;
 	}
 
-	MoonMesh->SetRelativeLocation(FVector(FinalDistance, 0.0f, 0.0f));
+	UStaticMesh* Mesh = MoonMesh->GetStaticMesh();
+	if (!Mesh)
+	{
+		return MoonDistance;
+	}
+
+	const float LocalRadius =
+		Mesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().GetMax();
+
+	if (LocalRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
+	{
+		return MoonDistance;
+	}
+
+	return MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
+}
+
+void ATODManager::UpdateMoonMeshTransform()
+{
+	if (!IsValid(MoonMesh))
+	{
+		return;
+	}
+
+	if (IsValid(MeshPivotComponent))
+	{
+		MeshPivotComponent->SetRelativeRotation(MoonLocalRotationOffset);
+	}
+
+	const float ActualDistance = GetScaledMoonDistance();
+	MoonMesh->SetRelativeLocation(FVector(-ActualDistance, 0.0f, 0.0f));
+
+	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
+	MoonMesh->SetRelativeScale3D(FVector(BaseScale * (ActualDistance / 10000.0f)));
 }
 
 // ======== Curve Evaluation =========
@@ -465,7 +496,7 @@ float ATODManager::GetSunIntensity(float InTime) const
 
 float ATODManager::GetFinalSpeed(float InTime)
 {
-	return CalculateCycleSpeed(CurrentSystemTime)*50.0f;
+	return CalculateCycleSpeed(CurrentSystemTime) * 50.0f;
 }
 
 // 기존 BP Timeline의 "Calculate Pivot Rotation -> Set Relative Rotation(PivotSunMoon)"을 대체
@@ -500,6 +531,8 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 	{
 		SunLightComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
 	}
+
+	UpdateMoonMeshTransform();
 }
 
 // ======= Presets: Editor =========
@@ -640,6 +673,16 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunLatitudeTiltMultiplier))
 	{
 		ApplyStaticSunMoonOffsets();
+		ForceViewportRedraw();
+		return;
+	}
+
+	if (
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonDistance) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, bAutoScaleMoonDistanceByMeshSize) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonMeshReferenceRadius))
+	{
+		UpdateMoonMeshTransform();
 		ForceViewportRedraw();
 		return;
 	}

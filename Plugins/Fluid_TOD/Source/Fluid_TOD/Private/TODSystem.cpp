@@ -28,6 +28,7 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	}
 
 	Owner->PivotSunMoonComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("PivotSunMoon"));
+	Owner->MeshPivotComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("MeshPivot"));
 
 	// SkyDome & Moon Mesh
 	TArray<UStaticMeshComponent*> Meshes;
