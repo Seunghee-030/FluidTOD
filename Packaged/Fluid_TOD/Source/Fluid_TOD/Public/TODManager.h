@@ -91,7 +91,13 @@ public:
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
 
     UPROPERTY()
+    TObjectPtr<class USceneComponent> PivotOrbitTiltComponent;
+
+    UPROPERTY()
     TObjectPtr<class USceneComponent> PivotSunMoonComponent;
+
+    UPROPERTY()
+    TObjectPtr<class USceneComponent> MeshPivotComponent;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
     TObjectPtr<UStaticMeshComponent> SkyDomeMesh;
@@ -222,8 +228,35 @@ public:
     float SunLatitudeTiltMultiplier = -1.0f;
 
     // =========================================================================
+    // Properties: Moon
+    // =========================================================================
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
+        meta = (ClampMin = "0.0", UIMin = "0.0", ToolTip = "Reference mesh radius distance for Moon."))
+    float MoonDistance = 50000.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
+        meta = (ToolTip = "Auto-scale MoonDistance based on Moon Mesh bounding size."))
+    bool bAutoScaleMoonDistanceByMeshSize = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
+        meta = (EditCondition = "bAutoScaleMoonDistanceByMeshSize", ClampMin = "1.0",
+            ToolTip = "Reference mesh radius (uu) that MoonDistance corresponds to."))
+    float MoonMeshReferenceRadius = 100.0f;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
+    float GetCalculatedMoonScale(float InTime) const;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Moon")
+    void UpdateMoonMeshTransform();
+
+private:
+    float GetScaledMoonDistance() const;
+
+    // =========================================================================
     // Properties: Curves
     // =========================================================================
+public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "TOD_Curves")
     TObjectPtr<UTODCurveContainer> CurveData;
 
@@ -276,7 +309,7 @@ public:
         FTODFogSettings& OutFog,
         FTODSkyAtmosphereSettings& OutSkyAtmosphere);
 
-	// getter for print debug info
+    // getter for print debug info
     UFUNCTION(BlueprintPure, Category = "TOD|Moon")
     float GetMoonSourceScaleAtTime(float InTime) const;
 

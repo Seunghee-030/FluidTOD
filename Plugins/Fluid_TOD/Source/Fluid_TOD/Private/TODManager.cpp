@@ -13,6 +13,7 @@
 #include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
 #include "EngineUtils.h"
+#include "Engine/StaticMesh.h"
 
 #include "TODCurveEvaluator.h"
 #include "Materials/MaterialInstanceDynamic.h"

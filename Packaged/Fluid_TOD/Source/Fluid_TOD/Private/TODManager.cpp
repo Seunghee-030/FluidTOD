@@ -13,6 +13,7 @@
 #include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
 #include "EngineUtils.h"
+#include "Engine/StaticMesh.h"
 
 #include "TODCurveEvaluator.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -74,6 +75,7 @@ void ATODManager::BeginPlay()
 	BakeTODCurves();
 	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
+	UpdateMoonMeshTransform();
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
@@ -104,6 +106,7 @@ void ATODManager::Tick(float DeltaSeconds)
 
 	UpdatePivotRotation(NewTime);
 	UpdateTOD(NewTime);
+	UpdateMoonMeshTransform();
 }
 
 void ATODManager::SetMaterialScalarByName(
@@ -394,6 +397,60 @@ void ATODManager::SortTODDataArray()
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
+float ATODManager::GetCalculatedMoonScale(float InTime) const
+{
+	float TargetScale = bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(InTime);
+
+	TargetScale = FMath::Max(TargetScale, 0.001f);
+
+	const float ReferenceDistance = 10000.0f;
+	float DistanceRatio = GetScaledMoonDistance() / ReferenceDistance;
+
+	return TargetScale * DistanceRatio;
+}
+
+float ATODManager::GetScaledMoonDistance() const
+{
+	if (!bAutoScaleMoonDistanceByMeshSize || !IsValid(MoonMesh))
+	{
+		return MoonDistance;
+	}
+
+	UStaticMesh* Mesh = MoonMesh->GetStaticMesh();
+	if (!Mesh)
+	{
+		return MoonDistance;
+	}
+
+	const float LocalRadius = Mesh->GetBounds().SphereRadius;
+
+	if (LocalRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
+	{
+		return MoonDistance;
+	}
+
+	return MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
+}
+
+void ATODManager::UpdateMoonMeshTransform()
+{
+	if (!IsValid(MoonMesh))
+	{
+		return;
+	}
+
+	if (IsValid(MeshPivotComponent))
+	{
+		MeshPivotComponent->SetRelativeRotation(MoonLocalRotationOffset);
+	}
+
+	const float ActualDistance = GetScaledMoonDistance();
+	MoonMesh->SetRelativeLocation(FVector(-ActualDistance, 0.0f, 0.0f));
+
+	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
+	MoonMesh->SetRelativeScale3D(FVector((BaseScale * (ActualDistance / 100000.0f)))); // moon 크기 조절
+}
+
 // ======== Curve Evaluation =========
 void ATODManager::BakeTODCurves()
 {
@@ -441,10 +498,9 @@ float ATODManager::GetSunIntensity(float InTime) const
 
 float ATODManager::GetFinalSpeed(float InTime)
 {
-	return CalculateCycleSpeed(CurrentSystemTime)*50.0f;
+	return CalculateCycleSpeed(CurrentSystemTime) * 50.0f;
 }
 
-// 기존 BP Timeline의 "Calculate Pivot Rotation -> Set Relative Rotation(PivotSunMoon)"을 대체
 void ATODManager::UpdatePivotRotation(float InTime)
 {
 	if (!IsValid(PivotSunMoonComponent))
@@ -467,6 +523,12 @@ float ATODManager::WrapStartTime(float InTime)
 
 void ATODManager::ApplyStaticSunMoonOffsets()
 {
+	if (IsValid(PivotOrbitTiltComponent))
+	{
+		PivotOrbitTiltComponent->SetRelativeRotation(
+			FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
+	}
+
 	if (IsValid(MoonLightComponent))
 	{
 		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
@@ -476,6 +538,8 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 	{
 		SunLightComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
 	}
+
+	UpdateMoonMeshTransform();
 }
 
 // ======= Presets: Editor =========
@@ -620,6 +684,16 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		return;
 	}
 
+	if (
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonDistance) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, bAutoScaleMoonDistanceByMeshSize) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonMeshReferenceRadius))
+	{
+		UpdateMoonMeshTransform();
+		ForceViewportRedraw();
+		return;
+	}
+
 	RequestDeferredRebake();
 }
 
@@ -646,6 +720,10 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 			->GetValue()
 			->GetFName();
 
+		// Interactive 여부
+		const bool bIsInteractive =
+			!!(PropertyChangedEvent.ChangeType & EPropertyChangeType::Interactive);
+
 		if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
 		{
 			const EPropertyChangeType::Type ChangeType =
@@ -657,10 +735,37 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 				(ChangeType & EPropertyChangeType::ArrayClear) ||
 				(ChangeType & EPropertyChangeType::Duplicate);
 
+			// 배열 변경 시, Time 값이 겹치지 않도록 조정
 			if (bArrayChanged)
 			{
+				const int32 ChangedIndex = PropertyChangedEvent.GetArrayIndex(
+					GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray).ToString());
+
+				if (TOD_DataArray.IsValidIndex(ChangedIndex))
+				{
+					const float BoundaryTolerance = 0.001f;
+					bool bCollision = true;
+
+					while (bCollision)
+					{
+						bCollision = false;
+						for (int32 i = 0; i < TOD_DataArray.Num(); ++i)
+						{
+							if (i == ChangedIndex) continue;
+
+							if (FMath::IsNearlyEqual(TOD_DataArray[i].Time, TOD_DataArray[ChangedIndex].Time, BoundaryTolerance))
+							{
+								TOD_DataArray[ChangedIndex].Time =
+									FMath::Min(TOD_DataArray[ChangedIndex].Time + 0.1f, 24.0f);
+								bCollision = true;
+								break;
+							}
+						}
+					}
+				}
 			}
 			else if (
+				!bIsInteractive &&   // 값이 확정된 경우만 검사
 				PropertyChangedEvent.Property &&
 				PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(FTODMasterData, Time))
 			{
@@ -705,6 +810,39 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 							FNotificationInfo Info(FText::FromString(TEXT(
 								"0 and 24 represent the same time and cannot coexist. "
 								"Input reverted because the opposite boundary already exists.")));
+							Info.ExpireDuration = 4.0f;
+							FSlateNotificationManager::Get().AddNotification(Info);
+						}
+					}
+					else
+					{
+						// 0/24 경계가 아닌 일반 슬롯끼리의 Time 중복 검사
+						bool bConflict = false;
+						for (int32 i = 0; i < TOD_DataArray.Num(); ++i)
+						{
+							if (i == ChangedIndex) continue;
+
+							if (FMath::IsNearlyEqual(TOD_DataArray[i].Time, NewTime, BoundaryTolerance))
+							{
+								bConflict = true;
+								break;
+							}
+						}
+
+						if (bConflict)
+						{
+							if (PreEditTOD_DataArray.IsValidIndex(ChangedIndex))
+							{
+								TOD_DataArray[ChangedIndex].Time = PreEditTOD_DataArray[ChangedIndex].Time;
+							}
+							else
+							{
+								TOD_DataArray[ChangedIndex].Time = FMath::Clamp(NewTime + 0.1f, 0.0f, 24.0f);
+							}
+
+							FNotificationInfo Info(FText::FromString(TEXT(
+								"Another slot already uses this time. "
+								"Input reverted to avoid overwriting its data.")));
 							Info.ExpireDuration = 4.0f;
 							FSlateNotificationManager::Get().AddNotification(Info);
 						}
