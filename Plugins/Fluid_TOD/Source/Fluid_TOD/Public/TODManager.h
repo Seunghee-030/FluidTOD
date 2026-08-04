@@ -221,6 +221,23 @@ public:
     FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
     float SunLatitudeTiltMultiplier = -1.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
+        meta = (ClampMin = "0.0", UIMin = "0.0",
+            ToolTip = "Moon distance at the reference radius (MoonMeshReferenceRadius)."))
+    float MoonDistance = 50000.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
+        meta = (ToolTip = "Auto-scales MoonDistance based on the Moon mesh's bounding radius."))
+    bool bAutoScaleMoonDistanceByMeshSize = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
+        meta = (EditCondition = "bAutoScaleMoonDistanceByMeshSize", ClampMin = "1.0",
+            ToolTip = "Reference mesh radius (in uu) corresponding to the base MoonDistance."))
+    float MoonMeshReferenceRadius = 100.0f;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Moon")
+    void UpdateMoonDistance();
+
     // =========================================================================
     // Properties: Curves
     // =========================================================================

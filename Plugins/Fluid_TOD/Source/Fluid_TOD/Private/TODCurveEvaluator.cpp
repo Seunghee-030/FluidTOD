@@ -128,7 +128,14 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	AddTwentyFourBoundaryFromZero(ValidPPVs);
 
 	const int32 Num = ValidPPVs.Num();
-	if (Num == 0) return;
+	if (Num == 0)
+	{
+		// TOD 데이터가 모두 삭제되면 런타임 PPV 리셋
+		Owner->RuntimePPVComponent->bEnabled = false;
+		Owner->RuntimePPVComponent->BlendWeight = 0.0f;
+		Owner->RuntimePPVComponent->Settings = FPostProcessSettings();
+		return;
+	}
 
 	for (const FTODMasterData& Data : ValidPPVs)
 	{

@@ -394,6 +394,30 @@ void ATODManager::SortTODDataArray()
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
 }
 
+// World Scale에 따른 Moon Distance 갱신
+void ATODManager::UpdateMoonDistance()
+{
+	if (!IsValid(MoonMesh)) return;
+
+	float FinalDistance = MoonDistance;
+
+	if (bAutoScaleMoonDistanceByMeshSize)
+	{
+		if (UStaticMesh* Mesh = MoonMesh->GetStaticMesh())
+		{
+			const float LocalRadius =
+				Mesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().GetMax();
+
+			if (LocalRadius > KINDA_SMALL_NUMBER && MoonMeshReferenceRadius > KINDA_SMALL_NUMBER)
+			{
+				FinalDistance = MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
+			}
+		}
+	}
+
+	MoonMesh->SetRelativeLocation(FVector(FinalDistance, 0.0f, 0.0f));
+}
+
 // ======== Curve Evaluation =========
 void ATODManager::BakeTODCurves()
 {
