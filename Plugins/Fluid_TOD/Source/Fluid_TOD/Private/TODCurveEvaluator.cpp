@@ -35,9 +35,27 @@ namespace
 		return FMath::IsNearlyEqual(Time, TODHours, TODBoundaryTolerance);
 	}
 
+	// 누락되었던 0시 데이터를 24시 경계값으로 복사해주는 헬퍼 함수 복구
+	void AddTwentyFourBoundaryFromZero(TArray<FTODMasterData>& DataArray)
+	{
+		if (DataArray.Num() == 0) return;
+
+		int32 ZeroIndex = DataArray.IndexOfByPredicate([](const FTODMasterData& Data) {
+			return FMath::IsNearlyZero(Data.Time, TODBoundaryTolerance);
+			});
+
+		if (ZeroIndex != INDEX_NONE)
+		{
+			FTODMasterData BoundaryData = DataArray[ZeroIndex];
+			BoundaryData.Time = TODHours;
+			DataArray.Add(BoundaryData);
+		}
+	}
+
 	TArray<FTODMasterData> BuildCanonicalTODData(
 		const TArray<FTODMasterData>& SourceData,
-		bool bRequireValidPPV)
+		bool bRequireValidPPV,
+		TArray<FString>* OutDroppedNames = nullptr)
 	{
 		struct FCanonicalEntry
 		{
@@ -73,9 +91,17 @@ namespace
 			}
 			else if (Entries[ExistingIndex].bCameFromTwentyFour && !bCameFromTwentyFour)
 			{
-				// 0h and 24h are the same instant. If both exist, 0h is the editable source of truth.
+				// 0h이 24h 자리를 대체
 				Entries[ExistingIndex].Data = Copy;
 				Entries[ExistingIndex].bCameFromTwentyFour = false;
+			}
+			else
+			{
+				// 예외
+				if (OutDroppedNames)
+				{
+					OutDroppedNames->Add(Copy.Name.IsEmpty() ? TEXT("(Unnamed)") : Copy.Name);
+				}
 			}
 		}
 
@@ -91,29 +117,6 @@ namespace
 			});
 
 		return Result;
-	}
-
-	void AddTwentyFourBoundaryFromZero(TArray<FTODMasterData>& DataArray)
-	{
-		const int32 ZeroIndex = DataArray.IndexOfByPredicate(
-			[](const FTODMasterData& Data)
-			{
-				return FMath::IsNearlyEqual(Data.Time, 0.0f, TODBoundaryTolerance);
-			});
-
-		if (ZeroIndex == INDEX_NONE)
-		{
-			return;
-		}
-
-		FTODMasterData EndBoundary = DataArray[ZeroIndex];
-		EndBoundary.Time = TODHours;
-		DataArray.Add(EndBoundary);
-
-		DataArray.Sort([](const FTODMasterData& A, const FTODMasterData& B)
-			{
-				return A.Time < B.Time;
-			});
 	}
 }
 
@@ -321,11 +324,23 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 
 	if (Owner->TOD_DataArray.Num() == 0) return;
 
-	TArray<FTODMasterData> SortedCopy = BuildCanonicalTODData(Owner->TOD_DataArray, false);
+	TArray<FString> DroppedNames;
+	TArray<FTODMasterData> SortedCopy =
+		BuildCanonicalTODData(Owner->TOD_DataArray, false, &DroppedNames);
 	if (SortedCopy.Num() == 0) return;
 
-	// If the artist authored 0h or 24h, bake both boundaries from the same full data.
 	AddTwentyFourBoundaryFromZero(SortedCopy);
+
+#if WITH_EDITOR
+	if (DroppedNames.Num() > 0)
+	{
+		FNotificationInfo Info(FText::Format(
+			FText::FromString(TEXT("The following items were ignored due to duplicate times: {0}")),
+			FText::FromString(FString::Join(DroppedNames, TEXT(", ")))));
+		Info.ExpireDuration = 5.0f;
+		FSlateNotificationManager::Get().AddNotification(Info);
+	}
+#endif
 
 	for (const FTODMasterData& Data : SortedCopy)
 	{
@@ -486,7 +501,7 @@ float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, flo
 	return 0.0f;
 }
 
-float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const 
+float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const
 {
 	if (!Owner || !Owner->CurveData)
 	{
@@ -503,7 +518,7 @@ float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTim
 	return 0.0f;
 }
 
-float FTODCurveEvaluator::GetSunIntensity(const ATODManager* Owner, float InTime) const 
+float FTODCurveEvaluator::GetSunIntensity(const ATODManager* Owner, float InTime) const
 {
 	if (!Owner || !Owner->CurveData)
 	{

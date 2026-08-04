@@ -646,6 +646,10 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 			->GetValue()
 			->GetFName();
 
+		// Interactive 여부
+		const bool bIsInteractive =
+			!!(PropertyChangedEvent.ChangeType & EPropertyChangeType::Interactive);
+
 		if (ActiveMemberName == GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray))
 		{
 			const EPropertyChangeType::Type ChangeType =
@@ -657,10 +661,37 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 				(ChangeType & EPropertyChangeType::ArrayClear) ||
 				(ChangeType & EPropertyChangeType::Duplicate);
 
+			// 배열 변경 시, Time 값이 겹치지 않도록 조정
 			if (bArrayChanged)
 			{
+				const int32 ChangedIndex = PropertyChangedEvent.GetArrayIndex(
+					GET_MEMBER_NAME_CHECKED(ATODManager, TOD_DataArray).ToString());
+
+				if (TOD_DataArray.IsValidIndex(ChangedIndex))
+				{
+					const float BoundaryTolerance = 0.001f;
+					bool bCollision = true;
+
+					while (bCollision)
+					{
+						bCollision = false;
+						for (int32 i = 0; i < TOD_DataArray.Num(); ++i)
+						{
+							if (i == ChangedIndex) continue;
+
+							if (FMath::IsNearlyEqual(TOD_DataArray[i].Time, TOD_DataArray[ChangedIndex].Time, BoundaryTolerance))
+							{
+								TOD_DataArray[ChangedIndex].Time =
+									FMath::Min(TOD_DataArray[ChangedIndex].Time + 0.1f, 24.0f);
+								bCollision = true;
+								break;
+							}
+						}
+					}
+				}
 			}
 			else if (
+				!bIsInteractive &&   // 값이 확정된 경우만 검사
 				PropertyChangedEvent.Property &&
 				PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(FTODMasterData, Time))
 			{
@@ -705,6 +736,39 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 							FNotificationInfo Info(FText::FromString(TEXT(
 								"0 and 24 represent the same time and cannot coexist. "
 								"Input reverted because the opposite boundary already exists.")));
+							Info.ExpireDuration = 4.0f;
+							FSlateNotificationManager::Get().AddNotification(Info);
+						}
+					}
+					else
+					{
+						// 0/24 경계가 아닌 일반 슬롯끼리의 Time 중복 검사
+						bool bConflict = false;
+						for (int32 i = 0; i < TOD_DataArray.Num(); ++i)
+						{
+							if (i == ChangedIndex) continue;
+
+							if (FMath::IsNearlyEqual(TOD_DataArray[i].Time, NewTime, BoundaryTolerance))
+							{
+								bConflict = true;
+								break;
+							}
+						}
+
+						if (bConflict)
+						{
+							if (PreEditTOD_DataArray.IsValidIndex(ChangedIndex))
+							{
+								TOD_DataArray[ChangedIndex].Time = PreEditTOD_DataArray[ChangedIndex].Time;
+							}
+							else
+							{
+								TOD_DataArray[ChangedIndex].Time = FMath::Clamp(NewTime + 0.1f, 0.0f, 24.0f);
+							}
+
+							FNotificationInfo Info(FText::FromString(TEXT(
+								"Another slot already uses this time. "
+								"Input reverted to avoid overwriting its data.")));
 							Info.ExpireDuration = 4.0f;
 							FSlateNotificationManager::Get().AddNotification(Info);
 						}
