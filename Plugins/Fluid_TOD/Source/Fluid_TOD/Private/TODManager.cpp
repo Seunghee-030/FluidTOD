@@ -74,6 +74,7 @@ void ATODManager::BeginPlay()
 	BakeTODCurves();
 	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
+	UpdateMoonMeshTransform();
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
@@ -104,6 +105,7 @@ void ATODManager::Tick(float DeltaSeconds)
 
 	UpdatePivotRotation(NewTime);
 	UpdateTOD(NewTime);
+	UpdateMoonMeshTransform();
 }
 
 void ATODManager::SetMaterialScalarByName(
@@ -419,8 +421,7 @@ float ATODManager::GetScaledMoonDistance() const
 		return MoonDistance;
 	}
 
-	const float LocalRadius =
-		Mesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().GetMax();
+	const float LocalRadius = Mesh->GetBounds().SphereRadius;
 
 	if (LocalRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
 	{
@@ -446,7 +447,7 @@ void ATODManager::UpdateMoonMeshTransform()
 	MoonMesh->SetRelativeLocation(FVector(-ActualDistance, 0.0f, 0.0f));
 
 	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
-	MoonMesh->SetRelativeScale3D(FVector(BaseScale * (ActualDistance / 10000.0f)));
+	MoonMesh->SetRelativeScale3D(FVector((BaseScale * (ActualDistance / 100000.0f)))); // moon 크기 조절
 }
 
 // ======== Curve Evaluation =========
@@ -499,7 +500,6 @@ float ATODManager::GetFinalSpeed(float InTime)
 	return CalculateCycleSpeed(CurrentSystemTime) * 50.0f;
 }
 
-// 기존 BP Timeline의 "Calculate Pivot Rotation -> Set Relative Rotation(PivotSunMoon)"을 대체
 void ATODManager::UpdatePivotRotation(float InTime)
 {
 	if (!IsValid(PivotSunMoonComponent))
@@ -522,6 +522,12 @@ float ATODManager::WrapStartTime(float InTime)
 
 void ATODManager::ApplyStaticSunMoonOffsets()
 {
+	if (IsValid(PivotOrbitTiltComponent))
+	{
+		PivotOrbitTiltComponent->SetRelativeRotation(
+			FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
+	}
+
 	if (IsValid(MoonLightComponent))
 	{
 		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);

@@ -91,6 +91,9 @@ public:
     TObjectPtr<class USkyAtmosphereComponent> SkyAtmosphereComponent;
 
     UPROPERTY()
+    TObjectPtr<class USceneComponent> PivotOrbitTiltComponent;
+
+    UPROPERTY()
     TObjectPtr<class USceneComponent> PivotSunMoonComponent;
 
     UPROPERTY()
@@ -243,9 +246,12 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "TOD|Moon")
     float GetCalculatedMoonScale(float InTime) const;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Moon")
+    void UpdateMoonMeshTransform();
+
 private:
     float GetScaledMoonDistance() const;
-    void UpdateMoonMeshTransform();
 
     // =========================================================================
     // Properties: Curves
