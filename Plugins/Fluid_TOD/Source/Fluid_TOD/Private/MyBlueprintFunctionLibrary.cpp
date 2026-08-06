@@ -1,4 +1,4 @@
-﻿#include "MyBlueprintFunctionLibrary.h"
+#include "MyBlueprintFunctionLibrary.h"
 #include "TOD_Types.h"
 #include "Curves/RichCurve.h"
 #include "Engine/Engine.h"
@@ -95,15 +95,6 @@ void UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(FRuntimeFloatCurve& InC
 		RichCurve->AddKey(0.0f, BlendedValue);
 		RichCurve->AddKey(24.0f, BlendedValue);
 	}
-	else if (MinTime == 0.0f && MaxTime == 24.0f)
-	{
-		float ValueToSync = RichCurve->Eval(0.0f);
-		FKeyHandle Key24 = RichCurve->FindKey(24.0f);
-		if (RichCurve->IsKeyHandleValid(Key24))
-		{
-			RichCurve->UpdateOrAddKey(24.0f, ValueToSync);
-		}
-	}
 
 	RichCurve->PreInfinityExtrap = RCCE_Cycle;
 	RichCurve->PostInfinityExtrap = RCCE_Cycle;
@@ -137,15 +128,6 @@ void UMyBlueprintFunctionLibrary::SealColorCurveFor24Hours(FRuntimeCurveLinearCo
 			float BlendedValue = (RichCurve->Eval(MinTime) + RichCurve->Eval(MaxTime)) * 0.5f;
 			RichCurve->AddKey(0.0f, BlendedValue);
 			RichCurve->AddKey(24.0f, BlendedValue);
-		}
-		else if (MinTime == 0.0f && MaxTime == 24.0f)
-		{
-			float ValueToSync = RichCurve->Eval(0.0f);
-			FKeyHandle Key24 = RichCurve->FindKey(24.0f);
-			if (RichCurve->IsKeyHandleValid(Key24))
-			{
-				RichCurve->UpdateOrAddKey(24.0f, ValueToSync);
-			}
 		}
 
 		RichCurve->PreInfinityExtrap = RCCE_Cycle;

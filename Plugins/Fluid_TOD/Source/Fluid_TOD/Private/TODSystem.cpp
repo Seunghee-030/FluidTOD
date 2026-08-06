@@ -131,7 +131,7 @@ FRotator FTODSystem::CalculatePivotRotation(
 		);
 	}
 
-	return FRotator(0.0f, PitchAngle, 0.0f);
+	return FRotator(PitchAngle, 0.0f, 0.0f);
 }
 
 void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)

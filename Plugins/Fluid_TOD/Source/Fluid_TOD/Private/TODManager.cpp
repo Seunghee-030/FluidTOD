@@ -534,11 +534,6 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
 	}
 
-	if (IsValid(SunLightComponent))
-	{
-		SunLightComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
-	}
-
 	UpdateMoonMeshTransform();
 }
 
