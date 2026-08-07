@@ -17,8 +17,7 @@ public:
 
     static float NormalizeTime(float Time);
 
-    FRotator CalculatePivotRotation(
+    FQuat CalculatePivotRotation(
         const ATODManager* Owner,
-        float InTime
-    ) const;
+        float InTime) const;
 };

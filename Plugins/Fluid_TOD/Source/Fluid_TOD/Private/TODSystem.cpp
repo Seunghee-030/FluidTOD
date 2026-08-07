@@ -92,46 +92,49 @@ float FTODSystem::NormalizeTime(float Time)
 	return SafeTime < 0.f ? SafeTime + 24.f : SafeTime;
 }
 
-FRotator FTODSystem::CalculatePivotRotation(
+FQuat FTODSystem::CalculatePivotRotation(
 	const ATODManager* Owner,
 	float InTime) const
 {
-	const float SafeTime = NormalizeTime(InTime);
+	const float TimeFromNoon = NormalizeTime(InTime);
+
+	const float HalfDay =
+		(Owner->CalculatedSunsetTime - Owner->CalculatedSunriseTime) * 0.5f;
+
+	const bool bIsDaytime =
+		(TimeFromNoon < HalfDay) ||
+		(TimeFromNoon >= (24.0f - HalfDay));
 
 	float PitchAngle = 0.0f;
 
-	bool bIsDaytime =
-		(SafeTime >= Owner->CalculatedSunriseTime) &&
-		(SafeTime < Owner->CalculatedSunsetTime);
-
 	if (bIsDaytime)
 	{
+		const float T =
+			(TimeFromNoon < HalfDay)
+			? TimeFromNoon
+			: (TimeFromNoon - 24.0f);
+
 		PitchAngle = FMath::GetMappedRangeValueClamped(
-			FVector2D(
-				Owner->CalculatedSunriseTime,
-				Owner->CalculatedSunsetTime),
+			FVector2D(-HalfDay, HalfDay),
 			FVector2D(180.0f, 360.0f),
-			SafeTime
+			T
 		);
 	}
 	else
 	{
-		float TotalNightDuration =
-			24.0f - (Owner->CalculatedSunsetTime - Owner->CalculatedSunriseTime);
-
-		float ElapsedNightTime =
-			(SafeTime >= Owner->CalculatedSunsetTime)
-			? SafeTime - Owner->CalculatedSunsetTime
-			: (24.0f - Owner->CalculatedSunsetTime) + SafeTime;
+		constexpr float PoleGuardDeg = 1.0f;
 
 		PitchAngle = FMath::GetMappedRangeValueClamped(
-			FVector2D(0.0f, TotalNightDuration),
-			FVector2D(0.0f, 180.0f),
-			ElapsedNightTime
+			FVector2D(HalfDay, 24.0f - HalfDay),
+			FVector2D(PoleGuardDeg, 180.0f - PoleGuardDeg),
+			TimeFromNoon
 		);
 	}
 
-	return FRotator(PitchAngle, 0.0f, 0.0f);
+	return FQuat(
+		FVector::RightVector,
+		FMath::DegreesToRadians(PitchAngle)
+	);
 }
 
 void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
@@ -252,7 +255,7 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	{
 		if (!Owner->SunLightComponent->bAtmosphereSunLight)
 		{
-			Owner->SunLightComponent->SetAtmosphereSunLight(true);
+			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
 			Owner->SunLightComponent->MarkRenderStateDirty();
 		}
 
@@ -269,7 +272,7 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		// 달의 대기 산란 영향 차단 (붉은 달 방지)
 		if (Owner->MoonLightComponent->bAtmosphereSunLight)
 		{
-			Owner->MoonLightComponent->SetAtmosphereSunLight(false);
+			//Owner->MoonLightComponent->SetAtmosphereSunLight(false);
 			Owner->MoonLightComponent->MarkRenderStateDirty();
 		}
 		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);

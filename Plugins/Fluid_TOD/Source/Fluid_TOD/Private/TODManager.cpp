@@ -508,7 +508,14 @@ void ATODManager::UpdatePivotRotation(float InTime)
 		return;
 	}
 
-	PivotSunMoonComponent->SetRelativeRotation(CalculatePivotRotation(InTime));
+	PivotSunMoonComponent->SetRelativeRotation(
+		CalculatePivotRotation(InTime)
+	);
+}
+
+FQuat ATODManager::CalculatePivotRotation(float InTime) const
+{
+	return TODSystem.CalculatePivotRotation(this, InTime);
 }
 
 float ATODManager::WrapStartTime(float InTime)
@@ -577,11 +584,6 @@ void ATODManager::FindComponents()
 void ATODManager::UpdateSunTimes()
 {
 	TODSystem.UpdateSunTimes(this);
-}
-
-FRotator ATODManager::CalculatePivotRotation(float InTime) const
-{
-	return TODSystem.CalculatePivotRotation(this, InTime);
 }
 
 // ======= Editor 기능 관련 =========

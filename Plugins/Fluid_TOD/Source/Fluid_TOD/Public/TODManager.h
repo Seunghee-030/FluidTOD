@@ -336,8 +336,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void UpdateSunTimes();
 
-    UFUNCTION(BlueprintPure, Category = "TOD|Geography")
-    FRotator CalculatePivotRotation(float InTime) const;
+    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    FQuat CalculatePivotRotation(float InTime) const;
 
     // =========================================================================
     // Functions: Preset

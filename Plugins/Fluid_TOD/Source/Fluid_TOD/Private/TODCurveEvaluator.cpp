@@ -118,6 +118,40 @@ namespace
 
 		return Result;
 	}
+
+	void FlattenSeamTangentRich(FRichCurve* Rich)
+	{
+		if (!Rich || Rich->GetNumKeys() < 2) return;
+
+		FKeyHandle FirstHandle = Rich->GetFirstKeyHandle();
+		FKeyHandle LastHandle = Rich->GetLastKeyHandle();
+
+		if (FMath::IsNearlyEqual(Rich->GetKey(FirstHandle).Value, Rich->GetKey(LastHandle).Value, KINDA_SMALL_NUMBER))
+		{
+			Rich->SetKeyTangentMode(FirstHandle, RCTM_User);
+			Rich->SetKeyTangentMode(LastHandle, RCTM_User);
+			Rich->SetKeyInterpMode(FirstHandle, RCIM_Cubic);
+			Rich->SetKeyInterpMode(LastHandle, RCIM_Cubic);
+
+			FRichCurveKey& FirstKey = Rich->GetKey(FirstHandle);
+			FRichCurveKey& LastKey = Rich->GetKey(LastHandle);
+			FirstKey.ArriveTangent = FirstKey.LeaveTangent = 0.0f;
+			LastKey.ArriveTangent = LastKey.LeaveTangent = 0.0f;
+		}
+	}
+
+	void FlattenSeamTangent(FRuntimeFloatCurve& InCurve)
+	{
+		FlattenSeamTangentRich(InCurve.GetRichCurve());
+	}
+
+	void FlattenSeamTangentColor(FRuntimeCurveLinearColor& InCurve)
+	{
+		for (int32 i = 0; i < 4; ++i)
+		{
+			FlattenSeamTangentRich(&InCurve.ColorCurves[i]);
+		}
+	}
 }
 
 void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
@@ -400,6 +434,9 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::SealColorCurveFor24Hours(*Curve); }
+
+	for (FRuntimeFloatCurve* Curve : FloatCurves) { FlattenSeamTangent(*Curve); }
+	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { FlattenSeamTangentColor(*Curve); }
 }
 
 void FTODCurveEvaluator::GetTODSettingsAtTime(
