@@ -239,6 +239,9 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	Owner->RuntimePPVComponent->Priority = 1.0f;
 	Owner->RuntimePPVComponent->BlendWeight = 1.0f;
 
+	// 초기화
+	Owner->RuntimePPVComponent->Settings = FPostProcessSettings();
+
 #define LERP_PPV(Prop) \
 	{ \
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \

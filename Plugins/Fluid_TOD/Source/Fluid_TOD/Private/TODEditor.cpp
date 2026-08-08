@@ -141,8 +141,71 @@ void FTODEditor::LoadSelectedPreset(ATODManager* Owner)
 	if (!Owner || !Owner->LoadPreset) return;
 	if (Owner->LoadPreset->TOD_DataArray.Num() == 0) return;
 
+	struct FExistingPPVEntry
+	{
+		float Time = 0.0f;
+		TObjectPtr<APostProcessVolume> PPV = nullptr;
+	};
+
+	auto NormalizeForMatch = [](float Time)
+		{
+			return FMath::IsNearlyEqual(Time, 24.0f, KINDA_SMALL_NUMBER) ? 0.0f : Time;
+		};
+
+	TArray<FExistingPPVEntry> ExistingPPVs;
+	for (const FTODMasterData& OldData : Owner->TOD_DataArray)
+	{
+		if (IsValid(OldData.PPV))
+		{
+			ExistingPPVs.Add({ NormalizeForMatch(OldData.Time), OldData.PPV });
+		}
+	}
+
 	Owner->TOD_DataArray = Owner->LoadPreset->TOD_DataArray;
+
+	TArray<bool> bConsumed;
+	bConsumed.SetNumZeroed(ExistingPPVs.Num());
+
+	for (FTODMasterData& NewData : Owner->TOD_DataArray)
+	{
+		const float NewTime = NormalizeForMatch(NewData.Time);
+
+		for (int32 i = 0; i < ExistingPPVs.Num(); ++i)
+		{
+			if (bConsumed[i]) continue;
+
+			if (FMath::IsNearlyEqual(ExistingPPVs[i].Time, NewTime, KINDA_SMALL_NUMBER))
+			{
+				NewData.PPV = ExistingPPVs[i].PPV;
+				bConsumed[i] = true;
+				break;
+			}
+		}
+	}
+
 	Owner->MarkPackageDirty();
+
+#if WITH_EDITOR
+	TArray<FString> OrphanedTimes;
+	for (int32 i = 0; i < ExistingPPVs.Num(); ++i)
+	{
+		if (!bConsumed[i])
+		{
+			OrphanedTimes.Add(FString::Printf(TEXT("%.2f"), ExistingPPVs[i].Time));
+		}
+	}
+
+	if (OrphanedTimes.Num() > 0)
+	{
+		FNotificationInfo Info(FText::Format(
+			FText::FromString(TEXT(
+				"Preset loaded. Previously assigned PPV at time {0} could not be re-linked "
+				"(no slot with the exact same time exists in the loaded preset). Please reassign if needed.")),
+			FText::FromString(FString::Join(OrphanedTimes, TEXT(", ")))));
+		Info.ExpireDuration = 6.0f;
+		FSlateNotificationManager::Get().AddNotification(Info);
+	}
+#endif
 }
 
 void FTODEditor::ForceViewportRedraw(ATODManager* Owner)

@@ -71,11 +71,11 @@ void ATODManager::BeginPlay()
 	FindComponents();
 	UpdateSunTimes();
 	SortTODDataArray();
-	ApplyStaticSunMoonOffsets();
+
 	BakeTODCurves();
-	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
-	UpdateMoonMeshTransform();
+	ApplyStaticSunMoonOffsets();
+	UpdatePivotRotation(StartTime);
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
@@ -95,7 +95,7 @@ void ATODManager::Tick(float DeltaSeconds)
 		return;
 	}
 
-	const float Speed = CalculateCycleSpeed(CurrentSystemTime);
+	const float Speed = CalculateCycleSpeed(CurrentSystemTime) * TimeDirection;
 
 	float NewTime = CurrentSystemTime + Speed * DeltaSeconds;
 	NewTime = FMath::Fmod(NewTime, 24.0f);
@@ -104,6 +104,7 @@ void ATODManager::Tick(float DeltaSeconds)
 		NewTime += 24.0f;
 	}
 
+	UpdateSkyAnchorPosition();
 	UpdatePivotRotation(NewTime);
 	UpdateTOD(NewTime);
 	UpdateMoonMeshTransform();
@@ -183,6 +184,7 @@ void ATODManager::SetStartTime(float NewTime)
 	SortTODDataArray();
 	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
+	UpdateMoonMeshTransform();
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
@@ -200,6 +202,7 @@ void ATODManager::SetCurrentTime(float NewTime)
 
 	UpdatePivotRotation(CurrentSystemTime);
 	UpdateTOD(CurrentSystemTime);
+	UpdateMoonMeshTransform();
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
@@ -481,6 +484,25 @@ void ATODManager::GetTODSettingsAtTime(
 	);
 }
 
+void ATODManager::UpdateSkyAnchorPosition()
+{
+	if (!bFollowCameraPosition) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC) return;
+
+	APawn* Pawn = PC->GetPawn();
+	if (!Pawn) return;
+
+	if (IsValid(PivotOrbitTiltComponent))
+	{
+		PivotOrbitTiltComponent->SetWorldLocation(Pawn->GetActorLocation());
+	}
+}
+
 float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
 {
 	return CurveEvaluator.GetMoonSourceScaleAtTime(this, InTime);
@@ -587,8 +609,9 @@ void ATODManager::UpdateSunTimes()
 }
 
 // ======= Editor 기능 관련 =========
-
-#if WITH_EDITOR
+// =========================================================
+// 공통 및 런타임 생명주기 (패키징 빌드에서도 반드시 존재해야 하는 함수들)
+// =========================================================
 
 void ATODManager::RequestDeferredRebake()
 {
@@ -610,9 +633,9 @@ void ATODManager::RequestDeferredRebake()
 
 				WeakThis->bRebakeRequested = false;
 				WeakThis->BakeTODCurves();
+				WeakThis->UpdateTOD(WeakThis->StartTime);
 				WeakThis->ApplyStaticSunMoonOffsets();
 				WeakThis->UpdatePivotRotation(WeakThis->StartTime);
-				WeakThis->UpdateTOD(WeakThis->StartTime);
 				WeakThis->ForceViewportRedraw();
 			});
 	}
@@ -620,12 +643,69 @@ void ATODManager::RequestDeferredRebake()
 	{
 		bRebakeRequested = false;
 		BakeTODCurves();
+		UpdateTOD(StartTime);
 		ApplyStaticSunMoonOffsets();
 		UpdatePivotRotation(StartTime);
-		UpdateTOD(StartTime);
 		ForceViewportRedraw();
 	}
 }
+
+void ATODManager::PostInitProperties()
+{
+	Super::PostInitProperties();
+
+	// 에디터에서만 델리게이트를 바인딩
+#if WITH_EDITOR
+	if (!HasAnyFlags(RF_ClassDefaultObject))
+	{
+		PropertyChangeDelegateHandle =
+			FCoreUObjectDelegates::OnObjectPropertyChanged.AddUObject(
+				this,
+				&ATODManager::OnExternalPropertyChanged
+			);
+	}
+#endif
+}
+
+void ATODManager::BeginDestroy()
+{
+	// 에디터에서만 델리게이트를 해제
+#if WITH_EDITOR
+	if (PropertyChangeDelegateHandle.IsValid())
+	{
+		FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(
+			PropertyChangeDelegateHandle
+		);
+	}
+#endif
+
+	Super::BeginDestroy();
+}
+
+void ATODManager::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	// 에디터 환경에서만 위치를 0,0,0으로 고정
+#if WITH_EDITOR
+	if (GetWorld() &&
+		GetWorld()->WorldType == EWorldType::Editor)
+	{
+		SetActorLocation(FVector::ZeroVector);
+		SetActorRotation(FRotator::ZeroRotator);
+		SetActorScale3D(FVector::OneVector);
+	}
+#endif
+
+	RequestDeferredRebake();
+}
+
+
+// =========================================================
+// 에디터 전용 기능 (패키징 시 완전 제외)
+// =========================================================
+
+#if WITH_EDITOR
 
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -921,32 +1001,6 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 	OnTODDataChanged.Broadcast();
 }
 
-void ATODManager::PostInitProperties()
-{
-	Super::PostInitProperties();
-
-	if (!HasAnyFlags(RF_ClassDefaultObject))
-	{
-		PropertyChangeDelegateHandle =
-			FCoreUObjectDelegates::OnObjectPropertyChanged.AddUObject(
-				this,
-				&ATODManager::OnExternalPropertyChanged
-			);
-	}
-}
-
-void ATODManager::BeginDestroy()
-{
-	if (PropertyChangeDelegateHandle.IsValid())
-	{
-		FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(
-			PropertyChangeDelegateHandle
-		);
-	}
-
-	Super::BeginDestroy();
-}
-
 void ATODManager::OnExternalPropertyChanged(
 	UObject* Object,
 	FPropertyChangedEvent& PropertyChangedEvent)
@@ -988,24 +1042,9 @@ void ATODManager::OnExternalPropertyChanged(
 			}
 
 			WeakThis->bPendingPPVUpdate = false;
-			WeakThis->UpdateTOD(WeakThis->StartTime);
+			WeakThis->UpdateTOD(WeakThis->CurrentSystemTime);
 			WeakThis->ForceViewportRedraw();
 		});
-}
-
-void ATODManager::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-	if (GetWorld() &&
-		GetWorld()->WorldType == EWorldType::Editor)
-	{
-		SetActorLocation(FVector::ZeroVector);
-		SetActorRotation(FRotator::ZeroRotator);
-		SetActorScale3D(FVector::OneVector);
-	}
-
-	RequestDeferredRebake();
 }
 
 void ATODManager::PostEditMove(bool bFinished)
@@ -1015,4 +1054,98 @@ void ATODManager::PostEditMove(bool bFinished)
 	RequestDeferredRebake();
 }
 
-#endif
+#endif // 에디터 매크로 종료
+
+// ======= Debug =========
+FString ATODManager::GetFullDebugDumpString() const
+{
+	const float CurTime = CurrentSystemTime;
+
+	const FString StateStr = StaticEnum<ETODState>()->GetNameStringByValue(
+		static_cast<int64>(GetCurrentTODState(CurTime)));
+
+	auto BoolStr = [](bool b) { return b ? TEXT("true") : TEXT("false"); };
+
+	return FString::Printf(TEXT(
+		"\n"
+		"================= [TOD FULL STATE DUMP] =================\n"
+		"-- Time / State --\n"
+		"  CurrentSystemTime      : %.4f  (%s)\n"
+		"  StartTime              : %.4f\n"
+		"  StartTimeDisplay       : %s\n"
+		"  CurrentState (Zone)    : %s\n"
+		"  TransitionDuration     : %.3f\n"
+		"  bIsTimePaused           : %s\n"
+		"  bIsVisualOverridden     : %s\n"
+		"\n"
+		"-- Speed --\n"
+		"  PlayerRef               : %s\n"
+		"  ActiveDaySpeed          : %.3f\n"
+		"  IdleDaySpeed            : %.3f\n"
+		"  InterpSpeed             : %.3f\n"
+		"  DayCycleDuration(min)   : %.3f\n"
+		"  TargetSpeed (internal)  : %.4f\n"
+		"  CurrentSpeed (internal) : %.4f\n"
+		"  CycleSpeedCurve.NumKeys : %d\n"
+		"  GetFinalSpeed()         : %.4f\n"
+		"\n"
+		"-- Geography --\n"
+		"  Latitude                : %.3f\n"
+		"  Longitude                : %.3f\n"
+		"  CalculatedSunriseTime    : %.3f (%s)\n"
+		"  CalculatedSunsetTime     : %.3f (%s)\n"
+		"  MoonLocalRotationOffset  : (P=%.2f, Y=%.2f, R=%.2f)\n"
+		"  SunLatitudeTiltMultiplier: %.3f\n"
+		"\n"
+		"-- Moon --\n"
+		"  MoonDistance                    : %.1f\n"
+		"  bAutoScaleMoonDistanceByMeshSize : %s\n"
+		"  MoonMeshReferenceRadius          : %.1f\n"
+		"  bOverrideMoonSourceScale         : %s\n"
+		"  OverriddenMoonSourceScale        : %.3f\n"
+		"  GetCalculatedMoonScale()         : %.4f\n"
+		"  GetMoonSourceScaleAtTime()       : %.4f\n"
+		"  GetMoonIntensity()               : %.2f\n"
+		"  GetSunIntensity()                : %.2f\n"
+		"===========================================================\n"
+	),
+		// Time / State
+		CurTime, *GetFormattedTimeAsString(CurTime),
+		StartTime,
+		*StartTimeDisplay,
+		*StateStr,
+		TransitionDuration,
+		BoolStr(bIsTimePaused),
+		BoolStr(bIsVisualOverridden),
+
+		// Speed
+		IsValid(PlayerRef) ? *PlayerRef->GetName() : TEXT("None"),
+		ActiveDaySpeed,
+		IdleDaySpeed,
+		InterpSpeed,
+		DayCycleDuration,
+		TargetSpeed,
+		CurrentSpeed,
+		CycleSpeedCurve.GetRichCurveConst() ? CycleSpeedCurve.GetRichCurveConst()->GetNumKeys() : 0,
+		const_cast<ATODManager*>(this)->GetFinalSpeed(CurTime),
+
+		// Geography
+		Latitude,
+		Longitude,
+		CalculatedSunriseTime, *SunriseTime,
+		CalculatedSunsetTime, *SunsetTime,
+		MoonLocalRotationOffset.Pitch, MoonLocalRotationOffset.Yaw, MoonLocalRotationOffset.Roll,
+		SunLatitudeTiltMultiplier,
+
+		// Moon
+		MoonDistance,
+		BoolStr(bAutoScaleMoonDistanceByMeshSize),
+		MoonMeshReferenceRadius,
+		BoolStr(bOverrideMoonSourceScale),
+		OverriddenMoonSourceScale,
+		GetCalculatedMoonScale(CurTime),
+		GetMoonSourceScaleAtTime(CurTime),
+		GetMoonIntensity(CurTime),
+		GetSunIntensity(CurTime)
+	);
+}

@@ -164,6 +164,28 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
     bool IsTimeInState(float InTime, ETODState TargetState) const;
+    
+	// =========================================================================
+	// Properties: PIE console Control
+	// =========================================================================
+  public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Time")
+    float TimeDirection = 1.0f; // 1: 정방향, -1: 역방향
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Time")
+    void ToggleTimeDirection() { TimeDirection *= -1.0f; }
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Time")
+    void ToggleTimePause() { bIsTimePaused = !bIsTimePaused; }
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Speed")
+    void SetSpeedMultiplier(float Multiplier)
+    {
+        DayCycleDuration = FMath::Clamp(20.0f / FMath::Max(Multiplier, 0.01f), 0.1f, 360.0f);
+    }
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Debug")
+    FString GetFullDebugDumpString() const;
 
 protected:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Speed", meta = (AllowPrivateAccess = "true", Tooltip = "Reference to the player character to track movement state."))
@@ -227,6 +249,12 @@ public:
     FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
     float SunLatitudeTiltMultiplier = -1.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
+        meta = (ToolTip = "Keeps the sun/moon pivot centered on the camera so distant light and mesh stay aligned (removes parallax)."))
+    bool bFollowCameraPosition = true;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    void UpdateSkyAnchorPosition();
     // =========================================================================
     // Properties: Moon
     // =========================================================================
