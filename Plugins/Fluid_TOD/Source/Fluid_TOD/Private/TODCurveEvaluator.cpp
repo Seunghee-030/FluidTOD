@@ -152,6 +152,65 @@ namespace
 			FlattenSeamTangentRich(&InCurve.ColorCurves[i]);
 		}
 	}
+
+	void ApplyPPVCompensation(ATODManager* Owner, float CurrentTime)
+	{
+		if (!Owner || !IsValid(Owner->RuntimePPVComponent))
+		{
+			return;
+		}
+
+		const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
+		FPostProcessSettings& Settings = Owner->RuntimePPVComponent->Settings;
+
+		// 노출 보정 (가산)
+		if (const FRichCurve* Curve = Owner->PPV_ExposureCompensationCurve.GetRichCurveConst())
+		{
+			if (Curve->GetNumKeys() > 0)
+			{
+				Settings.bOverride_AutoExposureBias = true;
+				Settings.AutoExposureBias += Curve->Eval(SafeTime);
+			}
+		}
+
+		// 밝기 보정 (배율)
+		if (const FRichCurve* Curve = Owner->PPV_BrightnessCompensationCurve.GetRichCurveConst())
+		{
+			if (Curve->GetNumKeys() > 0)
+			{
+				Settings.bOverride_BloomIntensity = true;
+				Settings.BloomIntensity *= Curve->Eval(SafeTime);
+			}
+		}
+
+		// 색온도 보정 (가산)
+		if (const FRichCurve* Curve = Owner->PPV_WhiteTempCompensationCurve.GetRichCurveConst())
+		{
+			if (Curve->GetNumKeys() > 0)
+			{
+				Settings.bOverride_WhiteTemp = true;
+				Settings.WhiteTemp += Curve->Eval(SafeTime);
+			}
+		}
+
+		// 색감 보정 (RGBA 배율)
+		bool bHasColorCompensation = false;
+		for (int32 i = 0; i < 4; ++i)
+		{
+			if (Owner->PPV_ColorGradingCompensationCurve.ColorCurves[i].GetNumKeys() > 0)
+			{
+				bHasColorCompensation = true;
+				break;
+			}
+		}
+
+		if (bHasColorCompensation)
+		{
+			const FLinearColor Comp = Owner->PPV_ColorGradingCompensationCurve.GetLinearColorValue(SafeTime);
+			Settings.bOverride_ColorSaturation = true;
+			Settings.ColorSaturation *= FVector4(Comp.R, Comp.G, Comp.B, Comp.A);
+		}
+	}
 }
 
 void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
@@ -181,53 +240,49 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Data.PPV->BlendWeight = 0.0f;
 	}
 
-	// PPV 1개뿐 일 때.
+	int32 PrevIndex = 0;
+	int32 NextIndex = 0;
+	float Alpha = 0.0f;
+
 	if (Num == 1)
 	{
-		APostProcessVolume* OnlyPPV = ValidPPVs[0].PPV;
-		if (!IsValid(OnlyPPV)) return;
-
-		Owner->RuntimePPVComponent->bEnabled = true;
-		Owner->RuntimePPVComponent->bUnbound = true;
-		Owner->RuntimePPVComponent->Priority = 1.0f;
-		Owner->RuntimePPVComponent->BlendWeight = 1.0f;
-		Owner->RuntimePPVComponent->Settings = OnlyPPV->Settings;
-		return;
-	}
-
-	const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
-
-	int32 PrevIndex = Num - 1;
-	int32 NextIndex = 0;
-
-	for (int32 i = 0; i < Num; ++i)
-	{
-		if (SafeTime < ValidPPVs[i].Time)
-		{
-			NextIndex = i;
-			PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
-			break;
-		}
-	}
-
-	if (SafeTime >= ValidPPVs[Num - 1].Time)
-	{
-		PrevIndex = Num - 1;
+		PrevIndex = 0;
 		NextIndex = 0;
 	}
+	else
+	{
+		const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
 
-	float PrevTime = ValidPPVs[PrevIndex].Time;
-	float NextTime = ValidPPVs[NextIndex].Time;
+		PrevIndex = Num - 1;
+		NextIndex = 0;
 
-	float Range = NextTime - PrevTime;
-	while (Range <= 0.0f) Range += TODHours;
+		for (int32 i = 0; i < Num; ++i)
+		{
+			if (SafeTime < ValidPPVs[i].Time)
+			{
+				NextIndex = i;
+				PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
+				break;
+			}
+		}
 
-	float Elapsed = SafeTime - PrevTime;
-	while (Elapsed < 0.0f) Elapsed += TODHours;
+		if (SafeTime >= ValidPPVs[Num - 1].Time)
+		{
+			PrevIndex = Num - 1;
+			NextIndex = 0;
+		}
 
-	const float RawAlpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
+		const float PrevTime = ValidPPVs[PrevIndex].Time;
+		const float NextTime = ValidPPVs[NextIndex].Time;
 
-	const float Alpha = RawAlpha;
+		float Range = NextTime - PrevTime;
+		while (Range <= 0.0f) Range += TODHours;
+
+		float Elapsed = SafeTime - PrevTime;
+		while (Elapsed < 0.0f) Elapsed += TODHours;
+
+		Alpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
+	}
 
 	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
 	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
@@ -247,9 +302,17 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
 		const bool bNextOverride = NextPPV->Settings.bOverride_##Prop; \
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
-		if (bPrevOverride || bNextOverride) \
+		if (bPrevOverride && bNextOverride) \
 		{ \
 			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+		} \
+		else if (bPrevOverride) \
+		{ \
+			Owner->RuntimePPVComponent->Settings.Prop = PrevPPV->Settings.Prop; \
+		} \
+		else if (bNextOverride) \
+		{ \
+			Owner->RuntimePPVComponent->Settings.Prop = NextPPV->Settings.Prop; \
 		} \
 	}
 
@@ -266,9 +329,17 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
 		const bool bNextOverride = NextPPV->Settings.bOverride_##Prop; \
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
-		if (bPrevOverride || bNextOverride) \
+		if (bPrevOverride && bNextOverride) \
 		{ \
 			Owner->RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+		} \
+		else if (bPrevOverride) \
+		{ \
+			Owner->RuntimePPVComponent->Settings.Prop = PrevPPV->Settings.Prop; \
+		} \
+		else if (bNextOverride) \
+		{ \
+			Owner->RuntimePPVComponent->Settings.Prop = NextPPV->Settings.Prop; \
 		} \
 	}
 
@@ -334,10 +405,79 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	LERP_PPV(LumenSceneLightingQuality);
 	LERP_PPV(LumenSceneDetail);
 
+	// Local Exposure / Film Tonemapper
+	LERP_PPV(LocalExposureHighlightContrastScale);
+	LERP_PPV(LocalExposureShadowContrastScale);
+	LERP_PPV(LocalExposureDetailStrength);
+	LERP_PPV(LocalExposureMiddleGreyBias);
+	LERP_PPV(FilmSlope);
+	LERP_PPV(FilmToe);
+	LERP_PPV(FilmShoulder);
+	LERP_PPV(FilmBlackClip);
+	LERP_PPV(FilmWhiteClip);
+
+	// Lens Flare / 기타 렌즈 이펙트
+	LERP_PPV(LensFlareBokehSize);
+	LERP_PPV(LensFlareThreshold);
+	LERP_COLOR_PPV(LensFlareTint);
+
+	// Film Grain 확장
+	LERP_PPV(FilmGrainIntensityShadows);
+	LERP_PPV(FilmGrainIntensityMidtones);
+	LERP_PPV(FilmGrainIntensityHighlights);
+	LERP_PPV(FilmGrainShadowsMax);
+	LERP_PPV(FilmGrainHighlightsMin);
+	LERP_PPV(FilmGrainHighlightsMax);
+
+	// Scene Color / Chromatic Aberration
+	LERP_COLOR_PPV(SceneColorTint);
+	LERP_PPV(ChromaticAberrationStartOffset);
+
+	// Color Grading 경계값 / 기타
+	LERP_PPV(ColorCorrectionShadowsMax);
+	LERP_PPV(ColorCorrectionHighlightsMin);
+	LERP_PPV(ColorCorrectionHighlightsMax);
+	LERP_PPV(BlueCorrection);
+	LERP_PPV(ExpandGamut);
+	LERP_PPV(ToneCurveAmount);
+
+	// Bloom 커널 (Standard 방식)
+	LERP_PPV(Bloom1Size);
+	LERP_PPV(Bloom2Size);
+	LERP_PPV(Bloom3Size);
+	LERP_PPV(Bloom4Size);
+	LERP_PPV(Bloom5Size);
+	LERP_PPV(Bloom6Size);
+	LERP_COLOR_PPV(Bloom1Tint);
+	LERP_COLOR_PPV(Bloom2Tint);
+	LERP_COLOR_PPV(Bloom3Tint);
+	LERP_COLOR_PPV(Bloom4Tint);
+	LERP_COLOR_PPV(Bloom5Tint);
+	LERP_COLOR_PPV(Bloom6Tint);
+
+	// Ambient Occlusion 세부값
+	LERP_PPV(AmbientOcclusionRadius);
+	LERP_PPV(AmbientOcclusionStaticFraction);
+	LERP_PPV(AmbientOcclusionBias);
+	LERP_PPV(AmbientOcclusionPower);
+	LERP_PPV(AmbientOcclusionFadeDistance);
+	LERP_PPV(AmbientOcclusionFadeRadius);
+
+	// Screen Space Reflection
+	LERP_PPV(ScreenSpaceReflectionIntensity);
+
+	// Local Exposure 추가값
+	LERP_PPV(LocalExposureBlurredLuminanceBlend);
+
+	// Motion Blur 추가값
+	LERP_PPV(MotionBlurMax);
+
 #undef LERP_PPV
 #undef LERP_VEC4_PPV
 #undef LERP_PPV_FORCE_OVERRIDE
 #undef LERP_COLOR_PPV
+
+	ApplyPPVCompensation(Owner, CurrentTime);
 }
 
 void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)

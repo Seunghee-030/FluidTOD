@@ -1066,6 +1066,35 @@ FString ATODManager::GetFullDebugDumpString() const
 
 	auto BoolStr = [](bool b) { return b ? TEXT("true") : TEXT("false"); };
 
+	// PPV Compensation 값 계산
+	float CompExposure = 0.0f;
+	float CompBrightness = 1.0f;
+	float CompWhiteTemp = 0.0f;
+	FLinearColor CompColorGrading = FLinearColor::White;
+
+	if (const FRichCurve* Curve = PPV_ExposureCompensationCurve.GetRichCurveConst())
+	{
+		if (Curve->GetNumKeys() > 0) CompExposure = Curve->Eval(CurTime);
+	}
+	if (const FRichCurve* Curve = PPV_BrightnessCompensationCurve.GetRichCurveConst())
+	{
+		if (Curve->GetNumKeys() > 0) CompBrightness = Curve->Eval(CurTime);
+	}
+	if (const FRichCurve* Curve = PPV_WhiteTempCompensationCurve.GetRichCurveConst())
+	{
+		if (Curve->GetNumKeys() > 0) CompWhiteTemp = Curve->Eval(CurTime);
+	}
+
+	bool bHasColorComp = false;
+	for (int32 i = 0; i < 4; ++i)
+	{
+		if (PPV_ColorGradingCompensationCurve.ColorCurves[i].GetNumKeys() > 0) { bHasColorComp = true; break; }
+	}
+	if (bHasColorComp)
+	{
+		CompColorGrading = PPV_ColorGradingCompensationCurve.GetLinearColorValue(CurTime);
+	}
+
 	return FString::Printf(TEXT(
 		"\n"
 		"================= [TOD FULL STATE DUMP] =================\n"
@@ -1107,6 +1136,12 @@ FString ATODManager::GetFullDebugDumpString() const
 		"  GetMoonSourceScaleAtTime()       : %.4f\n"
 		"  GetMoonIntensity()               : %.2f\n"
 		"  GetSunIntensity()                : %.2f\n"
+		"\n"
+		"-- PPV Compensation --\n"
+		"  Exposure Bias (+)      : %.3f\n"
+		"  Brightness Scale (x)   : %.3f\n"
+		"  WhiteTemp Offset (+)   : %.1fK\n"
+		"  ColorGrading Scale     : (R:%.2f, G:%.2f, B:%.2f, A:%.2f)\n"
 		"===========================================================\n"
 	),
 		// Time / State
@@ -1146,6 +1181,12 @@ FString ATODManager::GetFullDebugDumpString() const
 		GetCalculatedMoonScale(CurTime),
 		GetMoonSourceScaleAtTime(CurTime),
 		GetMoonIntensity(CurTime),
-		GetSunIntensity(CurTime)
-	);
+		GetSunIntensity(CurTime),
+
+		// PPV Compensation
+		CompExposure,
+		CompBrightness,
+		CompWhiteTemp,
+		CompColorGrading.R, CompColorGrading.G, CompColorGrading.B, CompColorGrading.A
+		);
 }

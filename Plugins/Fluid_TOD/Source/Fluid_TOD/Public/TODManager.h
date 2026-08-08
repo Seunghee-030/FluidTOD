@@ -293,6 +293,26 @@ public:
     float OverriddenMoonSourceScale = 0.5f;
 
     // =========================================================================
+    // Properties: PPV Compensation
+    // =========================================================================
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|PPV Compensation",
+        meta = (ToolTip = "Time-of-day exposure compensation. Added to the blended PPV's AutoExposureBias."))
+    FRuntimeFloatCurve PPV_ExposureCompensationCurve;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|PPV Compensation",
+        meta = (ToolTip = "Time-of-day brightness compensation. Applied as a multiplier to the blended PPV's BloomIntensity."))
+    FRuntimeFloatCurve PPV_BrightnessCompensationCurve;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|PPV Compensation",
+        meta = (ToolTip = "Time-of-day color temperature compensation (Kelvin). Added to the blended PPV's WhiteTemp."))
+    FRuntimeFloatCurve PPV_WhiteTempCompensationCurve;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|PPV Compensation",
+        meta = (ToolTip = "Time-of-day color grading compensation. Applied as an RGBA multiplier to the blended PPV's ColorSaturation."))
+    FRuntimeCurveLinearColor PPV_ColorGradingCompensationCurve;
+
+    // =========================================================================
     // Properties: Preset
     // =========================================================================
 
