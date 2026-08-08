@@ -177,13 +177,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     void ToggleTimePause() { bIsTimePaused = !bIsTimePaused; }
-
-    UFUNCTION(BlueprintCallable, Category = "TOD|Speed")
-    void SetSpeedMultiplier(float Multiplier)
-    {
-        DayCycleDuration = FMath::Clamp(20.0f / FMath::Max(Multiplier, 0.01f), 0.1f, 360.0f);
-    }
-
     UFUNCTION(BlueprintPure, Category = "TOD|Debug")
     FString GetFullDebugDumpString() const;
 

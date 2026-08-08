@@ -105,22 +105,6 @@ static FAutoConsoleCommandWithWorldAndArgs CVar_TOD_TogglePause(
         })
 );
 
-// 콘솔 명령어: TOD 시간 흐름 속도 배속 설정
-static FAutoConsoleCommandWithWorldAndArgs CVar_TOD_SetSpeed(
-    TEXT("Tod.Speed"),
-    TEXT("Usage: Tod.Speed 5 (set the daily cycle speed to multiply.)"),
-    FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
-        [](const TArray<FString>& Args, UWorld* World)
-        {
-            if (!World || Args.Num() == 0) return;
-            const float Mult = FCString::Atof(*Args[0]);
-            for (TActorIterator<ATODManager> It(World); It; ++It)
-            {
-                It->SetSpeedMultiplier(Mult);
-                break;
-            }
-        })
-);
 
 // 콘솔 명령어: TOD 곡선 재베이크
 static FAutoConsoleCommandWithWorld CVar_TOD_Bake(
