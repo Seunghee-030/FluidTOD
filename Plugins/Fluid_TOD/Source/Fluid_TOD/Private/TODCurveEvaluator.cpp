@@ -697,6 +697,40 @@ float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, flo
 	return 0.0f;
 }
 
+float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const
+{
+	if (!Owner || !Owner->CurveData)
+	{
+		return 0.0f;
+	}
+
+	const float SafeTime = NormalizeTODTimeForBake(InTime);
+
+	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.IntensityCurve.GetRichCurveConst())
+	{
+		return Curve->Eval(SafeTime);
+	}
+
+	return 0.0f;
+}
+
+float FTODCurveEvaluator::GetSunIntensity(const ATODManager* Owner, float InTime) const
+{
+	if (!Owner || !Owner->CurveData)
+	{
+		return 0.0f;
+	}
+
+	const float SafeTime = NormalizeTODTimeForBake(InTime);
+
+	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.IntensityCurve.GetRichCurveConst())
+	{
+		return Curve->Eval(SafeTime);
+	}
+
+	return 0.0f;
+}
+
 #if WITH_EDITOR
 
 TArray<TPair<float, float>> FTODCurveEvaluator::SnapshotFloatCurve(const FRuntimeFloatCurve& Curve)
@@ -952,36 +986,3 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 }
 
 #endif // WITH_EDITOR
-float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const
-{
-	if (!Owner || !Owner->CurveData)
-	{
-		return 0.0f;
-	}
-
-	const float SafeTime = NormalizeTODTimeForBake(InTime);
-
-	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.IntensityCurve.GetRichCurveConst())
-	{
-		return Curve->Eval(SafeTime);
-	}
-
-	return 0.0f;
-}
-
-float FTODCurveEvaluator::GetSunIntensity(const ATODManager* Owner, float InTime) const
-{
-	if (!Owner || !Owner->CurveData)
-	{
-		return 0.0f;
-	}
-
-	const float SafeTime = NormalizeTODTimeForBake(InTime);
-
-	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.IntensityCurve.GetRichCurveConst())
-	{
-		return Curve->Eval(SafeTime);
-	}
-
-	return 0.0f;
-}
