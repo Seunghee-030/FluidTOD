@@ -25,4 +25,14 @@ public:
     float GetMoonSourceScaleAtTime(const class ATODManager* Owner, float InTime) const;
     float GetMoonIntensity(const class ATODManager* Owner, float InTime) const;
     float GetSunIntensity(const class ATODManager* Owner, float InTime) const;
+
+    static TArray<FRuntimeFloatCurve*> GetAllFloatCurves(class UTODCurveContainer* CurveData);
+    static TArray<FRuntimeCurveLinearColor*> GetAllColorCurves(class UTODCurveContainer* CurveData);
+
+#if WITH_EDITOR
+    static TArray<TPair<float, float>> SnapshotFloatCurve(const FRuntimeFloatCurve& Curve);
+    static TArray<TArray<TPair<float, float>>> SnapshotColorCurve(const FRuntimeCurveLinearColor& Curve);
+
+    static void SyncGraphEditToDataArray(ATODManager* Owner, class UTODCurveContainer* CurveData);
+#endif
 };

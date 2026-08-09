@@ -213,6 +213,29 @@ namespace
 	}
 }
 
+TArray<FRuntimeFloatCurve*> FTODCurveEvaluator::GetAllFloatCurves(UTODCurveContainer* CurveData)
+{
+	if (!CurveData) return {};
+
+	return {
+		&CurveData->SunCurves.IntensityCurve, &CurveData->SunCurves.SourceAngleCurve, &CurveData->SunCurves.SourceSoftAngleCurve, &CurveData->SunCurves.IndirectIntensityCurve,
+		&CurveData->MoonCurves.IntensityCurve, &CurveData->MoonCurves.SourceAngleCurve, &CurveData->MoonCurves.SourceSoftAngleCurve, &CurveData->MoonCurves.SourceScaleCurve, &CurveData->MoonCurves.SourceEmissiveIntensityCurve,
+		&CurveData->SkyLightCurves.IntensityCurve, &CurveData->SkyLightCurves.IndirectIntensityCurve, &CurveData->SkyLightCurves.VolumetricScatteringIntensityCurve, &CurveData->SkyLightCurves.TextureEmissiveIntensityCurve,
+		&CurveData->FogCurves.DensityCurve, &CurveData->FogCurves.HeightFalloffCurve,
+		&CurveData->SkyAtmosphereCurves.MieScatteringScaleCurve, &CurveData->SkyAtmosphereCurves.RayleighScatteringScaleCurve, &CurveData->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
+	};
+}
+
+TArray<FRuntimeCurveLinearColor*> FTODCurveEvaluator::GetAllColorCurves(UTODCurveContainer* CurveData)
+{
+	if (!CurveData) return {};
+
+	return {
+		&CurveData->SunCurves.LightColorCurve, &CurveData->MoonCurves.LightColorCurve, &CurveData->SkyLightCurves.LightColorCurve, &CurveData->FogCurves.InscatteringColorCurve, &CurveData->FogCurves.DirectionalColorCurve,
+		&CurveData->SkyAtmosphereCurves.MieScatteringColorCurve, &CurveData->SkyAtmosphereCurves.AbsorptionColorCurve, &CurveData->SkyAtmosphereCurves.SkyLuminanceFactorCurve
+	};
+}
+
 void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
@@ -240,49 +263,53 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Data.PPV->BlendWeight = 0.0f;
 	}
 
-	int32 PrevIndex = 0;
-	int32 NextIndex = 0;
-	float Alpha = 0.0f;
-
+	// PPV 1개뿐 일 때.
 	if (Num == 1)
 	{
-		PrevIndex = 0;
-		NextIndex = 0;
-	}
-	else
-	{
-		const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
+		APostProcessVolume* OnlyPPV = ValidPPVs[0].PPV;
+		if (!IsValid(OnlyPPV)) return;
 
+		Owner->RuntimePPVComponent->bEnabled = true;
+		Owner->RuntimePPVComponent->bUnbound = true;
+		Owner->RuntimePPVComponent->Priority = 1.0f;
+		Owner->RuntimePPVComponent->BlendWeight = 1.0f;
+		Owner->RuntimePPVComponent->Settings = OnlyPPV->Settings;
+		return;
+	}
+
+	const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
+
+	int32 PrevIndex = Num - 1;
+	int32 NextIndex = 0;
+
+	for (int32 i = 0; i < Num; ++i)
+	{
+		if (SafeTime < ValidPPVs[i].Time)
+		{
+			NextIndex = i;
+			PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
+			break;
+		}
+	}
+
+	if (SafeTime >= ValidPPVs[Num - 1].Time)
+	{
 		PrevIndex = Num - 1;
 		NextIndex = 0;
-
-		for (int32 i = 0; i < Num; ++i)
-		{
-			if (SafeTime < ValidPPVs[i].Time)
-			{
-				NextIndex = i;
-				PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
-				break;
-			}
-		}
-
-		if (SafeTime >= ValidPPVs[Num - 1].Time)
-		{
-			PrevIndex = Num - 1;
-			NextIndex = 0;
-		}
-
-		const float PrevTime = ValidPPVs[PrevIndex].Time;
-		const float NextTime = ValidPPVs[NextIndex].Time;
-
-		float Range = NextTime - PrevTime;
-		while (Range <= 0.0f) Range += TODHours;
-
-		float Elapsed = SafeTime - PrevTime;
-		while (Elapsed < 0.0f) Elapsed += TODHours;
-
-		Alpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
 	}
+
+	float PrevTime = ValidPPVs[PrevIndex].Time;
+	float NextTime = ValidPPVs[NextIndex].Time;
+
+	float Range = NextTime - PrevTime;
+	while (Range <= 0.0f) Range += TODHours;
+
+	float Elapsed = SafeTime - PrevTime;
+	while (Elapsed < 0.0f) Elapsed += TODHours;
+
+	const float RawAlpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
+
+	const float Alpha = RawAlpha;
 
 	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
 	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
@@ -302,17 +329,9 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
 		const bool bNextOverride = NextPPV->Settings.bOverride_##Prop; \
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
-		if (bPrevOverride && bNextOverride) \
+		if (bPrevOverride || bNextOverride) \
 		{ \
 			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
-		} \
-		else if (bPrevOverride) \
-		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = PrevPPV->Settings.Prop; \
-		} \
-		else if (bNextOverride) \
-		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = NextPPV->Settings.Prop; \
 		} \
 	}
 
@@ -329,17 +348,9 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
 		const bool bNextOverride = NextPPV->Settings.bOverride_##Prop; \
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
-		if (bPrevOverride && bNextOverride) \
+		if (bPrevOverride || bNextOverride) \
 		{ \
 			Owner->RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
-		} \
-		else if (bPrevOverride) \
-		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = PrevPPV->Settings.Prop; \
-		} \
-		else if (bNextOverride) \
-		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = NextPPV->Settings.Prop; \
 		} \
 	}
 
@@ -404,6 +415,14 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	// Lumen
 	LERP_PPV(LumenSceneLightingQuality);
 	LERP_PPV(LumenSceneDetail);
+
+	// Depth of Field
+	LERP_PPV(DepthOfFieldFocalDistance);
+	LERP_PPV(DepthOfFieldFstop);
+	LERP_PPV(DepthOfFieldMinFstop);
+	LERP_PPV(DepthOfFieldSensorWidth);
+	LERP_PPV(DepthOfFieldDepthBlurAmount);
+	LERP_PPV(DepthOfFieldDepthBlurRadius);
 
 	// Local Exposure / Film Tonemapper
 	LERP_PPV(LocalExposureHighlightContrastScale);
@@ -489,19 +508,9 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 
 	Owner->FindComponents();
 
-	// 구조체 내부 커브 포인터 매핑
-	TArray<FRuntimeFloatCurve*> FloatCurves = {
-		&Owner->CurveData->SunCurves.IntensityCurve, &Owner->CurveData->SunCurves.SourceAngleCurve, &Owner->CurveData->SunCurves.SourceSoftAngleCurve, &Owner->CurveData->SunCurves.IndirectIntensityCurve,
-		&Owner->CurveData->MoonCurves.IntensityCurve, &Owner->CurveData->MoonCurves.SourceAngleCurve, &Owner->CurveData->MoonCurves.SourceSoftAngleCurve, &Owner->CurveData->MoonCurves.SourceScaleCurve, &Owner->CurveData->MoonCurves.SourceEmissiveIntensityCurve,
-		&Owner->CurveData->SkyLightCurves.IntensityCurve, &Owner->CurveData->SkyLightCurves.IndirectIntensityCurve, &Owner->CurveData->SkyLightCurves.VolumetricScatteringIntensityCurve, &Owner->CurveData->SkyLightCurves.TextureEmissiveIntensityCurve,
-		&Owner->CurveData->FogCurves.DensityCurve, &Owner->CurveData->FogCurves.HeightFalloffCurve,
-		&Owner->CurveData->SkyAtmosphereCurves.MieScatteringScaleCurve, &Owner->CurveData->SkyAtmosphereCurves.RayleighScatteringScaleCurve, &Owner->CurveData->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
-	};
-
-	TArray<FRuntimeCurveLinearColor*> ColorCurves = {
-		&Owner->CurveData->SunCurves.LightColorCurve, &Owner->CurveData->MoonCurves.LightColorCurve, &Owner->CurveData->SkyLightCurves.LightColorCurve, &Owner->CurveData->FogCurves.InscatteringColorCurve, &Owner->CurveData->FogCurves.DirectionalColorCurve,
-		&Owner->CurveData->SkyAtmosphereCurves.MieScatteringColorCurve, &Owner->CurveData->SkyAtmosphereCurves.AbsorptionColorCurve, &Owner->CurveData->SkyAtmosphereCurves.SkyLuminanceFactorCurve
-	};
+	// 구조체 내부 커브 포인터 매핑 (그래프 동기화 로직과 동일한 순서를 공유)
+	TArray<FRuntimeFloatCurve*> FloatCurves = GetAllFloatCurves(Owner->CurveData);
+	TArray<FRuntimeCurveLinearColor*> ColorCurves = GetAllColorCurves(Owner->CurveData);
 
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(*Curve); }
@@ -688,6 +697,261 @@ float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, flo
 	return 0.0f;
 }
 
+#if WITH_EDITOR
+
+TArray<TPair<float, float>> FTODCurveEvaluator::SnapshotFloatCurve(const FRuntimeFloatCurve& Curve)
+{
+	TArray<TPair<float, float>> Keys;
+	if (const FRichCurve* Rich = Curve.GetRichCurveConst())
+	{
+		for (auto It = Rich->GetKeyIterator(); It; ++It)
+		{
+			Keys.Add(TPair<float, float>(It->Time, It->Value));
+		}
+	}
+	return Keys;
+}
+
+TArray<TArray<TPair<float, float>>> FTODCurveEvaluator::SnapshotColorCurve(const FRuntimeCurveLinearColor& Curve)
+{
+	TArray<TArray<TPair<float, float>>> Channels;
+	Channels.SetNum(4);
+	for (int32 i = 0; i < 4; ++i)
+	{
+		for (auto It = Curve.ColorCurves[i].GetKeyIterator(); It; ++It)
+		{
+			Channels[i].Add(TPair<float, float>(It->Time, It->Value));
+		}
+	}
+	return Channels;
+}
+
+namespace
+{
+	using FTODFieldSetter = TFunction<void(FTODMasterData&, float)>;
+
+	struct FTODFloatBinding
+	{
+		FTODFieldSetter Setter;
+	};
+
+	using FTODColorSetter = TFunction<void(FTODMasterData&, FLinearColor)>;
+
+	struct FTODColorBinding
+	{
+		FTODColorSetter Setter;
+	};
+
+	// GetAllFloatCurves()와 정확히 같은 순서. (Sun 4, Moon 5, SkyLight 4, Fog 2, SkyAtmosphere 3)
+	const TArray<FTODFloatBinding>& GetFloatBindings()
+	{
+		static const TArray<FTODFloatBinding> Bindings = {
+			// Sun
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Source_Angle = V; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Source_Soft_Angle = V; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Indirect_Light_Intensity = V; } },
+			// Moon
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Source_Angle = V; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Source_Soft_Angle = V; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Scale = V; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Emissive_Intensity = V; } },
+			// SkyLight
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Light_Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Indirect_Lighting_Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity = V; } },
+			// Fog
+			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Density = V; } },
+			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Height_Falloff = V; } },
+			// SkyAtmosphere
+			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Mie_Scattering_Scale = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Rayleigh_Scattering_Scale = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Aerial_Perspective_Distance_Scale = V; } },
+		};
+		return Bindings;
+	}
+
+	// GetAllColorCurves()와 정확히 같은 순서.
+	const TArray<FTODColorBinding>& GetColorBindings()
+	{
+		static const TArray<FTODColorBinding> Bindings = {
+			{ [](FTODMasterData& D, FLinearColor C) { D.Sun_Settings.Light_Color = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Moon_Settings.Light_Color = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyLight_Settings.Sky_Light_Color = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Fog_Settings.Fog_Inscattering_Color = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Fog_Settings.Fog_Directional_Inscattering = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Mie_Scattering_Color = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Absorption_Color = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Sky_Luminance_Factor = C; } },
+		};
+		return Bindings;
+	}
+
+	// 0h/24h는 개념적으로 같은 시간이므로 동일 취급해서 TOD_DataArray 항목을 찾는다.
+	bool FindMatchingDataIndex(const TArray<FTODMasterData>& DataArray, float KeyTime, int32& OutIndex)
+	{
+		const float Target = NormalizeTODTimeForBake(KeyTime);
+
+		for (int32 i = 0; i < DataArray.Num(); ++i)
+		{
+			if (FMath::IsNearlyEqual(NormalizeTODTimeForBake(DataArray[i].Time), Target, TODBoundaryTolerance))
+			{
+				OutIndex = i;
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+// 그래프(인라인 커브 에디터)에서 편집한 현재 커브 상태를 TOD_DataArray로 읽어 되돌려 쓴다.
+// 스냅샷/이전값 비교 없이, 매번 TOD_DataArray를 기준("있어야 할 키 시간 목록")으로 판단한다.
+// - 시간(Time): 기준과 다르면 그 키만 원복.
+// - 값(Value): 조건 없이 커브에 있는 값을 그대로 읽어(get) TOD_DataArray에 쓴다.
+// - Interpolation 등 커브 자체의 다른 속성은 전혀 건드리지 않는다.
+void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveContainer* CurveData)
+{
+	if (!Owner || !CurveData) return;
+
+	// TOD_DataArray 기준으로 "있어야 할" 키 시간 목록을 새로 계산한다 (BakeTODCurves와 동일 로직).
+	TArray<FTODMasterData> Canonical = BuildCanonicalTODData(Owner->TOD_DataArray, false);
+	AddTwentyFourBoundaryFromZero(Canonical);
+
+	if (Canonical.Num() == 0) return;
+
+	TArray<FRuntimeFloatCurve*> FloatCurves = GetAllFloatCurves(CurveData);
+	TArray<FRuntimeCurveLinearColor*> ColorCurves = GetAllColorCurves(CurveData);
+
+	const TArray<FTODFloatBinding>& FloatBindings = GetFloatBindings();
+	const TArray<FTODColorBinding>& ColorBindings = GetColorBindings();
+
+	constexpr float FindTolerance = TODBoundaryTolerance;
+
+	bool bDataChanged = false;
+	bool bStructureBroken = false;
+
+	// ===== Float 커브 =====
+	for (int32 CurveIndex = 0; CurveIndex < FloatCurves.Num(); ++CurveIndex)
+	{
+		FRichCurve* Rich = FloatCurves[CurveIndex]->GetRichCurve();
+		if (!Rich) continue;
+
+		TArray<TPair<float, float>> CurrentKeys = SnapshotFloatCurve(*FloatCurves[CurveIndex]);
+
+		if (CurrentKeys.Num() != Canonical.Num())
+		{
+			// 그래프에서 키를 추가/삭제해 TOD_DataArray와 개수가 어긋났다. 이 커브는 재베이크로 복구한다.
+			bStructureBroken = true;
+			continue;
+		}
+
+		for (int32 KeyIdx = 0; KeyIdx < CurrentKeys.Num(); ++KeyIdx)
+		{
+			const float CanonicalTime = Canonical[KeyIdx].Time;
+			const float CurrentTime = CurrentKeys[KeyIdx].Key;
+			const float CurrentValue = CurrentKeys[KeyIdx].Value;
+
+			// 시간은 TOD_DataArray 기준으로 고정 — 어긋났으면 그 키만 원복한다.
+			if (!FMath::IsNearlyEqual(CurrentTime, CanonicalTime, FindTolerance))
+			{
+				const FKeyHandle Handle = Rich->FindKey(CurrentTime, FindTolerance);
+				if (Rich->IsKeyHandleValid(Handle))
+				{
+					Rich->SetKeyTime(Handle, CanonicalTime);
+				}
+			}
+
+			// 값은 조건 없이 커브에 있는 그대로 읽어서(get) TOD_DataArray에 쓴다.
+			int32 DataIndex = INDEX_NONE;
+			if (FindMatchingDataIndex(Owner->TOD_DataArray, CanonicalTime, DataIndex))
+			{
+				FloatBindings[CurveIndex].Setter(Owner->TOD_DataArray[DataIndex], CurrentValue);
+				bDataChanged = true;
+			}
+		}
+	}
+
+	// ===== Color 커브 =====
+	for (int32 CurveIndex = 0; CurveIndex < ColorCurves.Num(); ++CurveIndex)
+	{
+		TArray<TArray<TPair<float, float>>> CurrentChannels = SnapshotColorCurve(*ColorCurves[CurveIndex]);
+
+		bool bCountMismatch = false;
+		for (int32 Ch = 0; Ch < 4; ++Ch)
+		{
+			if (CurrentChannels[Ch].Num() != Canonical.Num())
+			{
+				bCountMismatch = true;
+				break;
+			}
+		}
+
+		if (bCountMismatch)
+		{
+			bStructureBroken = true;
+			continue;
+		}
+
+		for (int32 KeyIdx = 0; KeyIdx < Canonical.Num(); ++KeyIdx)
+		{
+			const float CanonicalTime = Canonical[KeyIdx].Time;
+
+			for (int32 Ch = 0; Ch < 4; ++Ch)
+			{
+				FRichCurve& Rich = ColorCurves[CurveIndex]->ColorCurves[Ch];
+				const float CurrentTime = CurrentChannels[Ch][KeyIdx].Key;
+
+				if (!FMath::IsNearlyEqual(CurrentTime, CanonicalTime, FindTolerance))
+				{
+					const FKeyHandle Handle = Rich.FindKey(CurrentTime, FindTolerance);
+					if (Rich.IsKeyHandleValid(Handle))
+					{
+						Rich.SetKeyTime(Handle, CanonicalTime);
+					}
+				}
+			}
+
+			int32 DataIndex = INDEX_NONE;
+			if (FindMatchingDataIndex(Owner->TOD_DataArray, CanonicalTime, DataIndex))
+			{
+				const FLinearColor NewColor(
+					CurrentChannels[0][KeyIdx].Value,
+					CurrentChannels[1][KeyIdx].Value,
+					CurrentChannels[2][KeyIdx].Value,
+					CurrentChannels[3][KeyIdx].Value
+				);
+
+				ColorBindings[CurveIndex].Setter(Owner->TOD_DataArray[DataIndex], NewColor);
+				bDataChanged = true;
+			}
+		}
+	}
+
+	if (bStructureBroken)
+	{
+		FNotificationInfo Info(FText::FromString(TEXT(
+			"그래프에서 키를 추가/삭제할 수 없습니다. TOD_DataArray 기준으로 커브를 다시 생성합니다.")));
+		Info.ExpireDuration = 4.0f;
+		FSlateNotificationManager::Get().AddNotification(Info);
+
+		Owner->BakeTODCurves();
+		Owner->UpdateTOD(Owner->GetCurrentTime());
+		Owner->ForceViewportRedraw();
+		return;
+	}
+
+	if (bDataChanged)
+	{
+		Owner->MarkPackageDirty();
+		Owner->OnTODDataChanged.Broadcast();
+		Owner->UpdateTOD(Owner->GetCurrentTime());
+		Owner->ForceViewportRedraw();
+	}
+}
+
+#endif // WITH_EDITOR
 float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const
 {
 	if (!Owner || !Owner->CurveData)

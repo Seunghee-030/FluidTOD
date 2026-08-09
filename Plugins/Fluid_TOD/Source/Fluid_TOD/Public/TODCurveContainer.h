@@ -25,4 +25,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "SkyAtmosphere Curves")
 	FTODSkyAtmosphereCurveData SkyAtmosphereCurves;
+
+#if WITH_EDITOR
+public:
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 };
