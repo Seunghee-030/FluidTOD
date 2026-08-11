@@ -147,6 +147,11 @@ namespace
 		}
 	}
 
+	void FixCyclicSeamTangents(FRichCurve* Rich)
+	{
+		if (!Rich) return;
+
+		const int32 NumKeys = Rich->GetNumKeys();
 		if (NumKeys < 2) return;
 
 		if (NumKeys < 3)
@@ -187,6 +192,7 @@ namespace
 		Rich->SetKeyTangentMode(LastHandle, RCTM_User);
 
 		Rich->DeleteKey(PadAfterHandle);
+		Rich->DeleteKey(PadBeforeHandle);
 	}
 
 	void ApplyPPVCompensation(ATODManager* Owner, float CurrentTime)
