@@ -213,6 +213,14 @@ public:
     UPROPERTY()
     float TransitionDuration = 1.0f;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography",
+        meta = (ToolTip = "크로스페이드 시작 시점의 이전 상태. CurrentState로 전환되는 중이라면 이 상태에서 블렌드되어 온다."))
+    ETODState PreviousState;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography",
+        meta = (ToolTip = "PreviousState -> CurrentState 전환 진행률. 0=PreviousState 방금 벗어남, 1=CurrentState로 완전 전환됨."))
+    float StateBlendAlpha = 1.0f;
+
     // =========================================================================
     // Properties: Geography
     // =========================================================================

@@ -149,30 +149,56 @@ void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
 	float SunsetStart = Owner->CalculatedSunsetTime - Owner->TransitionDuration;
 	float DuskEnd = Owner->CalculatedSunsetTime + Owner->TransitionDuration;
 
+	ETODState NewState;
+	ETODState NewPreviousState;
+	float SegmentStart; // 현재 세그먼트에 진입한 시각 (경계값). Elapsed 계산 기준점.
+
 	if (SafeTime >= DawnStart && SafeTime < Owner->CalculatedSunriseTime)
 	{
-		Owner->CurrentState = ETODState::Dawn;
+		NewState = ETODState::Dawn;
+		NewPreviousState = ETODState::Night;
+		SegmentStart = DawnStart;
 	}
 	else if (SafeTime >= Owner->CalculatedSunriseTime && SafeTime < SunriseEnd)
 	{
-		Owner->CurrentState = ETODState::Sunrise;
+		NewState = ETODState::Sunrise;
+		NewPreviousState = ETODState::Dawn;
+		SegmentStart = Owner->CalculatedSunriseTime;
 	}
 	else if (SafeTime >= SunriseEnd && SafeTime < SunsetStart)
 	{
-		Owner->CurrentState = ETODState::Day;
+		NewState = ETODState::Day;
+		NewPreviousState = ETODState::Sunrise;
+		SegmentStart = SunriseEnd;
 	}
 	else if (SafeTime >= SunsetStart && SafeTime < Owner->CalculatedSunsetTime)
 	{
-		Owner->CurrentState = ETODState::Sunset;
+		NewState = ETODState::Sunset;
+		NewPreviousState = ETODState::Day;
+		SegmentStart = SunsetStart;
 	}
 	else if (SafeTime >= Owner->CalculatedSunsetTime && SafeTime < DuskEnd)
 	{
-		Owner->CurrentState = ETODState::Dusk;
+		NewState = ETODState::Dusk;
+		NewPreviousState = ETODState::Sunset;
+		SegmentStart = Owner->CalculatedSunsetTime;
 	}
 	else
 	{
-		Owner->CurrentState = ETODState::Night;
+		NewState = ETODState::Night;
+		NewPreviousState = ETODState::Dusk;
+		SegmentStart = DuskEnd;
 	}
+
+	// 정규화 후 경과시간 계산.
+	float Elapsed = SafeTime - NormalizeTime(SegmentStart);
+	if (Elapsed < 0.0f) Elapsed += 24.0f;
+
+	Owner->PreviousState = NewPreviousState;
+	Owner->CurrentState = NewState;
+	Owner->StateBlendAlpha = FMath::Clamp(
+		Elapsed / FMath::Max(Owner->TransitionDuration, KINDA_SMALL_NUMBER),
+		0.0f, 1.0f);
 }
 
 void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
@@ -272,7 +298,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		// 달의 대기 산란 영향 차단 (붉은 달 방지)
 		if (Owner->MoonLightComponent->bAtmosphereSunLight)
 		{
-			//Owner->MoonLightComponent->SetAtmosphereSunLight(false);
 			Owner->MoonLightComponent->MarkRenderStateDirty();
 		}
 		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);

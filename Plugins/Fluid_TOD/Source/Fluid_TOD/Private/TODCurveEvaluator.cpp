@@ -35,21 +35,15 @@ namespace
 		return FMath::IsNearlyEqual(Time, TODHours, TODBoundaryTolerance);
 	}
 
-	// 누락되었던 0시 데이터를 24시 경계값으로 복사해주는 헬퍼 함수 복구
-	void AddTwentyFourBoundaryFromZero(TArray<FTODMasterData>& DataArray)
+	void AddTwentyFourBoundaryFromEarliest(TArray<FTODMasterData>& DataArray)
 	{
 		if (DataArray.Num() == 0) return;
 
-		int32 ZeroIndex = DataArray.IndexOfByPredicate([](const FTODMasterData& Data) {
-			return FMath::IsNearlyZero(Data.Time, TODBoundaryTolerance);
-			});
+		if (IsTwentyFourBoundary(DataArray.Last().Time)) return;
 
-		if (ZeroIndex != INDEX_NONE)
-		{
-			FTODMasterData BoundaryData = DataArray[ZeroIndex];
-			BoundaryData.Time = TODHours;
-			DataArray.Add(BoundaryData);
-		}
+		FTODMasterData BoundaryData = DataArray[0];
+		BoundaryData.Time = TODHours;
+		DataArray.Add(BoundaryData);
 	}
 
 	TArray<FTODMasterData> BuildCanonicalTODData(
@@ -153,6 +147,48 @@ namespace
 		}
 	}
 
+		if (NumKeys < 2) return;
+
+		if (NumKeys < 3)
+		{
+			FlattenSeamTangentRich(Rich);
+			return;
+		}
+
+		FKeyHandle FirstHandle = Rich->GetFirstKeyHandle();
+		FKeyHandle LastHandle = Rich->GetLastKeyHandle();
+
+		const float FirstTime = Rich->GetKeyTime(FirstHandle);
+		const float LastTime = Rich->GetKeyTime(LastHandle);
+
+		if (!FMath::IsNearlyEqual(FirstTime, 0.0f, TODBoundaryTolerance) ||
+			!FMath::IsNearlyEqual(LastTime, TODHours, TODBoundaryTolerance))
+		{
+			FlattenSeamTangentRich(Rich);
+			return;
+		}
+
+		TArray<TPair<float, float>> Snapshot;
+		for (auto It = Rich->GetKeyIterator(); It; ++It)
+		{
+			Snapshot.Add(TPair<float, float>(It->Time, It->Value));
+		}
+
+		const TPair<float, float> SecondKey = Snapshot[1];
+		const TPair<float, float> SecondLastKey = Snapshot[Snapshot.Num() - 2];
+		const FKeyHandle PadAfterHandle = Rich->AddKey(SecondKey.Key + TODHours, SecondKey.Value);
+		const FKeyHandle PadBeforeHandle = Rich->AddKey(SecondLastKey.Key - TODHours, SecondLastKey.Value);
+
+		Rich->SetKeyTangentMode(FirstHandle, RCTM_Auto);
+		Rich->SetKeyTangentMode(LastHandle, RCTM_Auto);
+
+		Rich->AutoSetTangents(0.0f);
+		Rich->SetKeyTangentMode(FirstHandle, RCTM_User);
+		Rich->SetKeyTangentMode(LastHandle, RCTM_User);
+
+		Rich->DeleteKey(PadAfterHandle);
+	}
+
 	void ApplyPPVCompensation(ATODManager* Owner, float CurrentTime)
 	{
 		if (!Owner || !IsValid(Owner->RuntimePPVComponent))
@@ -241,7 +277,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
 	TArray<FTODMasterData> ValidPPVs = BuildCanonicalTODData(Owner->TOD_DataArray, true);
-	AddTwentyFourBoundaryFromZero(ValidPPVs);
+	AddTwentyFourBoundaryFromEarliest(ValidPPVs);
 
 	const int32 Num = ValidPPVs.Num();
 	if (Num == 0)
@@ -522,7 +558,7 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 		BuildCanonicalTODData(Owner->TOD_DataArray, false, &DroppedNames);
 	if (SortedCopy.Num() == 0) return;
 
-	AddTwentyFourBoundaryFromZero(SortedCopy);
+	AddTwentyFourBoundaryFromEarliest(SortedCopy);
 
 #if WITH_EDITOR
 	if (DroppedNames.Num() > 0)
@@ -587,8 +623,17 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::SealColorCurveFor24Hours(*Curve); }
 
-	for (FRuntimeFloatCurve* Curve : FloatCurves) { FlattenSeamTangent(*Curve); }
-	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { FlattenSeamTangentColor(*Curve); }
+	for (FRuntimeFloatCurve* Curve : FloatCurves)
+	{
+		FixCyclicSeamTangents(Curve->GetRichCurve());
+	}
+	for (FRuntimeCurveLinearColor* Curve : ColorCurves)
+	{
+		for (int32 i = 0; i < 4; ++i)
+		{
+			FixCyclicSeamTangents(&Curve->ColorCurves[i]);
+		}
+	}
 }
 
 void FTODCurveEvaluator::GetTODSettingsAtTime(
@@ -840,18 +885,13 @@ namespace
 	}
 }
 
-// 그래프(인라인 커브 에디터)에서 편집한 현재 커브 상태를 TOD_DataArray로 읽어 되돌려 쓴다.
-// 스냅샷/이전값 비교 없이, 매번 TOD_DataArray를 기준("있어야 할 키 시간 목록")으로 판단한다.
-// - 시간(Time): 기준과 다르면 그 키만 원복.
-// - 값(Value): 조건 없이 커브에 있는 값을 그대로 읽어(get) TOD_DataArray에 쓴다.
-// - Interpolation 등 커브 자체의 다른 속성은 전혀 건드리지 않는다.
 void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveContainer* CurveData)
 {
 	if (!Owner || !CurveData) return;
 
 	// TOD_DataArray 기준으로 "있어야 할" 키 시간 목록을 새로 계산한다 (BakeTODCurves와 동일 로직).
 	TArray<FTODMasterData> Canonical = BuildCanonicalTODData(Owner->TOD_DataArray, false);
-	AddTwentyFourBoundaryFromZero(Canonical);
+	AddTwentyFourBoundaryFromEarliest(Canonical);
 
 	if (Canonical.Num() == 0) return;
 
