@@ -327,6 +327,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Preset")
     TObjectPtr<UTODPresetData> LoadPreset;
 
+    bool bApplyPresetCurveModesOnNextBake = false;
+
     // =========================================================================
     // Properties: Debug
     // =========================================================================

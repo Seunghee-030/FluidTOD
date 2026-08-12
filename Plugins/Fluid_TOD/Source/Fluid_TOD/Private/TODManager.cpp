@@ -552,10 +552,14 @@ float ATODManager::WrapStartTime(float InTime)
 
 void ATODManager::ApplyStaticSunMoonOffsets()
 {
+	float DeclinationDeg = 15.0f; // 기본값 15도 (여름~춘분 사이)
+
 	if (IsValid(PivotOrbitTiltComponent))
 	{
+		const float EffectiveTilt = (Latitude + DeclinationDeg) * SunLatitudeTiltMultiplier;
+
 		PivotOrbitTiltComponent->SetRelativeRotation(
-			FRotator(0.0f, 0.0f, SunLatitudeTiltMultiplier * Latitude));
+			FRotator(0.0f, 0.0f, EffectiveTilt));
 	}
 
 	if (IsValid(MoonLightComponent))

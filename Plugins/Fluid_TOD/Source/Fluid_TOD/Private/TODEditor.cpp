@@ -9,6 +9,7 @@
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Editor/EditorEngine.h"
+#include "TODCurveEvaluator.h"
 #endif
 
 void FTODEditor::SaveNewPreset(ATODManager* Owner)
@@ -56,6 +57,9 @@ void FTODEditor::SaveNewPreset(ATODManager* Owner)
 				Data.PPV = nullptr;
 			}
 
+			// Save the curve interpolation modes
+			NewAsset->CurveInterpModes = FTODCurveEvaluator::CaptureInterpModes(Owner->CurveData);
+
 			NewAsset->MarkPackageDirty();
 			FAssetRegistryModule::AssetCreated(NewAsset);
 
@@ -84,6 +88,8 @@ void FTODEditor::SaveCurrentPreset(ATODManager* Owner)
 	{
 		Data.PPV = nullptr;
 	}
+
+	Owner->LoadPreset->CurveInterpModes = FTODCurveEvaluator::CaptureInterpModes(Owner->CurveData);
 
 	Owner->LoadPreset->MarkPackageDirty();
 
@@ -162,6 +168,7 @@ void FTODEditor::LoadSelectedPreset(ATODManager* Owner)
 	}
 
 	Owner->TOD_DataArray = Owner->LoadPreset->TOD_DataArray;
+	Owner->bApplyPresetCurveModesOnNextBake = true;
 
 	TArray<bool> bConsumed;
 	bConsumed.SetNumZeroed(ExistingPPVs.Num());

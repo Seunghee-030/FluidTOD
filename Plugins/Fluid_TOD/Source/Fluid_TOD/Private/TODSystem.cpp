@@ -74,67 +74,92 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 {
 	if (!Owner) return;
 
-	float LatitudeOffset = (Owner->Latitude / 90.0f) * 2.0f;
+	// latitude -> radian
+	const float ClampedLat = FMath::Clamp(Owner->Latitude, -90.0f, 90.0f);
+	const float LatRad = FMath::DegreesToRadians(ClampedLat);
 
-	Owner->CalculatedSunriseTime = 6.0f - LatitudeOffset;
-	Owner->CalculatedSunsetTime = 18.0f + LatitudeOffset;
+	// Declination -> radian
+	const float DeclinationDeg = 15.0f;
+	const float DecRad = FMath::DegreesToRadians(DeclinationDeg);
 
-	Owner->SunriseTime =
-		Owner->GetFormattedTimeAsString(Owner->CalculatedSunriseTime);
+	// Hour Angle 계산
+	const float CosHourAngle = -FMath::Tan(LatRad) * FMath::Tan(DecRad);
 
-	Owner->SunsetTime =
-		Owner->GetFormattedTimeAsString(Owner->CalculatedSunsetTime);
+	float HourAngleDeg = 90.0f;
+
+	if (CosHourAngle <= -1.0f)
+	{
+		// 백야
+		Owner->CalculatedSunriseTime = 0.0f;
+		Owner->CalculatedSunsetTime = 24.0f;
+		Owner->SunriseTime = TEXT("[ Midnight Sun ]");
+		Owner->SunsetTime = TEXT("[ Midnight Sun ]");
+		return;
+	}
+	else if (CosHourAngle >= 1.0f)
+	{
+		// 극야
+		Owner->CalculatedSunriseTime = 12.0f;
+		Owner->CalculatedSunsetTime = 12.0f;
+		Owner->SunriseTime = TEXT("[ Polar Night ]");
+		Owner->SunsetTime = TEXT("[ Polar Night ]");
+		return;
+	}
+	else
+	{
+		HourAngleDeg = FMath::RadiansToDegrees(FMath::Acos(CosHourAngle));
+	}
+
+	const float HalfDayHours = HourAngleDeg / 15.0f;
+
+	// 태양 남중 정오 기준으로 설정
+	Owner->CalculatedSunriseTime = 12.0f - HalfDayHours;
+	Owner->CalculatedSunsetTime = 12.0f + HalfDayHours;
+
+	// text
+	Owner->SunriseTime = Owner->GetFormattedTimeAsString(Owner->CalculatedSunriseTime);
+	Owner->SunsetTime = Owner->GetFormattedTimeAsString(Owner->CalculatedSunsetTime);
 }
-
 float FTODSystem::NormalizeTime(float Time)
 {
 	float SafeTime = FMath::Fmod(Time, 24.0f);
 	return SafeTime < 0.f ? SafeTime + 24.f : SafeTime;
 }
 
+// 태양의 위치에 따라 Pivot 컴포넌트를 회전
 FQuat FTODSystem::CalculatePivotRotation(
 	const ATODManager* Owner,
 	float InTime) const
 {
-	const float TimeFromNoon = NormalizeTime(InTime);
+	if (!Owner) return FQuat::Identity;
 
-	const float HalfDay =
-		(Owner->CalculatedSunsetTime - Owner->CalculatedSunriseTime) * 0.5f;
+	const float LatRad = FMath::DegreesToRadians(FMath::Clamp(Owner->Latitude, -90.0f, 90.0f));
+	const float DecRad = FMath::DegreesToRadians(15.0f);
 
-	const bool bIsDaytime =
-		(TimeFromNoon < HalfDay) ||
-		(TimeFromNoon >= (24.0f - HalfDay));
+	const float TimeFromNoon = InTime - 12.0f;
+	const float HourAngleRad = FMath::DegreesToRadians(TimeFromNoon * 15.0f);
 
-	float PitchAngle = 0.0f;
+	const float SinLat = FMath::Sin(LatRad);
+	const float CosLat = FMath::Cos(LatRad);
+	const float SinDec = FMath::Sin(DecRad);
+	const float CosDec = FMath::Cos(DecRad);
+	const float SinHA = FMath::Sin(HourAngleRad);
+	const float CosHA = FMath::Cos(HourAngleRad);
 
-	if (bIsDaytime)
+	FVector SunDir;
+	SunDir.X = (CosLat * SinDec) - (SinLat * CosDec * CosHA); // North/South 방위
+	SunDir.Y = -(CosDec * SinHA);                             // East/West 방위
+	SunDir.Z = (SinLat * SinDec) + (CosLat * CosDec * CosHA); // 천정(Zenith) 고도
+
+	FQuat TargetWorldRotation = FRotationMatrix::MakeFromX(-SunDir).ToQuat();
+
+	if (IsValid(Owner->PivotOrbitTiltComponent))
 	{
-		const float T =
-			(TimeFromNoon < HalfDay)
-			? TimeFromNoon
-			: (TimeFromNoon - 24.0f);
-
-		PitchAngle = FMath::GetMappedRangeValueClamped(
-			FVector2D(-HalfDay, HalfDay),
-			FVector2D(180.0f, 360.0f),
-			T
-		);
-	}
-	else
-	{
-		constexpr float PoleGuardDeg = 1.0f;
-
-		PitchAngle = FMath::GetMappedRangeValueClamped(
-			FVector2D(HalfDay, 24.0f - HalfDay),
-			FVector2D(PoleGuardDeg, 180.0f - PoleGuardDeg),
-			TimeFromNoon
-		);
+		const FQuat ParentRot = Owner->PivotOrbitTiltComponent->GetComponentQuat();
+		return ParentRot.Inverse() * TargetWorldRotation;
 	}
 
-	return FQuat(
-		FVector::RightVector,
-		FMath::DegreesToRadians(PitchAngle)
-	);
+	return TargetWorldRotation;
 }
 
 void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
@@ -151,7 +176,9 @@ void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
 
 	ETODState NewState;
 	ETODState NewPreviousState;
-	float SegmentStart; // 현재 세그먼트에 진입한 시각 (경계값). Elapsed 계산 기준점.
+
+	// 경과시간 계산을 위한 세그먼트 시작 시간
+	float SegmentStart;
 
 	if (SafeTime >= DawnStart && SafeTime < Owner->CalculatedSunriseTime)
 	{
