@@ -552,14 +552,11 @@ float ATODManager::WrapStartTime(float InTime)
 
 void ATODManager::ApplyStaticSunMoonOffsets()
 {
-	float DeclinationDeg = 15.0f; // 기본값 15도 (여름~춘분 사이)
-
 	if (IsValid(PivotOrbitTiltComponent))
 	{
-		const float EffectiveTilt = (Latitude + DeclinationDeg) * SunLatitudeTiltMultiplier;
+		const FRotator OrbitTiltRotation(0.0f, SunAzimuthOffset, 0.0f);
 
-		PivotOrbitTiltComponent->SetRelativeRotation(
-			FRotator(0.0f, 0.0f, EffectiveTilt));
+		PivotOrbitTiltComponent->SetRelativeRotation(OrbitTiltRotation);
 	}
 
 	if (IsValid(MoonLightComponent))
@@ -567,7 +564,15 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
 	}
 
-	UpdateMoonMeshTransform();
+	//UpdateMoonMeshTransform();
+}
+
+// 태양 방위각 변경 Setter
+void ATODManager::SetSunAzimuthOffset(float InAzimuthOffset)
+{
+	SunAzimuthOffset = InAzimuthOffset;
+	ApplyStaticSunMoonOffsets();
+	MarkPackageDirty();
 }
 
 // ======= Presets: Editor =========
@@ -710,7 +715,6 @@ void ATODManager::OnConstruction(const FTransform& Transform)
 // =========================================================
 
 #if WITH_EDITOR
-
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -735,6 +739,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	{
 		UpdateSunTimes();
 		ApplyStaticSunMoonOffsets();
+		UpdatePivotRotation(CurrentSystemTime);
 		ForceViewportRedraw();
 		return;
 	}
@@ -756,9 +761,13 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		return;
 	}
 
+	// =========================================================================
+	//  SunAzimuthOffset/ 방위각, 위도 틸트, 달 회전 오프셋 변경 시 뷰포트 즉시 업데이트
+	// =========================================================================
 	if (
 		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonLocalRotationOffset) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunLatitudeTiltMultiplier))
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunLatitudeTiltMultiplier) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunAzimuthOffset)) // <--- 추가된 부분
 	{
 		ApplyStaticSunMoonOffsets();
 		ForceViewportRedraw();
@@ -1192,5 +1201,5 @@ FString ATODManager::GetFullDebugDumpString() const
 		CompBrightness,
 		CompWhiteTemp,
 		CompColorGrading.R, CompColorGrading.G, CompColorGrading.B, CompColorGrading.A
-		);
+	);
 }

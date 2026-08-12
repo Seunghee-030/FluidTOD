@@ -60,6 +60,7 @@ protected:
 
     bool bIsTimePaused = false;
     bool bIsVisualOverridden = false;
+    bool bFollowCameraPosition = true;
 
 public:
     UFUNCTION()
@@ -164,11 +165,11 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "TOD|Time")
     bool IsTimeInState(float InTime, ETODState TargetState) const;
-    
-	// =========================================================================
-	// Properties: PIE console Control
-	// =========================================================================
-  public:
+
+    // =========================================================================
+    // Properties: PIE console Control
+    // =========================================================================
+public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Time")
     float TimeDirection = 1.0f; // 1: 정방향, -1: 역방향
 
@@ -230,7 +231,9 @@ public:
             ToolTip = "Controls sunrise/sunset timing. Artistic setting, not physically accurate."))
     float Latitude = 45.0f;
 
-    UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
+        meta = (ClampMin = "-180.0", ClampMax = "180.0", UIMin = "-180.0", UIMax = "180.0",
+            ToolTip = "Shifts local solar time relative to the reference meridian (longitude degrees == hour-angle degrees, matching the real solar-time offset). Rotates when solar noon occurs without changing sunrise/sunset duration."))
     float Longitude = 127.0f;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
@@ -250,12 +253,15 @@ public:
     FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
     float SunLatitudeTiltMultiplier = -1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
-        meta = (ToolTip = "Keeps the sun/moon pivot centered on the camera so distant light and mesh stay aligned (removes parallax)."))
-    bool bFollowCameraPosition = true;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography", meta = (ClampMin = "-360.0", ClampMax = "360.0", UIMin = "-180.0", UIMax = "180.0", Tooltip = "태양/달이 떠오르는 방위각(Yaw)입니다. 0도일 때 기본 동쪽에서 떠오릅니다. 물리 계산과 무관한 아티스틱 값입니다."))
+    float SunAzimuthOffset = 0.0f;
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
+    void SetSunAzimuthOffset(float InAzimuthOffset);
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void UpdateSkyAnchorPosition();
+
     // =========================================================================
     // Properties: Moon
     // =========================================================================

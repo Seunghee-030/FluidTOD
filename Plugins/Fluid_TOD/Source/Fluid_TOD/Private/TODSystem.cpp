@@ -85,6 +85,10 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 	// Hour Angle 계산
 	const float CosHourAngle = -FMath::Tan(LatRad) * FMath::Tan(DecRad);
 
+	// 태양 남중 기준 시간 계산 (Longitude 반영)
+	const float SolarNoonTime = NormalizeTime(12.0f - (Owner->Longitude / 15.0f));
+
+	// 시간각(Hour Angle) 계산
 	float HourAngleDeg = 90.0f;
 
 	if (CosHourAngle <= -1.0f)
@@ -99,8 +103,8 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 	else if (CosHourAngle >= 1.0f)
 	{
 		// 극야
-		Owner->CalculatedSunriseTime = 12.0f;
-		Owner->CalculatedSunsetTime = 12.0f;
+		Owner->CalculatedSunriseTime = SolarNoonTime;
+		Owner->CalculatedSunsetTime = SolarNoonTime;
 		Owner->SunriseTime = TEXT("[ Polar Night ]");
 		Owner->SunsetTime = TEXT("[ Polar Night ]");
 		return;
@@ -112,9 +116,9 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 
 	const float HalfDayHours = HourAngleDeg / 15.0f;
 
-	// 태양 남중 정오 기준으로 설정
-	Owner->CalculatedSunriseTime = 12.0f - HalfDayHours;
-	Owner->CalculatedSunsetTime = 12.0f + HalfDayHours;
+	// 태양 남중(Longitude 반영) 기준으로 설정
+	Owner->CalculatedSunriseTime = NormalizeTime(SolarNoonTime - HalfDayHours);
+	Owner->CalculatedSunsetTime = NormalizeTime(SolarNoonTime + HalfDayHours);
 
 	// text
 	Owner->SunriseTime = Owner->GetFormattedTimeAsString(Owner->CalculatedSunriseTime);
@@ -137,7 +141,7 @@ FQuat FTODSystem::CalculatePivotRotation(
 	const float DecRad = FMath::DegreesToRadians(15.0f);
 
 	const float TimeFromNoon = InTime - 12.0f;
-	const float HourAngleRad = FMath::DegreesToRadians(TimeFromNoon * 15.0f);
+	const float HourAngleRad = FMath::DegreesToRadians((TimeFromNoon * 15.0f) + Owner->Longitude);
 
 	const float SinLat = FMath::Sin(LatRad);
 	const float CosLat = FMath::Cos(LatRad);
@@ -151,15 +155,17 @@ FQuat FTODSystem::CalculatePivotRotation(
 	SunDir.Y = -(CosDec * SinHA);                             // East/West 방위
 	SunDir.Z = (SinLat * SinDec) + (CosLat * CosDec * CosHA); // 천정(Zenith) 고도
 
-	FQuat TargetWorldRotation = FRotationMatrix::MakeFromX(-SunDir).ToQuat();
+	// 시간각(Latitude+Longitude+Time) 방향 회전
+	const FQuat TimeBasedRotation = FRotationMatrix::MakeFromX(-SunDir).ToQuat();
 
 	if (IsValid(Owner->PivotOrbitTiltComponent))
 	{
-		const FQuat ParentRot = Owner->PivotOrbitTiltComponent->GetComponentQuat();
-		return ParentRot.Inverse() * TargetWorldRotation;
+		return TimeBasedRotation;
 	}
 
-	return TargetWorldRotation;
+	// 부모 Pivot이 없는 경우
+	const FQuat AzimuthOffsetRotation(FVector::UpVector, FMath::DegreesToRadians(Owner->SunAzimuthOffset));
+	return AzimuthOffsetRotation * TimeBasedRotation;
 }
 
 void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
