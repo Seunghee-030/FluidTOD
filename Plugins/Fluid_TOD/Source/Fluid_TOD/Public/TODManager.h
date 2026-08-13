@@ -236,6 +236,11 @@ public:
             ToolTip = "Shifts local solar time relative to the reference meridian (longitude degrees == hour-angle degrees, matching the real solar-time offset). Rotates when solar noon occurs without changing sunrise/sunset duration."))
     float Longitude = 127.0f;
 
+    // 계절
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
+        meta = (ToolTip = "Sets the sun's declination (Spring/Fall = 0 deg, Summer = +23.45 deg, Winter = -23.45 deg), affecting sunrise/sunset times and sun altitude."))
+    ETODSeason Season = ETODSeason::Spring;
+
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
     float CalculatedSunriseTime = 6.0f;
 

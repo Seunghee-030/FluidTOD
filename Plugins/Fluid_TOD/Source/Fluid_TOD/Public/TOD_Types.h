@@ -19,6 +19,16 @@ enum class ETODState : uint8
 	Sunset  UMETA(DisplayName = "Sunset"),
 };
 
+// 계절
+UENUM(BlueprintType)
+enum class ETODSeason : uint8
+{
+	Spring   UMETA(DisplayName = "Spring"),
+	Summer   UMETA(DisplayName = "Summer"),
+	Autumn   UMETA(DisplayName = "Fall"),
+	Winter   UMETA(DisplayName = "Winter"),
+};
+
 // 사용할 빛 종류 선택 (Sun/Moon/Both)
 UENUM(BlueprintType)
 enum class ETODDirectionalLightType : uint8

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TOD_Types.h"
 
 class ATODManager;
 
@@ -16,6 +17,8 @@ public:
     void UpdateSunTimes(ATODManager* Owner);
 
     static float NormalizeTime(float Time);
+
+    static float GetSeasonDeclinationDeg(ETODSeason Season);
 
     FQuat CalculatePivotRotation(
         const ATODManager* Owner,

@@ -733,17 +733,6 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		return;
 	}
 
-	if (
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude))
-	{
-		UpdateSunTimes();
-		ApplyStaticSunMoonOffsets();
-		UpdatePivotRotation(CurrentSystemTime);
-		ForceViewportRedraw();
-		return;
-	}
-
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
 		// Start Time 슬라이더 순환
@@ -762,24 +751,16 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	}
 
 	// =========================================================================
-	//  SunAzimuthOffset/ 방위각, 위도 틸트, 달 회전 오프셋 변경 시 뷰포트 즉시 업데이트
+	//  Latitude / Longitude / Season 변경 시 일출·일몰 재계산 + 뷰포트 즉시 업데이트
 	// =========================================================================
 	if (
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonLocalRotationOffset) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunLatitudeTiltMultiplier) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunAzimuthOffset)) // <--- 추가된 부분
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Latitude) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Longitude) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, Season))
 	{
+		UpdateSunTimes();
 		ApplyStaticSunMoonOffsets();
-		ForceViewportRedraw();
-		return;
-	}
-
-	if (
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonDistance) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, bAutoScaleMoonDistanceByMeshSize) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, MoonMeshReferenceRadius))
-	{
-		UpdateMoonMeshTransform();
+		UpdatePivotRotation(CurrentSystemTime);
 		ForceViewportRedraw();
 		return;
 	}

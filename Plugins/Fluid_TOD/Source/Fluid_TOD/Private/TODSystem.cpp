@@ -70,6 +70,18 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	}
 }
 
+float FTODSystem::GetSeasonDeclinationDeg(ETODSeason Season)
+{
+	switch (Season)
+	{
+	case ETODSeason::Spring: return 0.0f;
+	case ETODSeason::Summer: return 23.45f;
+	case ETODSeason::Autumn: return 0.0f;
+	case ETODSeason::Winter: return -23.45f;
+	default:                 return 0.0f;
+	}
+}
+
 void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 {
 	if (!Owner) return;
@@ -79,16 +91,14 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 	const float LatRad = FMath::DegreesToRadians(ClampedLat);
 
 	// Declination -> radian
-	const float DeclinationDeg = 15.0f;
+	const float DeclinationDeg = GetSeasonDeclinationDeg(Owner->Season);
 	const float DecRad = FMath::DegreesToRadians(DeclinationDeg);
 
 	// Hour Angle 계산
 	const float CosHourAngle = -FMath::Tan(LatRad) * FMath::Tan(DecRad);
 
-	// 태양 남중 기준 시간 계산 (Longitude 반영)
 	const float SolarNoonTime = NormalizeTime(12.0f - (Owner->Longitude / 15.0f));
 
-	// 시간각(Hour Angle) 계산
 	float HourAngleDeg = 90.0f;
 
 	if (CosHourAngle <= -1.0f)
@@ -138,7 +148,7 @@ FQuat FTODSystem::CalculatePivotRotation(
 	if (!Owner) return FQuat::Identity;
 
 	const float LatRad = FMath::DegreesToRadians(FMath::Clamp(Owner->Latitude, -90.0f, 90.0f));
-	const float DecRad = FMath::DegreesToRadians(15.0f);
+	const float DecRad = FMath::DegreesToRadians(GetSeasonDeclinationDeg(Owner->Season));
 
 	const float TimeFromNoon = InTime - 12.0f;
 	const float HourAngleRad = FMath::DegreesToRadians((TimeFromNoon * 15.0f) + Owner->Longitude);
