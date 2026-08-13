@@ -390,7 +390,7 @@ FString ATODManager::GetFormattedTimeAsString(float InTime) const
 	int32 Hours = FMath::FloorToInt(SafeTime);
 	int32 Minutes = FMath::FloorToInt((SafeTime - Hours) * 60.0f);
 
-	return FString::Printf(TEXT("[ %02d : %02d ]"), Hours, Minutes);
+	return FString::Printf(TEXT("%02d : %02d"), Hours, Minutes);
 }
 
 // 정렬
@@ -643,6 +643,7 @@ void ATODManager::RequestDeferredRebake()
 				WeakThis->bRebakeRequested = false;
 				WeakThis->BakeTODCurves();
 				WeakThis->UpdateTOD(WeakThis->StartTime);
+				WeakThis->UpdateMoonMeshTransform();
 				WeakThis->ApplyStaticSunMoonOffsets();
 				WeakThis->UpdatePivotRotation(WeakThis->StartTime);
 				WeakThis->ForceViewportRedraw();
@@ -653,6 +654,7 @@ void ATODManager::RequestDeferredRebake()
 		bRebakeRequested = false;
 		BakeTODCurves();
 		UpdateTOD(StartTime);
+		UpdateMoonMeshTransform();
 		ApplyStaticSunMoonOffsets();
 		UpdatePivotRotation(StartTime);
 		ForceViewportRedraw();

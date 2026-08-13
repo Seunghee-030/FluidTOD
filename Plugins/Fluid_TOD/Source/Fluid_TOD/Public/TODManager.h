@@ -226,10 +226,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
         meta = (ClampMin = "-180.0", ClampMax = "180.0", UIMin = "-180.0", UIMax = "180.0",
             ToolTip = "Shifts local solar time relative to the reference meridian (longitude degrees == hour-angle degrees, matching the real solar-time offset). Rotates when solar noon occurs without changing sunrise/sunset duration."))
-    float Longitude = 127.0f;
+    float Longitude = 15.0f;
 
     // 계절
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography",
+    UPROPERTY(BlueprintReadWrite, Category = "TOD|Geography",
         meta = (ToolTip = "Sets the sun's declination (Spring/Fall = 0 deg, Summer = +23.45 deg, Winter = -23.45 deg), affecting sunrise/sunset times and sun altitude."))
     ETODSeason Season = ETODSeason::Spring;
 
@@ -251,7 +251,7 @@ public:
     float SunLatitudeTiltMultiplier = -1.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography", meta = (ClampMin = "-360.0", ClampMax = "360.0", UIMin = "-180.0", UIMax = "180.0", Tooltip = "태양/달이 떠오르는 방위각(Yaw)입니다. 0도일 때 기본 동쪽에서 떠오릅니다. 물리 계산과 무관한 아티스틱 값입니다."))
-    float SunAzimuthOffset = 0.0f;
+    float SunAzimuthOffset = -90.0f;
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void SetSunAzimuthOffset(float InAzimuthOffset);

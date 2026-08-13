@@ -94,6 +94,11 @@ struct FTODMoonSettings : public FTODSunMoonSettings
 {
 	GENERATED_BODY()
 
+	FTODMoonSettings()
+	{
+		Intensity = 100.0f;
+	}
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
 		meta = (DisplayPriority = "10", ClampMin = "0.0", UIMin = "0.0", UIMax = "10.0"))
 	float Moon_Source_Scale = 1.0f;
@@ -200,7 +205,7 @@ struct FTODMasterData
 
 	// 밤,낮,전환기 선택
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	ETODDirectionalLightType ActiveLightMode = ETODDirectionalLightType::SunOnly;
+	ETODDirectionalLightType ActiveLightMode = ETODDirectionalLightType::Transition;
 
 	// Day/Transition 상태일 때만 노출
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD", meta = (EditCondition = "ActiveLightMode == ETODDirectionalLightType::SunOnly || ActiveLightMode == ETODDirectionalLightType::Transition", EditConditionHides))

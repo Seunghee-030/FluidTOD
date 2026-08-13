@@ -1268,6 +1268,7 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 
 		Owner->BakeTODCurves();
 		Owner->UpdateTOD(Owner->GetCurrentTime());
+		Owner->UpdateMoonMeshTransform();
 		Owner->ForceViewportRedraw();
 		return;
 	}
@@ -1277,6 +1278,7 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 		Owner->MarkPackageDirty();
 		Owner->OnTODDataChanged.Broadcast();
 		Owner->UpdateTOD(Owner->GetCurrentTime());
+		Owner->UpdateMoonMeshTransform();
 		Owner->ForceViewportRedraw();
 	}
 }
