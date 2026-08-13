@@ -237,8 +237,6 @@ void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
 	float Elapsed = SafeTime - NormalizeTime(SegmentStart);
 	if (Elapsed < 0.0f) Elapsed += 24.0f;
 
-	Owner->PreviousState = NewPreviousState;
-	Owner->CurrentState = NewState;
 	Owner->StateBlendAlpha = FMath::Clamp(
 		Elapsed / FMath::Max(Owner->TransitionDuration, KINDA_SMALL_NUMBER),
 		0.0f, 1.0f);

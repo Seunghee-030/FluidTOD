@@ -46,6 +46,82 @@ namespace
 		DataArray.Add(BoundaryData);
 	}
 
+	// Canonical PPV Data 구조체
+	struct FTODPPVEntry
+	{
+		float Time = 0.0f;
+		APostProcessVolume* PPV = nullptr;
+	};
+
+	TArray<FTODPPVEntry> BuildCanonicalPPVData(const TArray<FTODMasterData>& SourceData)
+	{
+		struct FCanonicalPPVEntry
+		{
+			FTODPPVEntry Data;
+			bool bCameFromTwentyFour = false;
+		};
+
+		TArray<FCanonicalPPVEntry> Entries;
+		Entries.Reserve(SourceData.Num());
+
+		for (const FTODMasterData& Source : SourceData)
+		{
+			if (!IsValid(Source.PPV))
+			{
+				continue;
+			}
+
+			const bool bCameFromTwentyFour = IsTwentyFourBoundary(Source.Time);
+			const float NormalizedTime = NormalizeTODTimeForBake(Source.Time);
+
+			const int32 ExistingIndex = Entries.IndexOfByPredicate(
+				[NormalizedTime](const FCanonicalPPVEntry& Entry)
+				{
+					return FMath::IsNearlyEqual(Entry.Data.Time, NormalizedTime, TODBoundaryTolerance);
+				});
+
+			if (ExistingIndex == INDEX_NONE)
+			{
+				Entries.Add({ FTODPPVEntry{ NormalizedTime, Source.PPV }, bCameFromTwentyFour });
+			}
+			else if (Entries[ExistingIndex].bCameFromTwentyFour && !bCameFromTwentyFour)
+			{
+				// 0h이 24h 자리를 대체
+				Entries[ExistingIndex] = { FTODPPVEntry{ NormalizedTime, Source.PPV }, false };
+			}
+			else
+			{
+				// 예외
+				UE_LOG(LogTemp, Warning, TEXT("Duplicate PPV entry at time %.3f. Dropping one of them."), NormalizedTime);
+			}
+		}
+
+		TArray<FTODPPVEntry> Result;
+		Result.Reserve(Entries.Num());
+		for (const FCanonicalPPVEntry& Entry : Entries)
+		{
+			Result.Add(Entry.Data);
+		}
+
+		Result.Sort([](const FTODPPVEntry& A, const FTODPPVEntry& B)
+			{
+				return A.Time < B.Time;
+			});
+
+		return Result;
+	}
+
+	void AddTwentyFourBoundaryFromEarliestPPV(TArray<FTODPPVEntry>& DataArray)
+	{
+		if (DataArray.Num() == 0) return;
+
+		if (IsTwentyFourBoundary(DataArray.Last().Time)) return;
+
+		FTODPPVEntry BoundaryData = DataArray[0];
+		BoundaryData.Time = TODHours;
+		DataArray.Add(BoundaryData);
+	}
+
 	TArray<FTODMasterData> BuildCanonicalTODData(
 		const TArray<FTODMasterData>& SourceData,
 		bool bRequireValidPPV,
@@ -144,6 +220,21 @@ namespace
 		for (int32 i = 0; i < 4; ++i)
 		{
 			FlattenSeamTangentRich(&InCurve.ColorCurves[i]);
+		}
+	}
+
+	// 0h/24h 경계 키 InterpMode 동기화
+	void MirrorBoundaryInterpMode(FRichCurve* Rich)
+	{
+		if (!Rich || Rich->GetNumKeys() < 2) return;
+
+		const FKeyHandle FirstHandle = Rich->GetFirstKeyHandle();
+		const FKeyHandle LastHandle = Rich->GetLastKeyHandle();
+
+		if (FMath::IsNearlyEqual(Rich->GetKeyTime(FirstHandle), 0.0f, TODBoundaryTolerance) &&
+			FMath::IsNearlyEqual(Rich->GetKeyTime(LastHandle), TODHours, TODBoundaryTolerance))
+		{
+			Rich->SetKeyInterpMode(LastHandle, Rich->GetKeyInterpMode(FirstHandle));
 		}
 	}
 
@@ -360,8 +451,8 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
-	TArray<FTODMasterData> ValidPPVs = BuildCanonicalTODData(Owner->TOD_DataArray, true);
-	AddTwentyFourBoundaryFromEarliest(ValidPPVs);
+	TArray<FTODPPVEntry> ValidPPVs = BuildCanonicalPPVData(Owner->TOD_DataArray);
+	AddTwentyFourBoundaryFromEarliestPPV(ValidPPVs);
 
 	const int32 Num = ValidPPVs.Num();
 	if (Num == 0)
@@ -373,7 +464,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		return;
 	}
 
-	for (const FTODMasterData& Data : ValidPPVs)
+	for (const FTODPPVEntry& Data : ValidPPVs)
 	{
 		if (!IsValid(Data.PPV)) continue;
 
@@ -721,6 +812,13 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::SealColorCurveFor24Hours(*Curve); }
 
+	// 0h/24h 경계 키 InterpMode를 동기화
+	for (FRuntimeFloatCurve* Curve : FloatCurves) { MirrorBoundaryInterpMode(Curve->GetRichCurve()); }
+	for (FRuntimeCurveLinearColor* Curve : ColorCurves)
+	{
+		for (int32 i = 0; i < 4; ++i) { MirrorBoundaryInterpMode(&Curve->ColorCurves[i]); }
+	}
+
 	for (FRuntimeFloatCurve* Curve : FloatCurves)
 	{
 		FixCyclicSeamTangents(Curve->GetRichCurve());
@@ -874,6 +972,10 @@ float FTODCurveEvaluator::GetSunIntensity(const ATODManager* Owner, float InTime
 	return 0.0f;
 }
 
+// ============================================================================
+// Editor 전용 코드
+// ============================================================================
+
 #if WITH_EDITOR
 
 TArray<TPair<float, float>> FTODCurveEvaluator::SnapshotFloatCurve(const FRuntimeFloatCurve& Curve)
@@ -906,68 +1008,96 @@ TArray<TArray<TPair<float, float>>> FTODCurveEvaluator::SnapshotColorCurve(const
 namespace
 {
 	using FTODFieldSetter = TFunction<void(FTODMasterData&, float)>;
+	using FTODFieldGetter = TFunction<float(const FTODMasterData&)>;
 
 	struct FTODFloatBinding
 	{
 		FTODFieldSetter Setter;
+		FTODFieldGetter Getter;
 	};
 
 	using FTODColorSetter = TFunction<void(FTODMasterData&, FLinearColor)>;
+	using FTODColorGetter = TFunction<FLinearColor(const FTODMasterData&)>;
 
 	struct FTODColorBinding
 	{
 		FTODColorSetter Setter;
+		FTODColorGetter Getter;
 	};
 
-	// GetAllFloatCurves()와 정확히 같은 순서. (Sun 4, Moon 5, SkyLight 4, Fog 2, SkyAtmosphere 3)
+	// GetAllFloatCurves()와 정확히 같은 순서. (Sun 4, Moon 6, SkyLight 4, Fog 2, SkyAtmosphere 3)
 	const TArray<FTODFloatBinding>& GetFloatBindings()
 	{
 		static const TArray<FTODFloatBinding> Bindings = {
 			// Sun
-			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Intensity = V; } },
-			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Source_Angle = V; } },
-			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Source_Soft_Angle = V; } },
-			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Indirect_Light_Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Intensity = V; }, [](const FTODMasterData& D) { return D.Sun_Settings.Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Source_Angle = V; }, [](const FTODMasterData& D) { return D.Sun_Settings.Source_Angle; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Source_Soft_Angle = V; }, [](const FTODMasterData& D) { return D.Sun_Settings.Source_Soft_Angle; } },
+			{ [](FTODMasterData& D, float V) { D.Sun_Settings.Indirect_Light_Intensity = V; }, [](const FTODMasterData& D) { return D.Sun_Settings.Indirect_Light_Intensity; } },
 			// Moon
-			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Intensity = V; } },
-			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Source_Angle = V; } },
-			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Source_Soft_Angle = V; } },
-			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Indirect_Light_Intensity = V; } },
-			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Scale = V; } },
-			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Emissive_Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Intensity = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Source_Angle = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Source_Angle; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Source_Soft_Angle = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Source_Soft_Angle; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Indirect_Light_Intensity = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Indirect_Light_Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Scale = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Moon_Source_Scale; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Emissive_Intensity = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Moon_Source_Emissive_Intensity; } },
 			// SkyLight
-			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Light_Intensity = V; } },
-			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Indirect_Lighting_Intensity = V; } },
-			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity = V; } },
-			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Light_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Light_Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Indirect_Lighting_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Indirect_Lighting_Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity; } },
 			// Fog
-			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Density = V; } },
-			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Height_Falloff = V; } },
+			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Density = V; }, [](const FTODMasterData& D) { return D.Fog_Settings.Fog_Density; } },
+			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Height_Falloff = V; }, [](const FTODMasterData& D) { return D.Fog_Settings.Fog_Height_Falloff; } },
 			// SkyAtmosphere
-			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Mie_Scattering_Scale = V; } },
-			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Rayleigh_Scattering_Scale = V; } },
-			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Aerial_Perspective_Distance_Scale = V; } },
+			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Mie_Scattering_Scale = V; }, [](const FTODMasterData& D) { return D.SkyAtmosphere_Settings.Mie_Scattering_Scale; } },
+			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Rayleigh_Scattering_Scale = V; }, [](const FTODMasterData& D) { return D.SkyAtmosphere_Settings.Rayleigh_Scattering_Scale; } },
+			{ [](FTODMasterData& D, float V) { D.SkyAtmosphere_Settings.Aerial_Perspective_Distance_Scale = V; }, [](const FTODMasterData& D) { return D.SkyAtmosphere_Settings.Aerial_Perspective_Distance_Scale; } },
 		};
 		return Bindings;
 	}
 
-	// GetAllColorCurves()와 정확히 같은 순서.
 	const TArray<FTODColorBinding>& GetColorBindings()
 	{
 		static const TArray<FTODColorBinding> Bindings = {
-			{ [](FTODMasterData& D, FLinearColor C) { D.Sun_Settings.Light_Color = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.Moon_Settings.Light_Color = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.SkyLight_Settings.Sky_Light_Color = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.Fog_Settings.Fog_Inscattering_Color = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.Fog_Settings.Fog_Directional_Inscattering = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Mie_Scattering_Color = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Absorption_Color = C; } },
-			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Sky_Luminance_Factor = C; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Sun_Settings.Light_Color = C; }, [](const FTODMasterData& D) { return D.Sun_Settings.Light_Color; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Moon_Settings.Light_Color = C; }, [](const FTODMasterData& D) { return D.Moon_Settings.Light_Color; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyLight_Settings.Sky_Light_Color = C; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Light_Color; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Fog_Settings.Fog_Inscattering_Color = C; }, [](const FTODMasterData& D) { return D.Fog_Settings.Fog_Inscattering_Color; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.Fog_Settings.Fog_Directional_Inscattering = C; }, [](const FTODMasterData& D) { return D.Fog_Settings.Fog_Directional_Inscattering; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Mie_Scattering_Color = C; }, [](const FTODMasterData& D) { return D.SkyAtmosphere_Settings.Mie_Scattering_Color; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Absorption_Color = C; }, [](const FTODMasterData& D) { return D.SkyAtmosphere_Settings.Absorption_Color; } },
+			{ [](FTODMasterData& D, FLinearColor C) { D.SkyAtmosphere_Settings.Sky_Luminance_Factor = C; }, [](const FTODMasterData& D) { return D.SkyAtmosphere_Settings.Sky_Luminance_Factor; } },
 		};
 		return Bindings;
 	}
 
-	// 0h/24h는 개념적으로 같은 시간이므로 동일 취급해서 TOD_DataArray 항목을 찾는다.
+	// 0h/24h 경계 키가 서로 다른 값일 경우
+	void ResolveBoundaryPair(FRichCurve* Rich, TArray<TPair<float, float>>& CurrentKeys, float OldValue)
+	{
+		const int32 LastIdx = CurrentKeys.Num() - 1;
+		if (LastIdx < 1 || !Rich) return;
+
+		const bool bZeroChanged = !FMath::IsNearlyEqual(CurrentKeys[0].Value, OldValue, TODBoundaryTolerance);
+		const float FinalValue = bZeroChanged ? CurrentKeys[0].Value : CurrentKeys[LastIdx].Value;
+
+		CurrentKeys[0].Value = FinalValue;
+		CurrentKeys[LastIdx].Value = FinalValue;
+
+		const FKeyHandle FirstHandle = Rich->GetFirstKeyHandle();
+		const FKeyHandle LastHandle = Rich->GetLastKeyHandle();
+		if (!Rich->IsKeyHandleValid(FirstHandle) || !Rich->IsKeyHandleValid(LastHandle)) return;
+
+		Rich->SetKeyValue(FirstHandle, FinalValue);
+		Rich->SetKeyValue(LastHandle, FinalValue);
+
+		const ERichCurveInterpMode FinalMode = bZeroChanged
+			? Rich->GetKeyInterpMode(FirstHandle)
+			: Rich->GetKeyInterpMode(LastHandle);
+		Rich->SetKeyInterpMode(FirstHandle, FinalMode);
+		Rich->SetKeyInterpMode(LastHandle, FinalMode);
+	}
+
 	bool FindMatchingDataIndex(const TArray<FTODMasterData>& DataArray, float KeyTime, int32& OutIndex)
 	{
 		const float Target = NormalizeTODTimeForBake(KeyTime);
@@ -1018,6 +1148,19 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 			continue;
 		}
 
+		// 0h/24h 경계 키 값·InterpMode 동기화
+		if (CurrentKeys.Num() >= 2 &&
+			FMath::IsNearlyEqual(Canonical[0].Time, 0.0f, TODBoundaryTolerance) &&
+			FMath::IsNearlyEqual(Canonical.Last().Time, TODHours, TODBoundaryTolerance))
+		{
+			int32 BoundaryDataIndex = INDEX_NONE;
+			if (FindMatchingDataIndex(Owner->TOD_DataArray, 0.0f, BoundaryDataIndex))
+			{
+				const float OldValue = FloatBindings[CurveIndex].Getter(Owner->TOD_DataArray[BoundaryDataIndex]);
+				ResolveBoundaryPair(Rich, CurrentKeys, OldValue);
+			}
+		}
+
 		for (int32 KeyIdx = 0; KeyIdx < CurrentKeys.Num(); ++KeyIdx)
 		{
 			const float CanonicalTime = Canonical[KeyIdx].Time;
@@ -1061,6 +1204,24 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 		{
 			bStructureBroken = true;
 			continue;
+		}
+
+		// 0h/24h 경계 키 값·InterpMode 동기화
+		if (Canonical.Num() >= 2 &&
+			FMath::IsNearlyEqual(Canonical[0].Time, 0.0f, TODBoundaryTolerance) &&
+			FMath::IsNearlyEqual(Canonical.Last().Time, TODHours, TODBoundaryTolerance))
+		{
+			int32 BoundaryDataIndex = INDEX_NONE;
+			if (FindMatchingDataIndex(Owner->TOD_DataArray, 0.0f, BoundaryDataIndex))
+			{
+				const FLinearColor OldColor = ColorBindings[CurveIndex].Getter(Owner->TOD_DataArray[BoundaryDataIndex]);
+				const float OldVals[4] = { OldColor.R, OldColor.G, OldColor.B, OldColor.A };
+
+				for (int32 Ch = 0; Ch < 4; ++Ch)
+				{
+					ResolveBoundaryPair(&ColorCurves[CurveIndex]->ColorCurves[Ch], CurrentChannels[Ch], OldVals[Ch]);
+				}
+			}
 		}
 
 		for (int32 KeyIdx = 0; KeyIdx < Canonical.Num(); ++KeyIdx)

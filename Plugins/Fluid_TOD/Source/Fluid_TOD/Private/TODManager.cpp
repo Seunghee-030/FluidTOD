@@ -619,7 +619,7 @@ void ATODManager::UpdateSunTimes()
 
 // ======= Editor 기능 관련 =========
 // =========================================================
-// 공통 및 런타임 생명주기 (패키징 빌드에서도 반드시 존재해야 하는 함수들)
+// 공통 및 런타임
 // =========================================================
 
 void ATODManager::RequestDeferredRebake()
@@ -1048,7 +1048,7 @@ void ATODManager::PostEditMove(bool bFinished)
 	RequestDeferredRebake();
 }
 
-#endif // 에디터 매크로 종료
+#endif
 
 // ======= Debug =========
 FString ATODManager::GetFullDebugDumpString() const
@@ -1096,10 +1096,10 @@ FString ATODManager::GetFullDebugDumpString() const
 		"  CurrentSystemTime      : %.4f  (%s)\n"
 		"  StartTime              : %.4f\n"
 		"  StartTimeDisplay       : %s\n"
-		"  CurrentState (Zone)    : %s\n"
-		"  TransitionDuration     : %.3f\n"
+		"  CurrentState           : %s\n"
 		"  bIsTimePaused           : %s\n"
 		"  bIsVisualOverridden     : %s\n"
+		"  StateBlendAlpha         : %.3f\n"
 		"\n"
 		"-- Speed --\n"
 		"  PlayerRef               : %s\n"
@@ -1143,9 +1143,9 @@ FString ATODManager::GetFullDebugDumpString() const
 		StartTime,
 		*StartTimeDisplay,
 		*StateStr,
-		TransitionDuration,
 		BoolStr(bIsTimePaused),
 		BoolStr(bIsVisualOverridden),
+		StateBlendAlpha,
 
 		// Speed
 		IsValid(PlayerRef) ? *PlayerRef->GetName() : TEXT("None"),
