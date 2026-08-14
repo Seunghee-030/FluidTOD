@@ -61,9 +61,9 @@ void ATODManager::BeginPlay()
 			if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
 			{
 				// 모든 컷신 재생/정지/일시정지 될 때마다 상태 평가 함수 호출
-				SeqPlayer->OnPlay.AddDynamic(this, &ATODManager::EvaluateCinematicState);
-				SeqPlayer->OnStop.AddDynamic(this, &ATODManager::EvaluateCinematicState);
-				SeqPlayer->OnPause.AddDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnPlay.AddUniqueDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnStop.AddUniqueDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnPause.AddUniqueDynamic(this, &ATODManager::EvaluateCinematicState);
 			}
 		}
 	}
@@ -78,6 +78,28 @@ void ATODManager::BeginPlay()
 	UpdatePivotRotation(StartTime);
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
+}
+
+void ATODManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	for (FTODCinematicSetting& Setting : TargetCinematics)
+	{
+		if (!IsValid(Setting.SequenceActor))
+		{
+			continue;
+		}
+
+		if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
+		{
+			SeqPlayer->OnPlay.RemoveDynamic(this, &ATODManager::EvaluateCinematicState);
+			SeqPlayer->OnStop.RemoveDynamic(this, &ATODManager::EvaluateCinematicState);
+			SeqPlayer->OnPause.RemoveDynamic(this, &ATODManager::EvaluateCinematicState);
+		}
+	}
+
+	GetWorldTimerManager().ClearTimer(DebugTimerHandle);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void ATODManager::Tick(float DeltaSeconds)
@@ -349,9 +371,11 @@ void ATODManager::PrintTODDebugInfo()
 		"\n"
 		"[Moon] Intensity %.2f | Angle %.1f \n"
 		"[MoonSource] Scale %.1f | Emissive Intensity %.1f\n"
+		"[MoonGlow] Scale %.1f | Emissive Intensity %.1f\n"
 		"\n"
 		"[SkyLight] Intensity %.2f | Emissive Intensity %.1f\n"
 		"[SkyIndirectLighting] Intensity %.2f\n"
+		"[SkyStars] Emissive Intensity %.2f\n"
 		"\n"
 		"[Fog] Density %.5f\n"
 		"[Atmos] Mie Scattering Scale %.5f\n"
@@ -367,8 +391,10 @@ void ATODManager::PrintTODDebugInfo()
 		Sun.Intensity, Sun.Source_Angle,
 		Moon.Intensity, Moon.Source_Angle,
 		ActualMoonScale, ActualMoonEmissive,
+		Moon.Moon_Glow_Scale, Moon.Moon_Glow_Emissive_Intensity,
 		Sky.Sky_Light_Intensity, ActualSkyEmissive,
 		Sky.Sky_Indirect_Lighting_Intensity,
+		Sky.Star_Emissive_Intensity,
 		Fog.Fog_Density,
 		Atmos.Mie_Scattering_Scale,
 		CurrentBloom,
@@ -452,6 +478,12 @@ void ATODManager::UpdateMoonMeshTransform()
 
 	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
 	MoonMesh->SetRelativeScale3D(FVector((BaseScale * (ActualDistance / 100000.0f)))); // moon 크기 조절
+
+	if (IsValid(MoonGlowMesh))
+	{
+		const float GlowScale = FMath::Max(GetMoonGlowScaleAtTime(CurrentSystemTime), 0.001f);
+		MoonGlowMesh->SetRelativeScale3D(FVector((GlowScale * (ActualDistance / 100000.0f)))); // moon glow 크기 조절
+	}
 }
 
 // ======== Curve Evaluation =========
@@ -504,6 +536,11 @@ void ATODManager::UpdateSkyAnchorPosition()
 float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
 {
 	return CurveEvaluator.GetMoonSourceScaleAtTime(this, InTime);
+}
+
+float ATODManager::GetMoonGlowScaleAtTime(float InTime) const
+{
+	return CurveEvaluator.GetMoonGlowScaleAtTime(this, InTime);
 }
 
 float ATODManager::GetMoonIntensity(float InTime) const
@@ -759,6 +796,11 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		ApplyStaticSunMoonOffsets();
 		UpdatePivotRotation(CurrentSystemTime);
 		ForceViewportRedraw();
+		return;
+	}
+
+	if (bIsInteractive)
+	{
 		return;
 	}
 
@@ -1125,6 +1167,7 @@ FString ATODManager::GetFullDebugDumpString() const
 		"  OverriddenMoonSourceScale        : %.3f\n"
 		"  GetCalculatedMoonScale()         : %.4f\n"
 		"  GetMoonSourceScaleAtTime()       : %.4f\n"
+		"  GetMoonGlowScaleAtTime()         : %.4f\n"
 		"  GetMoonIntensity()               : %.2f\n"
 		"  GetSunIntensity()                : %.2f\n"
 		"\n"
@@ -1171,6 +1214,7 @@ FString ATODManager::GetFullDebugDumpString() const
 		OverriddenMoonSourceScale,
 		GetCalculatedMoonScale(CurTime),
 		GetMoonSourceScaleAtTime(CurTime),
+		GetMoonGlowScaleAtTime(CurTime),
 		GetMoonIntensity(CurTime),
 		GetSunIntensity(CurTime),
 

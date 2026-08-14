@@ -108,6 +108,12 @@ public:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> MoonMaterialInstance;
 
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
+    TObjectPtr<UStaticMeshComponent> MoonGlowMesh;
+
+    UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
+    TObjectPtr<UMaterialInstanceDynamic> MoonGlowMaterialInstance;
+
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> SkyMaterialInstance;
 
@@ -367,6 +373,9 @@ public:
     float GetMoonSourceScaleAtTime(float InTime) const;
 
     UFUNCTION(BlueprintPure, Category = "TOD|Moon")
+    float GetMoonGlowScaleAtTime(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
     float GetMoonIntensity(float InTime) const;
 
     UFUNCTION(BlueprintPure, Category = "TOD|Sun")
@@ -379,7 +388,10 @@ public:
     void UpdatePivotRotation(float InTime);
 
     void ApplyPPVBlending(float CurrentTime);
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void FindComponents();
+
     void SortTODDataArray();
 
     // =========================================================================
@@ -420,6 +432,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    void EndPlay(const EEndPlayReason::Type EndPlayReason);
     virtual void Tick(float DeltaSeconds) override;
 
 private:

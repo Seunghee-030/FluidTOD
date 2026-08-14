@@ -106,6 +106,14 @@ struct FTODMoonSettings : public FTODSunMoonSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
 		meta = (DisplayPriority = "11", ClampMin = "0.0", UIMin = "0.0"))
 	float Moon_Source_Emissive_Intensity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "10", ClampMin = "0.0", UIMin = "0.0", UIMax = "100.0"))
+	float Moon_Glow_Scale = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (DisplayPriority = "12", ClampMin = "0.0", UIMin = "0.0"))
+	float Moon_Glow_Emissive_Intensity = 1.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -131,6 +139,10 @@ struct FTODSkyLightSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
 		meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float SkyDome_Texture_Emissive_Intensity = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float Star_Emissive_Intensity = 1.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -250,6 +262,8 @@ struct FTODMoonCurveData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeCurveLinearColor LightColorCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceScaleCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve SourceEmissiveIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve GlowScaleCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Moon Curves") FRuntimeFloatCurve GlowEmissiveIntensityCurve;
 };
 
 USTRUCT(BlueprintType)
@@ -262,6 +276,7 @@ struct FTODSkyLightCurveData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve VolumetricScatteringIntensityCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeCurveLinearColor LightColorCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve TextureEmissiveIntensityCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkyLight Curves") FRuntimeFloatCurve StarEmissiveIntensityCurve;
 };
 
 USTRUCT(BlueprintType)

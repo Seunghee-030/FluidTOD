@@ -13,13 +13,29 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 {
 	if (!Owner) return;
 
+	// Store previous meshes
+	UStaticMeshComponent* PreviousSkyDomeMesh = Owner->SkyDomeMesh;
+	UStaticMeshComponent* PreviousMoonMesh = Owner->MoonMesh;
+	UStaticMeshComponent* PreviousMoonGlowMesh = Owner->MoonGlowMesh;
+
+	// Reset
+	Owner->SunLightComponent = nullptr;
+	Owner->MoonLightComponent = nullptr;
+	Owner->SkyLightComponent = nullptr;
+	Owner->FogComponent = nullptr;
+	Owner->SkyAtmosphereComponent = nullptr;
+
+	Owner->PivotOrbitTiltComponent = nullptr;
+	Owner->PivotSunMoonComponent = nullptr;
+	Owner->MeshPivotComponent = nullptr;
+
+	Owner->SkyDomeMesh = nullptr;
+	Owner->MoonMesh = nullptr;
+	Owner->MoonGlowMesh = nullptr;
+
 	// Sun & Moon
 	TArray<UDirectionalLightComponent*> Lights;
 	Owner->GetComponents<UDirectionalLightComponent>(Lights);
-
-	Owner->SunLightComponent = nullptr;
-	Owner->MoonLightComponent = nullptr;
-
 	for (UDirectionalLightComponent* Light : Lights)
 	{
 		if (Light->ComponentHasTag(TEXT("Moon"))) Owner->MoonLightComponent = Light;
@@ -27,6 +43,12 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		if (IsValid(Owner->SunLightComponent) && IsValid(Owner->MoonLightComponent)) break;
 	}
 
+	// SkyLight, Fog, SkyAtmosphere
+	Owner->SkyLightComponent = Owner->FindComponentByClass<USkyLightComponent>();
+	Owner->FogComponent = Owner->FindComponentByClass<UExponentialHeightFogComponent>();
+	Owner->SkyAtmosphereComponent = Owner->FindComponentByClass<USkyAtmosphereComponent>();
+
+	// Pivot Components
 	Owner->PivotOrbitTiltComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("PivotOrbitTilt"));
 	Owner->PivotSunMoonComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("PivotSunMoon"));
 	Owner->MeshPivotComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("MeshPivot"));
@@ -34,9 +56,6 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	// SkyDome & Moon Mesh
 	TArray<UStaticMeshComponent*> Meshes;
 	Owner->GetComponents<UStaticMeshComponent>(Meshes);
-
-	Owner->SkyDomeMesh = nullptr;
-	Owner->MoonMesh = nullptr;
 
 	for (UStaticMeshComponent* Mesh : Meshes)
 	{
@@ -48,13 +67,27 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		{
 			Owner->MoonMesh = Mesh;
 		}
+		else if (Mesh->ComponentHasTag(TEXT("MoonGlow")))
+		{
+			Owner->MoonGlowMesh = Mesh;
+		}
 	}
 
-	// SkyLight, Fog, SkyAtmosphere
-	Owner->SkyLightComponent = Owner->FindComponentByClass<USkyLightComponent>();
-	Owner->FogComponent = Owner->FindComponentByClass<UExponentialHeightFogComponent>();
-	Owner->SkyAtmosphereComponent = Owner->FindComponentByClass<USkyAtmosphereComponent>();
+	// if Meshes Changed
+	if (Owner->SkyDomeMesh != PreviousSkyDomeMesh)
+	{
+		Owner->SkyMaterialInstance = nullptr;
+	}
+	if (Owner->MoonMesh != PreviousMoonMesh)
+	{
+		Owner->MoonMaterialInstance = nullptr;
+	}
+	if (Owner->MoonGlowMesh != PreviousMoonGlowMesh)
+	{
+		Owner->MoonGlowMaterialInstance = nullptr;
+	}
 
+	// Create Material Instances
 	if (IsValid(Owner->SkyDomeMesh) &&
 		!IsValid(Owner->SkyMaterialInstance))
 	{
@@ -67,6 +100,13 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	{
 		Owner->MoonMaterialInstance =
 			Owner->MoonMesh->CreateAndSetMaterialInstanceDynamic(0);
+	}
+
+	if (IsValid(Owner->MoonGlowMesh) &&
+		!IsValid(Owner->MoonGlowMaterialInstance))
+	{
+		Owner->MoonGlowMaterialInstance =
+			Owner->MoonGlowMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
 }
 
@@ -291,6 +331,11 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 			TEXT("SkyTextureEmissiveIntensity"),
 			Sky.SkyDome_Texture_Emissive_Intensity
 		);
+
+		Owner->SkyMaterialInstance->SetScalarParameterValue(
+			TEXT("StarEmissiveIntensity"),
+			Sky.Star_Emissive_Intensity
+		);
 	}
 
 	if (IsValid(Owner->MoonMaterialInstance))
@@ -315,6 +360,14 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 				)
 			);
 		}
+	}
+
+	if (IsValid(Owner->MoonGlowMaterialInstance))
+	{
+		Owner->MoonGlowMaterialInstance->SetScalarParameterValue(
+			TEXT("MoonGlowEmissiveIntensity"),
+			Moon.Moon_Glow_Emissive_Intensity
+		);
 	}
 
 	// Sun

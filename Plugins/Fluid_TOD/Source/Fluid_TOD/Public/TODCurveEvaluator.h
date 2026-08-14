@@ -23,7 +23,9 @@ public:
     );
 
     float GetMoonSourceScaleAtTime(const class ATODManager* Owner, float InTime) const;
+    float GetMoonGlowScaleAtTime(const class ATODManager* Owner, float InTime) const;
     float GetMoonIntensity(const class ATODManager* Owner, float InTime) const;
+
     float GetSunIntensity(const class ATODManager* Owner, float InTime) const;
 
     static TArray<FRuntimeFloatCurve*> GetAllFloatCurves(class UTODCurveContainer* CurveData);

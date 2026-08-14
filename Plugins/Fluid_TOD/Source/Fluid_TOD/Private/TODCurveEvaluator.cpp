@@ -351,11 +351,32 @@ TArray<FRuntimeFloatCurve*> FTODCurveEvaluator::GetAllFloatCurves(UTODCurveConta
 	if (!CurveData) return {};
 
 	return {
-		&CurveData->SunCurves.IntensityCurve, &CurveData->SunCurves.SourceAngleCurve, &CurveData->SunCurves.SourceSoftAngleCurve, &CurveData->SunCurves.IndirectIntensityCurve,
-		&CurveData->MoonCurves.IntensityCurve, &CurveData->MoonCurves.SourceAngleCurve, &CurveData->MoonCurves.SourceSoftAngleCurve, &CurveData->MoonCurves.IndirectIntensityCurve, &CurveData->MoonCurves.SourceScaleCurve, &CurveData->MoonCurves.SourceEmissiveIntensityCurve,
-		&CurveData->SkyLightCurves.IntensityCurve, &CurveData->SkyLightCurves.IndirectIntensityCurve, &CurveData->SkyLightCurves.VolumetricScatteringIntensityCurve, &CurveData->SkyLightCurves.TextureEmissiveIntensityCurve,
-		&CurveData->FogCurves.DensityCurve, &CurveData->FogCurves.HeightFalloffCurve,
-		&CurveData->SkyAtmosphereCurves.MieScatteringScaleCurve, &CurveData->SkyAtmosphereCurves.RayleighScatteringScaleCurve, &CurveData->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
+		&CurveData->SunCurves.IntensityCurve,
+		&CurveData->SunCurves.SourceAngleCurve,
+		&CurveData->SunCurves.SourceSoftAngleCurve,
+		&CurveData->SunCurves.IndirectIntensityCurve,
+
+		&CurveData->MoonCurves.IntensityCurve,
+		&CurveData->MoonCurves.SourceAngleCurve,
+		&CurveData->MoonCurves.SourceSoftAngleCurve,
+		&CurveData->MoonCurves.IndirectIntensityCurve,
+		&CurveData->MoonCurves.SourceScaleCurve,
+		&CurveData->MoonCurves.SourceEmissiveIntensityCurve,
+		&CurveData->MoonCurves.GlowScaleCurve,
+		&CurveData->MoonCurves.GlowEmissiveIntensityCurve,
+
+		&CurveData->SkyLightCurves.IntensityCurve,
+		&CurveData->SkyLightCurves.IndirectIntensityCurve,
+		&CurveData->SkyLightCurves.VolumetricScatteringIntensityCurve,
+		&CurveData->SkyLightCurves.TextureEmissiveIntensityCurve,
+		&CurveData->SkyLightCurves.StarEmissiveIntensityCurve,
+
+		&CurveData->FogCurves.DensityCurve,
+		&CurveData->FogCurves.HeightFalloffCurve,
+
+		&CurveData->SkyAtmosphereCurves.MieScatteringScaleCurve,
+		&CurveData->SkyAtmosphereCurves.RayleighScatteringScaleCurve,
+		&CurveData->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve
 	};
 }
 
@@ -776,12 +797,19 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 		float TargetMoonEmissive = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Source_Emissive_Intensity;
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->MoonCurves.SourceEmissiveIntensityCurve, T, TargetMoonEmissive);
 
+		float TargetMoonGlowScale = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Glow_Scale;
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->MoonCurves.GlowScaleCurve, T, TargetMoonGlowScale);
+
+		float TargetMoonGlowEmissive = (Data.ActiveLightMode == ETODDirectionalLightType::SunOnly) ? 0.0f : Data.Moon_Settings.Moon_Glow_Emissive_Intensity;
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->MoonCurves.GlowEmissiveIntensityCurve, T, TargetMoonGlowEmissive);
+
 		// SkyLight
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->SkyLightCurves.IntensityCurve, T, Data.SkyLight_Settings.Sky_Light_Intensity);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->SkyLightCurves.IndirectIntensityCurve, T, Data.SkyLight_Settings.Sky_Indirect_Lighting_Intensity);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->SkyLightCurves.VolumetricScatteringIntensityCurve, T, Data.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(Owner->CurveData->SkyLightCurves.LightColorCurve, T, Data.SkyLight_Settings.Sky_Light_Color);
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->SkyLightCurves.TextureEmissiveIntensityCurve, T, Data.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity);
+		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->SkyLightCurves.StarEmissiveIntensityCurve, T, Data.SkyLight_Settings.Star_Emissive_Intensity);
 
 		// Fog
 		UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(Owner->CurveData->FogCurves.DensityCurve, T, Data.Fog_Settings.Fog_Density);
@@ -847,92 +875,112 @@ void FTODCurveEvaluator::GetTODSettingsAtTime(
 
 	// ===== Sun =====
 	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.IntensityCurve.GetRichCurveConst())
-		OutSun.Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSun.Intensity = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.SourceAngleCurve.GetRichCurveConst())
-		OutSun.Source_Angle = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSun.Source_Angle = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.SourceSoftAngleCurve.GetRichCurveConst())
-		OutSun.Source_Soft_Angle = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSun.Source_Soft_Angle = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.IndirectIntensityCurve.GetRichCurveConst())
-		OutSun.Indirect_Light_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSun.Indirect_Light_Intensity = Curve->Eval(SafeTime);
 
 	OutSun.Light_Color = Owner->CurveData->SunCurves.LightColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== Moon =====
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.IntensityCurve.GetRichCurveConst())
-		OutMoon.Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutMoon.Intensity = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.SourceAngleCurve.GetRichCurveConst())
-		OutMoon.Source_Angle = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutMoon.Source_Angle = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.SourceSoftAngleCurve.GetRichCurveConst())
-		OutMoon.Source_Soft_Angle = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutMoon.Source_Soft_Angle = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.IndirectIntensityCurve.GetRichCurveConst())
-		OutMoon.Indirect_Light_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutMoon.Indirect_Light_Intensity = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.SourceScaleCurve.GetRichCurveConst())
-		OutMoon.Moon_Source_Scale = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutMoon.Moon_Source_Scale = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.SourceEmissiveIntensityCurve.GetRichCurveConst())
-		OutMoon.Moon_Source_Emissive_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutMoon.Moon_Source_Emissive_Intensity = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.GlowScaleCurve.GetRichCurveConst())
+		if (Curve->GetNumKeys() > 0) OutMoon.Moon_Glow_Scale = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.GlowEmissiveIntensityCurve.GetRichCurveConst())
+		if (Curve->GetNumKeys() > 0) OutMoon.Moon_Glow_Emissive_Intensity = Curve->Eval(SafeTime);
 
 	OutMoon.Light_Color = Owner->CurveData->MoonCurves.LightColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== SkyLight =====
 	if (const FRichCurve* Curve = Owner->CurveData->SkyLightCurves.IntensityCurve.GetRichCurveConst())
-		OutSkyLight.Sky_Light_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyLight.Sky_Light_Intensity = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SkyLightCurves.IndirectIntensityCurve.GetRichCurveConst())
-		OutSkyLight.Sky_Indirect_Lighting_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyLight.Sky_Indirect_Lighting_Intensity = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SkyLightCurves.VolumetricScatteringIntensityCurve.GetRichCurveConst())
-		OutSkyLight.Sky_Volumetric_Scattering_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyLight.Sky_Volumetric_Scattering_Intensity = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SkyLightCurves.TextureEmissiveIntensityCurve.GetRichCurveConst())
-		OutSkyLight.SkyDome_Texture_Emissive_Intensity = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyLight.SkyDome_Texture_Emissive_Intensity = Curve->Eval(SafeTime);
+
+	if (const FRichCurve* Curve = Owner->CurveData->SkyLightCurves.StarEmissiveIntensityCurve.GetRichCurveConst())
+		if (Curve->GetNumKeys() > 0) OutSkyLight.Star_Emissive_Intensity = Curve->Eval(SafeTime);
 
 	OutSkyLight.Sky_Light_Color = Owner->CurveData->SkyLightCurves.LightColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== Fog =====
 	if (const FRichCurve* Curve = Owner->CurveData->FogCurves.DensityCurve.GetRichCurveConst())
-		OutFog.Fog_Density = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutFog.Fog_Density = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->FogCurves.HeightFalloffCurve.GetRichCurveConst())
-		OutFog.Fog_Height_Falloff = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutFog.Fog_Height_Falloff = Curve->Eval(SafeTime);
 
 	OutFog.Fog_Inscattering_Color = Owner->CurveData->FogCurves.InscatteringColorCurve.GetLinearColorValue(SafeTime);
 	OutFog.Fog_Directional_Inscattering = Owner->CurveData->FogCurves.DirectionalColorCurve.GetLinearColorValue(SafeTime);
 
 	// ===== Atmosphere =====
 	if (const FRichCurve* Curve = Owner->CurveData->SkyAtmosphereCurves.MieScatteringScaleCurve.GetRichCurveConst())
-		OutSkyAtmosphere.Mie_Scattering_Scale = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyAtmosphere.Mie_Scattering_Scale = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SkyAtmosphereCurves.RayleighScatteringScaleCurve.GetRichCurveConst())
-		OutSkyAtmosphere.Rayleigh_Scattering_Scale = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyAtmosphere.Rayleigh_Scattering_Scale = Curve->Eval(SafeTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SkyAtmosphereCurves.AerialPerspectiveDistanceScaleCurve.GetRichCurveConst())
-		OutSkyAtmosphere.Aerial_Perspective_Distance_Scale = Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) OutSkyAtmosphere.Aerial_Perspective_Distance_Scale = Curve->Eval(SafeTime);
 
 	OutSkyAtmosphere.Mie_Scattering_Color = Owner->CurveData->SkyAtmosphereCurves.MieScatteringColorCurve.GetLinearColorValue(SafeTime);
 	OutSkyAtmosphere.Absorption_Color = Owner->CurveData->SkyAtmosphereCurves.AbsorptionColorCurve.GetLinearColorValue(SafeTime);
 	OutSkyAtmosphere.Sky_Luminance_Factor = Owner->CurveData->SkyAtmosphereCurves.SkyLuminanceFactorCurve.GetLinearColorValue(SafeTime);
 }
 
+float FTODCurveEvaluator::GetMoonGlowScaleAtTime(const ATODManager* Owner, float InTime) const
+{
+	if (!Owner || !Owner->CurveData) return 0.0f;
+
+	const float SafeTime = NormalizeTODTimeForBake(InTime);
+
+	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.GlowScaleCurve.GetRichCurveConst())
+	{
+		if (Curve->GetNumKeys() > 0) return Curve->Eval(SafeTime);
+	}
+
+	return 0.0f;
+}
+
 float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, float InTime) const
 {
-	if (!Owner || !Owner->CurveData)
-	{
-		return 0.0f;
-	}
+	if (!Owner || !Owner->CurveData) return 0.0f;
 
 	const float SafeTime = NormalizeTODTimeForBake(InTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.SourceScaleCurve.GetRichCurveConst())
 	{
-		return Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) return Curve->Eval(SafeTime);
 	}
 
 	return 0.0f;
@@ -940,16 +988,13 @@ float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, flo
 
 float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const
 {
-	if (!Owner || !Owner->CurveData)
-	{
-		return 0.0f;
-	}
+	if (!Owner || !Owner->CurveData) return 0.0f;
 
 	const float SafeTime = NormalizeTODTimeForBake(InTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->MoonCurves.IntensityCurve.GetRichCurveConst())
 	{
-		return Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) return Curve->Eval(SafeTime);
 	}
 
 	return 0.0f;
@@ -957,16 +1002,13 @@ float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTim
 
 float FTODCurveEvaluator::GetSunIntensity(const ATODManager* Owner, float InTime) const
 {
-	if (!Owner || !Owner->CurveData)
-	{
-		return 0.0f;
-	}
+	if (!Owner || !Owner->CurveData) return 0.0f;
 
 	const float SafeTime = NormalizeTODTimeForBake(InTime);
 
 	if (const FRichCurve* Curve = Owner->CurveData->SunCurves.IntensityCurve.GetRichCurveConst())
 	{
-		return Curve->Eval(SafeTime);
+		if (Curve->GetNumKeys() > 0) return Curve->Eval(SafeTime);
 	}
 
 	return 0.0f;
@@ -1025,7 +1067,7 @@ namespace
 		FTODColorGetter Getter;
 	};
 
-	// GetAllFloatCurves()와 정확히 같은 순서. (Sun 4, Moon 6, SkyLight 4, Fog 2, SkyAtmosphere 3)
+	// GetAllFloatCurves()와 정확히 같은 순서. (Sun 4, Moon 8, SkyLight 5, Fog 2, SkyAtmosphere 3)
 	const TArray<FTODFloatBinding>& GetFloatBindings()
 	{
 		static const TArray<FTODFloatBinding> Bindings = {
@@ -1041,11 +1083,14 @@ namespace
 			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Indirect_Light_Intensity = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Indirect_Light_Intensity; } },
 			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Scale = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Moon_Source_Scale; } },
 			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Source_Emissive_Intensity = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Moon_Source_Emissive_Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Glow_Scale = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Moon_Glow_Scale; } },
+			{ [](FTODMasterData& D, float V) { D.Moon_Settings.Moon_Glow_Emissive_Intensity = V; }, [](const FTODMasterData& D) { return D.Moon_Settings.Moon_Glow_Emissive_Intensity; } },
 			// SkyLight
 			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Light_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Light_Intensity; } },
 			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Indirect_Lighting_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Indirect_Lighting_Intensity; } },
 			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Sky_Volumetric_Scattering_Intensity; } },
 			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.SkyDome_Texture_Emissive_Intensity; } },
+			{ [](FTODMasterData& D, float V) { D.SkyLight_Settings.Star_Emissive_Intensity = V; }, [](const FTODMasterData& D) { return D.SkyLight_Settings.Star_Emissive_Intensity; } },
 			// Fog
 			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Density = V; }, [](const FTODMasterData& D) { return D.Fog_Settings.Fog_Density; } },
 			{ [](FTODMasterData& D, float V) { D.Fog_Settings.Fog_Height_Falloff = V; }, [](const FTODMasterData& D) { return D.Fog_Settings.Fog_Height_Falloff; } },
