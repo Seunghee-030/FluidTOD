@@ -470,10 +470,7 @@ float ATODManager::GetScaledMoonDistance() const
 
 void ATODManager::UpdateMoonMeshTransform()
 {
-	if (!IsValid(MoonMesh))
-	{
-		return;
-	}
+	if (!IsValid(MoonMesh)) return;
 
 	if (IsValid(MeshPivotComponent))
 	{
@@ -490,6 +487,23 @@ void ATODManager::UpdateMoonMeshTransform()
 	{
 		const float GlowScale = FMath::Max(GetMoonGlowScaleAtTime(CurrentSystemTime), 0.001f);
 		MoonGlowMesh->SetRelativeScale3D(FVector((GlowScale * (ActualDistance / 100000.0f)))); // moon glow 크기 조절
+
+		const FVector MoonWorldLocation = MoonMesh->GetComponentLocation();
+		const FVector PivotWorldLocation = MeshPivotComponent->GetComponentLocation();
+		const FVector DirectionToPivot = (PivotWorldLocation - MoonWorldLocation).GetSafeNormal();
+
+		// Moon의 현재 실제(월드) 반지름 계산
+		float MoonWorldRadius = 0.0f;
+		if (const UStaticMesh* MoonStaticMesh = MoonMesh->GetStaticMesh())
+		{
+			MoonWorldRadius = MoonStaticMesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().X;
+		}
+
+		// 반지름보다 살짝 크게 (10% 여유)
+		constexpr float FrontOffsetMultiplier = 1.1f;
+		const float FrontOffset = MoonWorldRadius * FrontOffsetMultiplier;
+
+		MoonGlowMesh->SetWorldLocation(MoonWorldLocation + DirectionToPivot * FrontOffset);
 	}
 }
 
@@ -606,7 +620,10 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
 	}
 
-	//UpdateMoonMeshTransform();
+	if (IsValid(MoonGlowMesh))
+	{
+		MoonGlowMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	}
 }
 
 // 태양 방위각 변경 Setter

@@ -1,0 +1,21 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.Fluid_TOD.cpp.obj": [
+			"Fluid_TOD.init.gen.cpp.obj",
+			"MyBlueprintFunctionLibrary.gen.cpp.obj",
+			"TODCurveContainer.gen.cpp.obj",
+			"TODManager.gen.cpp.obj",
+			"TOD_Types.gen.cpp.obj",
+			"PerModuleInline.gen.cpp.obj",
+			"Fluid_TOD.cpp.obj",
+			"MyBlueprintFunctionLibrary.cpp.obj",
+			"TODCurveContainer.cpp.obj",
+			"TODCurveEvaluator.cpp.obj",
+			"TODEditor.cpp.obj",
+			"TODManager.cpp.obj",
+			"TODSystem.cpp.obj",
+			"TOD_Types.cpp.obj"
+		]
+	}
+}
