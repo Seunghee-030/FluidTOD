@@ -61,9 +61,9 @@ void ATODManager::BeginPlay()
 			if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
 			{
 				// 모든 컷신 재생/정지/일시정지 될 때마다 상태 평가 함수 호출
-				SeqPlayer->OnPlay.AddDynamic(this, &ATODManager::EvaluateCinematicState);
-				SeqPlayer->OnStop.AddDynamic(this, &ATODManager::EvaluateCinematicState);
-				SeqPlayer->OnPause.AddDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnPlay.AddUniqueDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnStop.AddUniqueDynamic(this, &ATODManager::EvaluateCinematicState);
+				SeqPlayer->OnPause.AddUniqueDynamic(this, &ATODManager::EvaluateCinematicState);
 			}
 		}
 	}
@@ -80,20 +80,35 @@ void ATODManager::BeginPlay()
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
 
+void ATODManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	for (FTODCinematicSetting& Setting : TargetCinematics)
+	{
+		if (!IsValid(Setting.SequenceActor))
+		{
+			continue;
+		}
+
+		if (ULevelSequencePlayer* SeqPlayer = Setting.SequenceActor->GetSequencePlayer())
+		{
+			SeqPlayer->OnPlay.RemoveDynamic(this, &ATODManager::EvaluateCinematicState);
+			SeqPlayer->OnStop.RemoveDynamic(this, &ATODManager::EvaluateCinematicState);
+			SeqPlayer->OnPause.RemoveDynamic(this, &ATODManager::EvaluateCinematicState);
+		}
+	}
+
+	GetWorldTimerManager().ClearTimer(DebugTimerHandle);
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void ATODManager::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	const UWorld* World = GetWorld();
-	if (!World || !World->IsGameWorld())
-	{
-		return;
-	}
-
-	if (bIsTimePaused)
-	{
-		return;
-	}
+	if (!World || !World->IsGameWorld()) return;
+	if (bIsTimePaused) return;
 
 	const float Speed = CalculateCycleSpeed(CurrentSystemTime) * TimeDirection;
 
@@ -301,12 +316,22 @@ void ATODManager::PrintTODDebugInfo()
 	FTODSkyAtmosphereSettings Atmos;
 	GetTODSettingsAtTime(CurrentSystemTime, Sun, Moon, Sky, Fog, Atmos);
 
-	float ActualMoonEmissive = 0.f;
 	float ActualSkyEmissive = 0.f;
+	float ActualMoonEmissive = 0.f;
 	float ActualMoonScale =
 		bOverrideMoonSourceScale
 		? OverriddenMoonSourceScale
 		: Moon.Moon_Source_Scale;
+	float ActualMoonGlowEmissive = 0.f;
+	float ActualMoonGlowScale = Moon.Moon_Glow_Scale;
+
+	if (IsValid(SkyMaterialInstance))
+	{
+		SkyMaterialInstance->GetScalarParameterValue(
+			FMaterialParameterInfo(TEXT("SkyTextureEmissiveIntensity")),
+			ActualSkyEmissive
+		);
+	}
 
 	if (IsValid(MoonMaterialInstance))
 	{
@@ -316,11 +341,11 @@ void ATODManager::PrintTODDebugInfo()
 		);
 	}
 
-	if (IsValid(SkyMaterialInstance))
+	if(IsValid(MoonGlowMaterialInstance))
 	{
-		SkyMaterialInstance->GetScalarParameterValue(
-			FMaterialParameterInfo(TEXT("SkyTextureEmissiveIntensity")),
-			ActualSkyEmissive
+		MoonGlowMaterialInstance->GetScalarParameterValue(
+			FMaterialParameterInfo(TEXT("MoonGlowEmissiveIntensity")),
+			ActualMoonGlowEmissive
 		);
 	}
 
@@ -343,17 +368,21 @@ void ATODManager::PrintTODDebugInfo()
 
 	FString DebugMsg = FString::Printf(TEXT(
 		"=========== TOD System Debug ===========\n"
-		"	Time   %s [%s]\n"
+		"	Time   %s					[%s]\n"
 		"--------------------------------------------------\n"
 		"[Sun] Intensity %.2f | Angle %.1f\n"
+		"[SunIndirect] Intensity %.2f\n"
 		"\n"
 		"[Moon] Intensity %.2f | Angle %.1f \n"
+		"[MoonIndirect] Intensity %.2f\n"
 		"[MoonSource] Scale %.1f | Emissive Intensity %.1f\n"
+		"[MoonGlow] Scale %.1f | Emissive Intensity %.1f\n"
 		"\n"
-		"[SkyLight] Intensity %.2f | Emissive Intensity %.1f\n"
-		"[SkyIndirectLighting] Intensity %.2f\n"
+		"[SkyLight] Intensity %.2f | Indirect Intensity %.1f\n"
+		"[SkyDome] Sky Emissive Intensity %.2f\n"
+		"[Stars] Emissive Intensity %.2f\n"
 		"\n"
-		"[Fog] Density %.5f\n"
+		"[Fog] Density %.5f | Height Falloff %.5f\n"
 		"[Atmos] Mie Scattering Scale %.5f\n"
 		"--------------------------------------------------\n"
 		"[PPV] Bloom: %.2f\n"
@@ -365,11 +394,15 @@ void ATODManager::PrintTODDebugInfo()
 		*GetFormattedTimeAsString(CurrentSystemTime),
 		*StateStr,
 		Sun.Intensity, Sun.Source_Angle,
+		Sun.Indirect_Light_Intensity,
 		Moon.Intensity, Moon.Source_Angle,
+		Moon.Indirect_Light_Intensity,
 		ActualMoonScale, ActualMoonEmissive,
-		Sky.Sky_Light_Intensity, ActualSkyEmissive,
-		Sky.Sky_Indirect_Lighting_Intensity,
-		Fog.Fog_Density,
+		ActualMoonGlowScale, ActualMoonGlowEmissive,
+		Sky.Sky_Light_Intensity, Sky.Sky_Indirect_Lighting_Intensity,
+		ActualSkyEmissive,
+		Sky.Star_Emissive_Intensity,
+		Fog.Fog_Density,Fog.Fog_Height_Falloff,
 		Atmos.Mie_Scattering_Scale,
 		CurrentBloom,
 		CurrentExpMin, CurrentExpMax,
@@ -452,6 +485,12 @@ void ATODManager::UpdateMoonMeshTransform()
 
 	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
 	MoonMesh->SetRelativeScale3D(FVector((BaseScale * (ActualDistance / 100000.0f)))); // moon 크기 조절
+
+	if (IsValid(MoonGlowMesh))
+	{
+		const float GlowScale = FMath::Max(GetMoonGlowScaleAtTime(CurrentSystemTime), 0.001f);
+		MoonGlowMesh->SetRelativeScale3D(FVector((GlowScale * (ActualDistance / 100000.0f)))); // moon glow 크기 조절
+	}
 }
 
 // ======== Curve Evaluation =========
@@ -504,6 +543,11 @@ void ATODManager::UpdateSkyAnchorPosition()
 float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
 {
 	return CurveEvaluator.GetMoonSourceScaleAtTime(this, InTime);
+}
+
+float ATODManager::GetMoonGlowScaleAtTime(float InTime) const
+{
+	return CurveEvaluator.GetMoonGlowScaleAtTime(this, InTime);
 }
 
 float ATODManager::GetMoonIntensity(float InTime) const
@@ -759,6 +803,11 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		ApplyStaticSunMoonOffsets();
 		UpdatePivotRotation(CurrentSystemTime);
 		ForceViewportRedraw();
+		return;
+	}
+
+	if (bIsInteractive)
+	{
 		return;
 	}
 
@@ -1046,138 +1095,3 @@ void ATODManager::PostEditMove(bool bFinished)
 }
 
 #endif
-
-// ======= Debug =========
-FString ATODManager::GetFullDebugDumpString() const
-{
-	const float CurTime = CurrentSystemTime;
-
-	const FString StateStr = StaticEnum<ETODState>()->GetNameStringByValue(
-		static_cast<int64>(GetCurrentTODState(CurTime)));
-
-	auto BoolStr = [](bool b) { return b ? TEXT("true") : TEXT("false"); };
-
-	// PPV Compensation 값 계산
-	float CompExposure = 0.0f;
-	float CompBrightness = 1.0f;
-	float CompWhiteTemp = 0.0f;
-	FLinearColor CompColorGrading = FLinearColor::White;
-
-	if (const FRichCurve* Curve = PPV_ExposureCompensationCurve.GetRichCurveConst())
-	{
-		if (Curve->GetNumKeys() > 0) CompExposure = Curve->Eval(CurTime);
-	}
-	if (const FRichCurve* Curve = PPV_BrightnessCompensationCurve.GetRichCurveConst())
-	{
-		if (Curve->GetNumKeys() > 0) CompBrightness = Curve->Eval(CurTime);
-	}
-	if (const FRichCurve* Curve = PPV_WhiteTempCompensationCurve.GetRichCurveConst())
-	{
-		if (Curve->GetNumKeys() > 0) CompWhiteTemp = Curve->Eval(CurTime);
-	}
-
-	bool bHasColorComp = false;
-	for (int32 i = 0; i < 4; ++i)
-	{
-		if (PPV_ColorGradingCompensationCurve.ColorCurves[i].GetNumKeys() > 0) { bHasColorComp = true; break; }
-	}
-	if (bHasColorComp)
-	{
-		CompColorGrading = PPV_ColorGradingCompensationCurve.GetLinearColorValue(CurTime);
-	}
-
-	return FString::Printf(TEXT(
-		"\n"
-		"================= [TOD FULL STATE DUMP] =================\n"
-		"-- Time / State --\n"
-		"  CurrentSystemTime      : %.4f  (%s)\n"
-		"  StartTime              : %.4f\n"
-		"  StartTimeDisplay       : %s\n"
-		"  CurrentState           : %s\n"
-		"  bIsTimePaused           : %s\n"
-		"  bIsVisualOverridden     : %s\n"
-		"  StateBlendAlpha         : %.3f\n"
-		"\n"
-		"-- Speed --\n"
-		"  PlayerRef               : %s\n"
-		"  ActiveDaySpeed          : %.3f\n"
-		"  IdleDaySpeed            : %.3f\n"
-		"  InterpSpeed             : %.3f\n"
-		"  DayCycleDuration(min)   : %.3f\n"
-		"  TargetSpeed (internal)  : %.4f\n"
-		"  CurrentSpeed (internal) : %.4f\n"
-		"  CycleSpeedCurve.NumKeys : %d\n"
-		"  GetFinalSpeed()         : %.4f\n"
-		"\n"
-		"-- Geography --\n"
-		"  Latitude                : %.3f\n"
-		"  Longitude                : %.3f\n"
-		"  CalculatedSunriseTime    : %.3f (%s)\n"
-		"  CalculatedSunsetTime     : %.3f (%s)\n"
-		"  MoonLocalRotationOffset  : (P=%.2f, Y=%.2f, R=%.2f)\n"
-		"  SunLatitudeTiltMultiplier: %.3f\n"
-		"\n"
-		"-- Moon --\n"
-		"  MoonDistance                    : %.1f\n"
-		"  bAutoScaleMoonDistanceByMeshSize : %s\n"
-		"  MoonMeshReferenceRadius          : %.1f\n"
-		"  bOverrideMoonSourceScale         : %s\n"
-		"  OverriddenMoonSourceScale        : %.3f\n"
-		"  GetCalculatedMoonScale()         : %.4f\n"
-		"  GetMoonSourceScaleAtTime()       : %.4f\n"
-		"  GetMoonIntensity()               : %.2f\n"
-		"  GetSunIntensity()                : %.2f\n"
-		"\n"
-		"-- PPV Compensation --\n"
-		"  Exposure Bias (+)      : %.3f\n"
-		"  Brightness Scale (x)   : %.3f\n"
-		"  WhiteTemp Offset (+)   : %.1fK\n"
-		"  ColorGrading Scale     : (R:%.2f, G:%.2f, B:%.2f, A:%.2f)\n"
-		"===========================================================\n"
-	),
-		// Time / State
-		CurTime, *GetFormattedTimeAsString(CurTime),
-		StartTime,
-		*StartTimeDisplay,
-		*StateStr,
-		BoolStr(bIsTimePaused),
-		BoolStr(bIsVisualOverridden),
-		StateBlendAlpha,
-
-		// Speed
-		IsValid(PlayerRef) ? *PlayerRef->GetName() : TEXT("None"),
-		ActiveDaySpeed,
-		IdleDaySpeed,
-		InterpSpeed,
-		DayCycleDuration,
-		TargetSpeed,
-		CurrentSpeed,
-		CycleSpeedCurve.GetRichCurveConst() ? CycleSpeedCurve.GetRichCurveConst()->GetNumKeys() : 0,
-		const_cast<ATODManager*>(this)->GetFinalSpeed(CurTime),
-
-		// Geography
-		Latitude,
-		Longitude,
-		CalculatedSunriseTime, *SunriseTime,
-		CalculatedSunsetTime, *SunsetTime,
-		MoonLocalRotationOffset.Pitch, MoonLocalRotationOffset.Yaw, MoonLocalRotationOffset.Roll,
-		SunLatitudeTiltMultiplier,
-
-		// Moon
-		MoonDistance,
-		BoolStr(bAutoScaleMoonDistanceByMeshSize),
-		MoonMeshReferenceRadius,
-		BoolStr(bOverrideMoonSourceScale),
-		OverriddenMoonSourceScale,
-		GetCalculatedMoonScale(CurTime),
-		GetMoonSourceScaleAtTime(CurTime),
-		GetMoonIntensity(CurTime),
-		GetSunIntensity(CurTime),
-
-		// PPV Compensation
-		CompExposure,
-		CompBrightness,
-		CompWhiteTemp,
-		CompColorGrading.R, CompColorGrading.G, CompColorGrading.B, CompColorGrading.A
-	);
-}

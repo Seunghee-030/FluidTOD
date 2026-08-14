@@ -4,11 +4,20 @@
 #include "TOD_Types.h"
 
 class ATODManager;
+class APostProcessVolume;
+
+struct FTODPPVEntry
+{
+    float Time = 0.0f;
+    APostProcessVolume* PPV = nullptr;
+};
 
 class FLUID_TOD_API FTODCurveEvaluator
 {
 public:
     void ApplyPPVBlending(ATODManager* Owner, float CurrentTime);
+
+    void RebuildPPVCache(ATODManager* Owner);
 
     void BakeTODCurves(ATODManager* Owner);
 
@@ -23,7 +32,9 @@ public:
     );
 
     float GetMoonSourceScaleAtTime(const class ATODManager* Owner, float InTime) const;
+    float GetMoonGlowScaleAtTime(const class ATODManager* Owner, float InTime) const;
     float GetMoonIntensity(const class ATODManager* Owner, float InTime) const;
+
     float GetSunIntensity(const class ATODManager* Owner, float InTime) const;
 
     static TArray<FRuntimeFloatCurve*> GetAllFloatCurves(class UTODCurveContainer* CurveData);

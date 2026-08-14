@@ -138,7 +138,7 @@ void Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_bOverrideVi
 {
 	((FTODCinematicSetting*)Obj)->bOverrideVisuals = 1;
 }
-const UECodeGen_Private::FBoolPropertyParams Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_bOverrideVisuals = { "bOverrideVisuals", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, sizeof(bool), sizeof(FTODCinematicSetting), &Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_bOverrideVisuals_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bOverrideVisuals_MetaData), NewProp_bOverrideVisuals_MetaData) };
+const UECodeGen_Private::FBoolPropertyParams Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_bOverrideVisuals = { "bOverrideVisuals", nullptr, (EPropertyFlags)0x0010000000000004, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, sizeof(bool), sizeof(FTODCinematicSetting), &Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_bOverrideVisuals_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bOverrideVisuals_MetaData), NewProp_bOverrideVisuals_MetaData) };
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_SequenceActor,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewProp_bPauseTime,
@@ -353,6 +353,42 @@ DEFINE_FUNCTION(ATODManager::execEvaluateCinematicState)
 	P_NATIVE_END;
 }
 // ********** End Class ATODManager Function EvaluateCinematicState ********************************
+
+// ********** Begin Class ATODManager Function FindComponents **************************************
+struct Z_Construct_UFunction_ATODManager_FindComponents_Statics
+{
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
+		{ "Category", "TOD|System" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin Function FindComponents constinit property declarations ************************
+// ********** End Function FindComponents constinit property declarations **************************
+	static const UECodeGen_Private::FFunctionParams FuncParams;
+};
+const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_FindComponents_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "FindComponents", 	nullptr, 
+	0, 
+0,
+RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_FindComponents_Statics::Function_MetaDataParams), Z_Construct_UFunction_ATODManager_FindComponents_Statics::Function_MetaDataParams)},  };
+UFunction* Z_Construct_UFunction_ATODManager_FindComponents()
+{
+	static UFunction* ReturnFunction = nullptr;
+	if (!ReturnFunction)
+	{
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, Z_Construct_UFunction_ATODManager_FindComponents_Statics::FuncParams);
+	}
+	return ReturnFunction;
+}
+DEFINE_FUNCTION(ATODManager::execFindComponents)
+{
+	P_FINISH;
+	P_NATIVE_BEGIN;
+	P_THIS->FindComponents();
+	P_NATIVE_END;
+}
+// ********** End Class ATODManager Function FindComponents ****************************************
 
 // ********** Begin Class ATODManager Function ForceViewportRedraw *********************************
 struct Z_Construct_UFunction_ATODManager_ForceViewportRedraw_Statics
@@ -670,56 +706,61 @@ DEFINE_FUNCTION(ATODManager::execGetFormattedTimeAsString)
 }
 // ********** End Class ATODManager Function GetFormattedTimeAsString ******************************
 
-// ********** Begin Class ATODManager Function GetFullDebugDumpString ******************************
-struct Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics
+// ********** Begin Class ATODManager Function GetMoonGlowScaleAtTime ******************************
+struct Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics
 {
-	struct TODManager_eventGetFullDebugDumpString_Parms
+	struct TODManager_eventGetMoonGlowScaleAtTime_Parms
 	{
-		FString ReturnValue;
+		float InTime;
+		float ReturnValue;
 	};
 #if WITH_METADATA
 	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
-		{ "Category", "TOD|Debug" },
+		{ "Category", "TOD|Moon" },
 		{ "ModuleRelativePath", "Public/TODManager.h" },
 	};
 #endif // WITH_METADATA
 
-// ********** Begin Function GetFullDebugDumpString constinit property declarations ****************
-	static const UECodeGen_Private::FStrPropertyParams NewProp_ReturnValue;
+// ********** Begin Function GetMoonGlowScaleAtTime constinit property declarations ****************
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_InTime;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_ReturnValue;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
-// ********** End Function GetFullDebugDumpString constinit property declarations ******************
+// ********** End Function GetMoonGlowScaleAtTime constinit property declarations ******************
 	static const UECodeGen_Private::FFunctionParams FuncParams;
 };
 
-// ********** Begin Function GetFullDebugDumpString Property Definitions ***************************
-const UECodeGen_Private::FStrPropertyParams Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::NewProp_ReturnValue = { "ReturnValue", nullptr, (EPropertyFlags)0x0010000000000580, UECodeGen_Private::EPropertyGenFlags::Str, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(TODManager_eventGetFullDebugDumpString_Parms, ReturnValue), METADATA_PARAMS(0, nullptr) };
-const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::PropPointers[] = {
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::NewProp_ReturnValue,
+// ********** Begin Function GetMoonGlowScaleAtTime Property Definitions ***************************
+const UECodeGen_Private::FFloatPropertyParams Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::NewProp_InTime = { "InTime", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(TODManager_eventGetMoonGlowScaleAtTime_Parms, InTime), METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FFloatPropertyParams Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::NewProp_ReturnValue = { "ReturnValue", nullptr, (EPropertyFlags)0x0010000000000580, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(TODManager_eventGetMoonGlowScaleAtTime_Parms, ReturnValue), METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::NewProp_InTime,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::NewProp_ReturnValue,
 };
-static_assert(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::PropPointers) < 2048);
-// ********** End Function GetFullDebugDumpString Property Definitions *****************************
-const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "GetFullDebugDumpString", 	Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::PropPointers, 
-	UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::PropPointers), 
-sizeof(Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::TODManager_eventGetFullDebugDumpString_Parms),
-RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x54020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::Function_MetaDataParams), Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::Function_MetaDataParams)},  };
-static_assert(sizeof(Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::TODManager_eventGetFullDebugDumpString_Parms) < MAX_uint16);
-UFunction* Z_Construct_UFunction_ATODManager_GetFullDebugDumpString()
+static_assert(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::PropPointers) < 2048);
+// ********** End Function GetMoonGlowScaleAtTime Property Definitions *****************************
+const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "GetMoonGlowScaleAtTime", 	Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::PropPointers, 
+	UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::PropPointers), 
+sizeof(Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::TODManager_eventGetMoonGlowScaleAtTime_Parms),
+RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x54020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::Function_MetaDataParams), Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::Function_MetaDataParams)},  };
+static_assert(sizeof(Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::TODManager_eventGetMoonGlowScaleAtTime_Parms) < MAX_uint16);
+UFunction* Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime()
 {
 	static UFunction* ReturnFunction = nullptr;
 	if (!ReturnFunction)
 	{
-		UECodeGen_Private::ConstructUFunction(&ReturnFunction, Z_Construct_UFunction_ATODManager_GetFullDebugDumpString_Statics::FuncParams);
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics::FuncParams);
 	}
 	return ReturnFunction;
 }
-DEFINE_FUNCTION(ATODManager::execGetFullDebugDumpString)
+DEFINE_FUNCTION(ATODManager::execGetMoonGlowScaleAtTime)
 {
+	P_GET_PROPERTY(FFloatProperty,Z_Param_InTime);
 	P_FINISH;
 	P_NATIVE_BEGIN;
-	*(FString*)Z_Param__Result=P_THIS->GetFullDebugDumpString();
+	*(float*)Z_Param__Result=P_THIS->GetMoonGlowScaleAtTime(Z_Param_InTime);
 	P_NATIVE_END;
 }
-// ********** End Class ATODManager Function GetFullDebugDumpString ********************************
+// ********** End Class ATODManager Function GetMoonGlowScaleAtTime ********************************
 
 // ********** Begin Class ATODManager Function GetMoonIntensity ************************************
 struct Z_Construct_UFunction_ATODManager_GetMoonIntensity_Statics
@@ -1925,6 +1966,15 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ "Category", "TOD|Material" },
 		{ "ModuleRelativePath", "Public/TODManager.h" },
 	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MoonGlowMesh_MetaData[] = {
+		{ "Category", "TOD|Material" },
+		{ "EditInline", "true" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MoonGlowMaterialInstance_MetaData[] = {
+		{ "Category", "TOD|Material" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SkyMaterialInstance_MetaData[] = {
 		{ "Category", "TOD|Material" },
 		{ "ModuleRelativePath", "Public/TODManager.h" },
@@ -2151,6 +2201,8 @@ struct Z_Construct_UClass_ATODManager_Statics
 	static const UECodeGen_Private::FObjectPropertyParams NewProp_SkyDomeMesh;
 	static const UECodeGen_Private::FObjectPropertyParams NewProp_MoonMesh;
 	static const UECodeGen_Private::FObjectPropertyParams NewProp_MoonMaterialInstance;
+	static const UECodeGen_Private::FObjectPropertyParams NewProp_MoonGlowMesh;
+	static const UECodeGen_Private::FObjectPropertyParams NewProp_MoonGlowMaterialInstance;
 	static const UECodeGen_Private::FObjectPropertyParams NewProp_SkyMaterialInstance;
 	static const UECodeGen_Private::FStrPropertyParams NewProp_StartTimeDisplay;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_StartTime;
@@ -2199,13 +2251,14 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ .NameUTF8 = UTF8TEXT("CalculateCycleSpeed"), .Pointer = &ATODManager::execCalculateCycleSpeed },
 		{ .NameUTF8 = UTF8TEXT("CalculatePivotRotation"), .Pointer = &ATODManager::execCalculatePivotRotation },
 		{ .NameUTF8 = UTF8TEXT("EvaluateCinematicState"), .Pointer = &ATODManager::execEvaluateCinematicState },
+		{ .NameUTF8 = UTF8TEXT("FindComponents"), .Pointer = &ATODManager::execFindComponents },
 		{ .NameUTF8 = UTF8TEXT("ForceViewportRedraw"), .Pointer = &ATODManager::execForceViewportRedraw },
 		{ .NameUTF8 = UTF8TEXT("GetCalculatedMoonScale"), .Pointer = &ATODManager::execGetCalculatedMoonScale },
 		{ .NameUTF8 = UTF8TEXT("GetCurrentTime"), .Pointer = &ATODManager::execGetCurrentTime },
 		{ .NameUTF8 = UTF8TEXT("GetCurrentTODState"), .Pointer = &ATODManager::execGetCurrentTODState },
 		{ .NameUTF8 = UTF8TEXT("GetFinalSpeed"), .Pointer = &ATODManager::execGetFinalSpeed },
 		{ .NameUTF8 = UTF8TEXT("GetFormattedTimeAsString"), .Pointer = &ATODManager::execGetFormattedTimeAsString },
-		{ .NameUTF8 = UTF8TEXT("GetFullDebugDumpString"), .Pointer = &ATODManager::execGetFullDebugDumpString },
+		{ .NameUTF8 = UTF8TEXT("GetMoonGlowScaleAtTime"), .Pointer = &ATODManager::execGetMoonGlowScaleAtTime },
 		{ .NameUTF8 = UTF8TEXT("GetMoonIntensity"), .Pointer = &ATODManager::execGetMoonIntensity },
 		{ .NameUTF8 = UTF8TEXT("GetMoonSourceScaleAtTime"), .Pointer = &ATODManager::execGetMoonSourceScaleAtTime },
 		{ .NameUTF8 = UTF8TEXT("GetStartTime"), .Pointer = &ATODManager::execGetStartTime },
@@ -2235,13 +2288,14 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ &Z_Construct_UFunction_ATODManager_CalculateCycleSpeed, "CalculateCycleSpeed" }, // 3391508547
 		{ &Z_Construct_UFunction_ATODManager_CalculatePivotRotation, "CalculatePivotRotation" }, // 2861658708
 		{ &Z_Construct_UFunction_ATODManager_EvaluateCinematicState, "EvaluateCinematicState" }, // 2988512050
+		{ &Z_Construct_UFunction_ATODManager_FindComponents, "FindComponents" }, // 1145738159
 		{ &Z_Construct_UFunction_ATODManager_ForceViewportRedraw, "ForceViewportRedraw" }, // 1059176239
 		{ &Z_Construct_UFunction_ATODManager_GetCalculatedMoonScale, "GetCalculatedMoonScale" }, // 1850207794
 		{ &Z_Construct_UFunction_ATODManager_GetCurrentTime, "GetCurrentTime" }, // 2657729296
 		{ &Z_Construct_UFunction_ATODManager_GetCurrentTODState, "GetCurrentTODState" }, // 2978199089
 		{ &Z_Construct_UFunction_ATODManager_GetFinalSpeed, "GetFinalSpeed" }, // 3744602356
 		{ &Z_Construct_UFunction_ATODManager_GetFormattedTimeAsString, "GetFormattedTimeAsString" }, // 1742728493
-		{ &Z_Construct_UFunction_ATODManager_GetFullDebugDumpString, "GetFullDebugDumpString" }, // 4146005819
+		{ &Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime, "GetMoonGlowScaleAtTime" }, // 1499360453
 		{ &Z_Construct_UFunction_ATODManager_GetMoonIntensity, "GetMoonIntensity" }, // 3770409508
 		{ &Z_Construct_UFunction_ATODManager_GetMoonSourceScaleAtTime, "GetMoonSourceScaleAtTime" }, // 2135344243
 		{ &Z_Construct_UFunction_ATODManager_GetStartTime, "GetStartTime" }, // 4000393215
@@ -2275,8 +2329,8 @@ struct Z_Construct_UClass_ATODManager_Statics
 
 // ********** Begin Class ATODManager Property Definitions *****************************************
 const UECodeGen_Private::FMulticastDelegatePropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_OnTODDataChanged = { "OnTODDataChanged", nullptr, (EPropertyFlags)0x0010000010080000, UECodeGen_Private::EPropertyGenFlags::InlineMulticastDelegate, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, OnTODDataChanged), Z_Construct_UDelegateFunction_Fluid_TOD_OnTODDataChangedSignature__DelegateSignature, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_OnTODDataChanged_MetaData), NewProp_OnTODDataChanged_MetaData) }; // 263358711
-const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TargetCinematics_Inner = { "TargetCinematics", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODCinematicSetting, METADATA_PARAMS(0, nullptr) }; // 3521652306
-const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TargetCinematics = { "TargetCinematics", nullptr, (EPropertyFlags)0x0020080000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TargetCinematics), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TargetCinematics_MetaData), NewProp_TargetCinematics_MetaData) }; // 3521652306
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TargetCinematics_Inner = { "TargetCinematics", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODCinematicSetting, METADATA_PARAMS(0, nullptr) }; // 3645121645
+const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TargetCinematics = { "TargetCinematics", nullptr, (EPropertyFlags)0x0020080000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TargetCinematics), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TargetCinematics_MetaData), NewProp_TargetCinematics_MetaData) }; // 3645121645
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_RuntimePPVComponent = { "RuntimePPVComponent", nullptr, (EPropertyFlags)0x01140000000a001d, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, RuntimePPVComponent), Z_Construct_UClass_UPostProcessComponent_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_RuntimePPVComponent_MetaData), NewProp_RuntimePPVComponent_MetaData) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_SunLightComponent = { "SunLightComponent", nullptr, (EPropertyFlags)0x0114000000080008, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, SunLightComponent), Z_Construct_UClass_UDirectionalLightComponent_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SunLightComponent_MetaData), NewProp_SunLightComponent_MetaData) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_MoonLightComponent = { "MoonLightComponent", nullptr, (EPropertyFlags)0x0114000000080008, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, MoonLightComponent), Z_Construct_UClass_UDirectionalLightComponent_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MoonLightComponent_MetaData), NewProp_MoonLightComponent_MetaData) };
@@ -2289,13 +2343,15 @@ const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_St
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_SkyDomeMesh = { "SkyDomeMesh", nullptr, (EPropertyFlags)0x011400000008001c, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, SkyDomeMesh), Z_Construct_UClass_UStaticMeshComponent_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SkyDomeMesh_MetaData), NewProp_SkyDomeMesh_MetaData) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_MoonMesh = { "MoonMesh", nullptr, (EPropertyFlags)0x011400000008001c, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, MoonMesh), Z_Construct_UClass_UStaticMeshComponent_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MoonMesh_MetaData), NewProp_MoonMesh_MetaData) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_MoonMaterialInstance = { "MoonMaterialInstance", nullptr, (EPropertyFlags)0x0114000000000004, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, MoonMaterialInstance), Z_Construct_UClass_UMaterialInstanceDynamic_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MoonMaterialInstance_MetaData), NewProp_MoonMaterialInstance_MetaData) };
+const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_MoonGlowMesh = { "MoonGlowMesh", nullptr, (EPropertyFlags)0x011400000008001c, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, MoonGlowMesh), Z_Construct_UClass_UStaticMeshComponent_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MoonGlowMesh_MetaData), NewProp_MoonGlowMesh_MetaData) };
+const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_MoonGlowMaterialInstance = { "MoonGlowMaterialInstance", nullptr, (EPropertyFlags)0x0114000000000004, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, MoonGlowMaterialInstance), Z_Construct_UClass_UMaterialInstanceDynamic_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MoonGlowMaterialInstance_MetaData), NewProp_MoonGlowMaterialInstance_MetaData) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_SkyMaterialInstance = { "SkyMaterialInstance", nullptr, (EPropertyFlags)0x0114000000000004, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, SkyMaterialInstance), Z_Construct_UClass_UMaterialInstanceDynamic_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SkyMaterialInstance_MetaData), NewProp_SkyMaterialInstance_MetaData) };
 const UECodeGen_Private::FStrPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_StartTimeDisplay = { "StartTimeDisplay", nullptr, (EPropertyFlags)0x0010000000020001, UECodeGen_Private::EPropertyGenFlags::Str, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, StartTimeDisplay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_StartTimeDisplay_MetaData), NewProp_StartTimeDisplay_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_StartTime = { "StartTime", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, StartTime), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_StartTime_MetaData), NewProp_StartTime_MetaData) };
-const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_DataArray_Inner = { "TOD_DataArray", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODMasterData, METADATA_PARAMS(0, nullptr) }; // 1494437275
-const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_DataArray = { "TOD_DataArray", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TOD_DataArray), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TOD_DataArray_MetaData), NewProp_TOD_DataArray_MetaData) }; // 1494437275
-const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_State_Inner = { "TOD_State", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODTimePoint, METADATA_PARAMS(0, nullptr) }; // 3289068517
-const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_State = { "TOD_State", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TOD_State), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TOD_State_MetaData), NewProp_TOD_State_MetaData) }; // 3289068517
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_DataArray_Inner = { "TOD_DataArray", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODMasterData, METADATA_PARAMS(0, nullptr) }; // 872119232
+const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_DataArray = { "TOD_DataArray", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TOD_DataArray), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TOD_DataArray_MetaData), NewProp_TOD_DataArray_MetaData) }; // 872119232
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_State_Inner = { "TOD_State", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODTimePoint, METADATA_PARAMS(0, nullptr) }; // 1611771925
+const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TOD_State = { "TOD_State", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TOD_State), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TOD_State_MetaData), NewProp_TOD_State_MetaData) }; // 1611771925
 const UECodeGen_Private::FFloatPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_TimeDirection = { "TimeDirection", nullptr, (EPropertyFlags)0x0010000000000004, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, TimeDirection), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TimeDirection_MetaData), NewProp_TimeDirection_MetaData) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_PlayerRef = { "PlayerRef", nullptr, (EPropertyFlags)0x0124080000000004, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, PlayerRef), Z_Construct_UClass_ACharacter_NoRegister, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_PlayerRef_MetaData), NewProp_PlayerRef_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_ActiveDaySpeed = { "ActiveDaySpeed", nullptr, (EPropertyFlags)0x0020080000000005, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, ActiveDaySpeed), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_ActiveDaySpeed_MetaData), NewProp_ActiveDaySpeed_MetaData) };
@@ -2355,6 +2411,8 @@ const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UClass_ATODManag
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_SkyDomeMesh,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_MoonMesh,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_MoonMaterialInstance,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_MoonGlowMesh,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_MoonGlowMaterialInstance,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_SkyMaterialInstance,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_StartTimeDisplay,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_StartTime,
@@ -2437,13 +2495,13 @@ ATODManager::~ATODManager() {}
 struct Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics
 {
 	static constexpr FStructRegisterCompiledInInfo ScriptStructInfo[] = {
-		{ FTODCinematicSetting::StaticStruct, Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewStructOps, TEXT("TODCinematicSetting"),&Z_Registration_Info_UScriptStruct_FTODCinematicSetting, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCinematicSetting), 3521652306U) },
+		{ FTODCinematicSetting::StaticStruct, Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewStructOps, TEXT("TODCinematicSetting"),&Z_Registration_Info_UScriptStruct_FTODCinematicSetting, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCinematicSetting), 3645121645U) },
 	};
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_ATODManager, ATODManager::StaticClass, TEXT("ATODManager"), &Z_Registration_Info_UClass_ATODManager, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(ATODManager), 1425965754U) },
+		{ Z_Construct_UClass_ATODManager, ATODManager::StaticClass, TEXT("ATODManager"), &Z_Registration_Info_UClass_ATODManager, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(ATODManager), 561579519U) },
 	};
 }; // Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_1650698052{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_1549058658{
 	TEXT("/Script/Fluid_TOD"),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ClassInfo),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ScriptStructInfo),

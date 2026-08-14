@@ -29,7 +29,7 @@ struct FTODCinematicSetting
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Pauses TOD time progression during sequence playback."))
     bool bPauseTime = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Stops TOD visual updates to allow sequence-based overrides."))
+    UPROPERTY(BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Stops TOD visual updates to allow sequence-based overrides."))
     bool bOverrideVisuals = true;
 };
 
@@ -141,6 +141,9 @@ public:
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
 
+	/// Cached PPV Blend Data for runtime evaluation
+    TArray<FTODPPVEntry> CachedPPVBlendData;
+
     // =========================================================================
     // Properties: Speed, Time, and Cycle
     // =========================================================================
@@ -183,8 +186,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     void ToggleTimePause() { bIsTimePaused = !bIsTimePaused; }
-    UFUNCTION(BlueprintPure, Category = "TOD|Debug")
-    FString GetFullDebugDumpString() const;
 
 protected:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Speed", meta = (AllowPrivateAccess = "true", Tooltip = "Reference to the player character to track movement state."))

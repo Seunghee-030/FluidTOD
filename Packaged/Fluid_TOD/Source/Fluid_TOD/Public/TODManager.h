@@ -29,7 +29,7 @@ struct FTODCinematicSetting
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Pauses TOD time progression during sequence playback."))
     bool bPauseTime = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Stops TOD visual updates to allow sequence-based overrides."))
+    UPROPERTY(BlueprintReadWrite, Category = "Cinematic", meta = (Tooltip = "Stops TOD visual updates to allow sequence-based overrides."))
     bool bOverrideVisuals = true;
 };
 
@@ -108,6 +108,12 @@ public:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> MoonMaterialInstance;
 
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
+    TObjectPtr<UStaticMeshComponent> MoonGlowMesh;
+
+    UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
+    TObjectPtr<UMaterialInstanceDynamic> MoonGlowMaterialInstance;
+
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> SkyMaterialInstance;
 
@@ -134,6 +140,9 @@ public:
         meta = (DisplayPriority = "3", TitleProperty = "Name",
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
+
+	/// Cached PPV Blend Data for runtime evaluation
+    TArray<FTODPPVEntry> CachedPPVBlendData;
 
     // =========================================================================
     // Properties: Speed, Time, and Cycle
@@ -177,8 +186,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "TOD|Time")
     void ToggleTimePause() { bIsTimePaused = !bIsTimePaused; }
-    UFUNCTION(BlueprintPure, Category = "TOD|Debug")
-    FString GetFullDebugDumpString() const;
 
 protected:
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Speed", meta = (AllowPrivateAccess = "true", Tooltip = "Reference to the player character to track movement state."))
@@ -367,6 +374,9 @@ public:
     float GetMoonSourceScaleAtTime(float InTime) const;
 
     UFUNCTION(BlueprintPure, Category = "TOD|Moon")
+    float GetMoonGlowScaleAtTime(float InTime) const;
+
+    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
     float GetMoonIntensity(float InTime) const;
 
     UFUNCTION(BlueprintPure, Category = "TOD|Sun")
@@ -379,7 +389,10 @@ public:
     void UpdatePivotRotation(float InTime);
 
     void ApplyPPVBlending(float CurrentTime);
+
+    UFUNCTION(BlueprintCallable, Category = "TOD|System")
     void FindComponents();
+
     void SortTODDataArray();
 
     // =========================================================================
@@ -420,6 +433,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    void EndPlay(const EEndPlayReason::Type EndPlayReason);
     virtual void Tick(float DeltaSeconds) override;
 
 private:

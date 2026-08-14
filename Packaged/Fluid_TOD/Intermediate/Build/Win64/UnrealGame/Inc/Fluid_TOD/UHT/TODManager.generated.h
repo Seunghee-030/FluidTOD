@@ -46,10 +46,12 @@ struct FTODCinematicSetting;
 	DECLARE_FUNCTION(execSaveNewPreset); \
 	DECLARE_FUNCTION(execCalculatePivotRotation); \
 	DECLARE_FUNCTION(execUpdateSunTimes); \
+	DECLARE_FUNCTION(execFindComponents); \
 	DECLARE_FUNCTION(execUpdatePivotRotation); \
 	DECLARE_FUNCTION(execGetFinalSpeed); \
 	DECLARE_FUNCTION(execGetSunIntensity); \
 	DECLARE_FUNCTION(execGetMoonIntensity); \
+	DECLARE_FUNCTION(execGetMoonGlowScaleAtTime); \
 	DECLARE_FUNCTION(execGetMoonSourceScaleAtTime); \
 	DECLARE_FUNCTION(execUpdateTOD); \
 	DECLARE_FUNCTION(execBakeTODCurves); \
@@ -57,7 +59,6 @@ struct FTODCinematicSetting;
 	DECLARE_FUNCTION(execGetCalculatedMoonScale); \
 	DECLARE_FUNCTION(execUpdateSkyAnchorPosition); \
 	DECLARE_FUNCTION(execSetSunAzimuthOffset); \
-	DECLARE_FUNCTION(execGetFullDebugDumpString); \
 	DECLARE_FUNCTION(execToggleTimePause); \
 	DECLARE_FUNCTION(execToggleTimeDirection); \
 	DECLARE_FUNCTION(execIsTimeInState); \

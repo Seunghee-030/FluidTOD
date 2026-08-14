@@ -344,22 +344,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 			TEXT("MoonSourceEmissiveIntensity"),
 			Moon.Moon_Source_Emissive_Intensity
 		);
-
-		if (IsValid(Owner->SunLightComponent))
-		{
-			const FVector SunDirection =
-				-Owner->SunLightComponent->GetForwardVector();
-
-			Owner->MoonMaterialInstance->SetVectorParameterValue(
-				TEXT("SunDirection"),
-				FLinearColor(
-					SunDirection.X,
-					SunDirection.Y,
-					SunDirection.Z,
-					0.0f
-				)
-			);
-		}
 	}
 
 	if (IsValid(Owner->MoonGlowMaterialInstance))

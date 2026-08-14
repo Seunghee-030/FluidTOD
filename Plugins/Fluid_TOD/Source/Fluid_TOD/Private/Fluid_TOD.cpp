@@ -105,7 +105,6 @@ static FAutoConsoleCommandWithWorldAndArgs CVar_TOD_TogglePause(
         })
 );
 
-
 // 콘솔 명령어: TOD 곡선 재베이크
 static FAutoConsoleCommandWithWorld CVar_TOD_Bake(
     TEXT("Tod.Bake"),
@@ -123,21 +122,6 @@ static FAutoConsoleCommandWithWorld CVar_TOD_Bake(
         })
 );
 
-// 콘솔 명령어: TOD 상태 출력
-static FAutoConsoleCommandWithWorld CVar_TOD_PrintFullState(
-    TEXT("Tod.Log"),
-    TEXT("Tod.Log (Dumps every TOD manager variable to the log.)"),
-    FConsoleCommandWithWorldDelegate::CreateLambda(
-        [](UWorld* World)
-        {
-            if (!World) return;
-            for (TActorIterator<ATODManager> It(World); It; ++It)
-            {
-                UE_LOG(LogTemp, Log, TEXT("%s"), *It->GetFullDebugDumpString());
-                break;
-            }
-        })
-);
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FFluid_TODModule, Fluid_TOD)

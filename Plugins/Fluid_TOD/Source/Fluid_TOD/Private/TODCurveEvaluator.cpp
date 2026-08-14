@@ -46,13 +46,6 @@ namespace
 		DataArray.Add(BoundaryData);
 	}
 
-	// Canonical PPV Data 구조체
-	struct FTODPPVEntry
-	{
-		float Time = 0.0f;
-		APostProcessVolume* PPV = nullptr;
-	};
-
 	TArray<FTODPPVEntry> BuildCanonicalPPVData(const TArray<FTODMasterData>& SourceData)
 	{
 		struct FCanonicalPPVEntry
@@ -472,8 +465,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
-	TArray<FTODPPVEntry> ValidPPVs = BuildCanonicalPPVData(Owner->TOD_DataArray);
-	AddTwentyFourBoundaryFromEarliestPPV(ValidPPVs);
+	const TArray<FTODPPVEntry>& ValidPPVs = Owner->CachedPPVBlendData;
 
 	const int32 Num = ValidPPVs.Num();
 	if (Num == 0)
@@ -731,6 +723,16 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	ApplyPPVCompensation(Owner, CurrentTime);
 }
 
+void FTODCurveEvaluator::RebuildPPVCache(ATODManager* Owner)
+{
+	if (!Owner) return;
+
+	TArray<FTODPPVEntry> ValidPPVs = BuildCanonicalPPVData(Owner->TOD_DataArray);
+	AddTwentyFourBoundaryFromEarliestPPV(ValidPPVs);
+
+	Owner->CachedPPVBlendData = MoveTemp(ValidPPVs);
+}
+
 void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 {
 	if (!Owner || !Owner->CurveData)
@@ -739,6 +741,7 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 	}
 
 	Owner->FindComponents();
+	RebuildPPVCache(Owner);
 
 	// 구조체 내부 커브 포인터 매핑 (그래프 동기화 로직과 동일한 순서를 공유)
 	TArray<FRuntimeFloatCurve*> FloatCurves = GetAllFloatCurves(Owner->CurveData);
