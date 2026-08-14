@@ -29,12 +29,16 @@ FLUID_TOD_API UClass* Z_Construct_UClass_UTODSinglePreset();
 FLUID_TOD_API UClass* Z_Construct_UClass_UTODSinglePreset_NoRegister();
 FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODComponentCategory();
 FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODDirectionalLightType();
+FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODSeason();
 FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODState();
+FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot();
+FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODCurveKeyMode();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODFogCurveData();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODFogSettings();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODMasterData();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODMoonCurveData();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODMoonSettings();
+FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSingleCurveModeList();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSkyAtmosphereSettings();
 FLUID_TOD_API UScriptStruct* Z_Construct_UScriptStruct_FTODSkyLightCurveData();
@@ -110,6 +114,68 @@ UEnum* Z_Construct_UEnum_Fluid_TOD_ETODState()
 	return Z_Registration_Info_UEnum_ETODState.InnerSingleton;
 }
 // ********** End Enum ETODState *******************************************************************
+
+// ********** Begin Enum ETODSeason ****************************************************************
+static FEnumRegistrationInfo Z_Registration_Info_UEnum_ETODSeason;
+static UEnum* ETODSeason_StaticEnum()
+{
+	if (!Z_Registration_Info_UEnum_ETODSeason.OuterSingleton)
+	{
+		Z_Registration_Info_UEnum_ETODSeason.OuterSingleton = GetStaticEnum(Z_Construct_UEnum_Fluid_TOD_ETODSeason, (UObject*)Z_Construct_UPackage__Script_Fluid_TOD(), TEXT("ETODSeason"));
+	}
+	return Z_Registration_Info_UEnum_ETODSeason.OuterSingleton;
+}
+template<> FLUID_TOD_NON_ATTRIBUTED_API UEnum* StaticEnum<ETODSeason>()
+{
+	return ETODSeason_StaticEnum();
+}
+struct Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics
+{
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Enum_MetaDataParams[] = {
+		{ "Autumn.DisplayName", "Fall" },
+		{ "Autumn.Name", "ETODSeason::Autumn" },
+		{ "BlueprintType", "true" },
+		{ "Comment", "// \xea\xb3\x84\xec\xa0\x88\n" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+		{ "Spring.DisplayName", "Spring" },
+		{ "Spring.Name", "ETODSeason::Spring" },
+		{ "Summer.DisplayName", "Summer" },
+		{ "Summer.Name", "ETODSeason::Summer" },
+		{ "ToolTip", "\xea\xb3\x84\xec\xa0\x88" },
+		{ "Winter.DisplayName", "Winter" },
+		{ "Winter.Name", "ETODSeason::Winter" },
+	};
+#endif // WITH_METADATA
+	static constexpr UECodeGen_Private::FEnumeratorParam Enumerators[] = {
+		{ "ETODSeason::Spring", (int64)ETODSeason::Spring },
+		{ "ETODSeason::Summer", (int64)ETODSeason::Summer },
+		{ "ETODSeason::Autumn", (int64)ETODSeason::Autumn },
+		{ "ETODSeason::Winter", (int64)ETODSeason::Winter },
+	};
+	static const UECodeGen_Private::FEnumParams EnumParams;
+}; // struct Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics 
+const UECodeGen_Private::FEnumParams Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics::EnumParams = {
+	(UObject*(*)())Z_Construct_UPackage__Script_Fluid_TOD,
+	nullptr,
+	"ETODSeason",
+	"ETODSeason",
+	Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics::Enumerators,
+	RF_Public|RF_Transient|RF_MarkAsNative,
+	UE_ARRAY_COUNT(Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics::Enumerators),
+	EEnumFlags::None,
+	(uint8)UEnum::ECppForm::EnumClass,
+	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics::Enum_MetaDataParams), Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics::Enum_MetaDataParams)
+};
+UEnum* Z_Construct_UEnum_Fluid_TOD_ETODSeason()
+{
+	if (!Z_Registration_Info_UEnum_ETODSeason.InnerSingleton)
+	{
+		UECodeGen_Private::ConstructUEnum(Z_Registration_Info_UEnum_ETODSeason.InnerSingleton, Z_Construct_UEnum_Fluid_TOD_ETODSeason_Statics::EnumParams);
+	}
+	return Z_Registration_Info_UEnum_ETODSeason.InnerSingleton;
+}
+// ********** End Enum ETODSeason ******************************************************************
 
 // ********** Begin Enum ETODDirectionalLightType **************************************************
 static FEnumRegistrationInfo Z_Registration_Info_UEnum_ETODDirectionalLightType;
@@ -978,15 +1044,7 @@ struct Z_Construct_UScriptStruct_FTODSunCurveData_Statics
 		{ "Category", "Sun Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IntensityInterpMode_MetaData[] = {
-		{ "Category", "Sun Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceAngleCurve_MetaData[] = {
-		{ "Category", "Sun Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceAngleInterpMode_MetaData[] = {
 		{ "Category", "Sun Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -994,15 +1052,7 @@ struct Z_Construct_UScriptStruct_FTODSunCurveData_Statics
 		{ "Category", "Sun Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceSoftAngleInterpMode_MetaData[] = {
-		{ "Category", "Sun Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IndirectIntensityCurve_MetaData[] = {
-		{ "Category", "Sun Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IndirectIntensityInterpMode_MetaData[] = {
 		{ "Category", "Sun Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1010,23 +1060,14 @@ struct Z_Construct_UScriptStruct_FTODSunCurveData_Statics
 		{ "Category", "Sun Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_ColorInterpMode_MetaData[] = {
-		{ "Category", "Sun Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 #endif // WITH_METADATA
 
 // ********** Begin ScriptStruct FTODSunCurveData constinit property declarations ******************
 	static const UECodeGen_Private::FStructPropertyParams NewProp_IntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_IntensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SourceAngleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SourceAngleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SourceSoftAngleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SourceSoftAngleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_IndirectIntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_IndirectIntensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_LightColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_ColorInterpMode;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End ScriptStruct FTODSunCurveData constinit property declarations ********************
 	static void* NewStructOps()
@@ -1047,26 +1088,16 @@ class UScriptStruct* FTODSunCurveData::StaticStruct()
 
 // ********** Begin ScriptStruct FTODSunCurveData Property Definitions *****************************
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IntensityCurve = { "IntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, IntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IntensityCurve_MetaData), NewProp_IntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IntensityInterpMode = { "IntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, IntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IntensityInterpMode_MetaData), NewProp_IntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceAngleCurve = { "SourceAngleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, SourceAngleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceAngleCurve_MetaData), NewProp_SourceAngleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceAngleInterpMode = { "SourceAngleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, SourceAngleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceAngleInterpMode_MetaData), NewProp_SourceAngleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceSoftAngleCurve = { "SourceSoftAngleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, SourceSoftAngleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceSoftAngleCurve_MetaData), NewProp_SourceSoftAngleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceSoftAngleInterpMode = { "SourceSoftAngleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, SourceSoftAngleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceSoftAngleInterpMode_MetaData), NewProp_SourceSoftAngleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IndirectIntensityCurve = { "IndirectIntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, IndirectIntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IndirectIntensityCurve_MetaData), NewProp_IndirectIntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IndirectIntensityInterpMode = { "IndirectIntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, IndirectIntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IndirectIntensityInterpMode_MetaData), NewProp_IndirectIntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_LightColorCurve = { "LightColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, LightColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LightColorCurve_MetaData), NewProp_LightColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_ColorInterpMode = { "ColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSunCurveData, ColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_ColorInterpMode_MetaData), NewProp_ColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODSunCurveData_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IntensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceAngleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceAngleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceSoftAngleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_SourceSoftAngleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IndirectIntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_IndirectIntensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_LightColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewProp_ColorInterpMode,
 };
 static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODSunCurveData_Statics::PropPointers) < 2048);
 // ********** End ScriptStruct FTODSunCurveData Property Definitions *******************************
@@ -1107,15 +1138,7 @@ struct Z_Construct_UScriptStruct_FTODMoonCurveData_Statics
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IntensityInterpMode_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceAngleCurve_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceAngleInterpMode_MetaData[] = {
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1123,15 +1146,7 @@ struct Z_Construct_UScriptStruct_FTODMoonCurveData_Statics
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceSoftAngleInterpMode_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IndirectIntensityCurve_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IndirectIntensityInterpMode_MetaData[] = {
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1139,15 +1154,7 @@ struct Z_Construct_UScriptStruct_FTODMoonCurveData_Statics
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LightColorInterpMode_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceScaleCurve_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceScaleInterpMode_MetaData[] = {
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1155,27 +1162,16 @@ struct Z_Construct_UScriptStruct_FTODMoonCurveData_Statics
 		{ "Category", "Moon Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SourceEmissiveIntensityInterpMode_MetaData[] = {
-		{ "Category", "Moon Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 #endif // WITH_METADATA
 
 // ********** Begin ScriptStruct FTODMoonCurveData constinit property declarations *****************
 	static const UECodeGen_Private::FStructPropertyParams NewProp_IntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_IntensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SourceAngleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SourceAngleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SourceSoftAngleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SourceSoftAngleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_IndirectIntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_IndirectIntensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_LightColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_LightColorInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SourceScaleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SourceScaleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SourceEmissiveIntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SourceEmissiveIntensityInterpMode;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End ScriptStruct FTODMoonCurveData constinit property declarations *******************
 	static void* NewStructOps()
@@ -1196,34 +1192,20 @@ class UScriptStruct* FTODMoonCurveData::StaticStruct()
 
 // ********** Begin ScriptStruct FTODMoonCurveData Property Definitions ****************************
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IntensityCurve = { "IntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, IntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IntensityCurve_MetaData), NewProp_IntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IntensityInterpMode = { "IntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, IntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IntensityInterpMode_MetaData), NewProp_IntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceAngleCurve = { "SourceAngleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceAngleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceAngleCurve_MetaData), NewProp_SourceAngleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceAngleInterpMode = { "SourceAngleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceAngleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceAngleInterpMode_MetaData), NewProp_SourceAngleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceSoftAngleCurve = { "SourceSoftAngleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceSoftAngleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceSoftAngleCurve_MetaData), NewProp_SourceSoftAngleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceSoftAngleInterpMode = { "SourceSoftAngleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceSoftAngleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceSoftAngleInterpMode_MetaData), NewProp_SourceSoftAngleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IndirectIntensityCurve = { "IndirectIntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, IndirectIntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IndirectIntensityCurve_MetaData), NewProp_IndirectIntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IndirectIntensityInterpMode = { "IndirectIntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, IndirectIntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IndirectIntensityInterpMode_MetaData), NewProp_IndirectIntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_LightColorCurve = { "LightColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, LightColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LightColorCurve_MetaData), NewProp_LightColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_LightColorInterpMode = { "LightColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, LightColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LightColorInterpMode_MetaData), NewProp_LightColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceScaleCurve = { "SourceScaleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceScaleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceScaleCurve_MetaData), NewProp_SourceScaleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceScaleInterpMode = { "SourceScaleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceScaleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceScaleInterpMode_MetaData), NewProp_SourceScaleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceEmissiveIntensityCurve = { "SourceEmissiveIntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceEmissiveIntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceEmissiveIntensityCurve_MetaData), NewProp_SourceEmissiveIntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceEmissiveIntensityInterpMode = { "SourceEmissiveIntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODMoonCurveData, SourceEmissiveIntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SourceEmissiveIntensityInterpMode_MetaData), NewProp_SourceEmissiveIntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IntensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceAngleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceAngleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceSoftAngleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceSoftAngleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IndirectIntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_IndirectIntensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_LightColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_LightColorInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceScaleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceScaleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceEmissiveIntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewProp_SourceEmissiveIntensityInterpMode,
 };
 static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::PropPointers) < 2048);
 // ********** End ScriptStruct FTODMoonCurveData Property Definitions ******************************
@@ -1264,15 +1246,7 @@ struct Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics
 		{ "Category", "SkyLight Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IntensityInterpMode_MetaData[] = {
-		{ "Category", "SkyLight Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IndirectIntensityCurve_MetaData[] = {
-		{ "Category", "SkyLight Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_IndirectIntensityInterpMode_MetaData[] = {
 		{ "Category", "SkyLight Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1280,15 +1254,7 @@ struct Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics
 		{ "Category", "SkyLight Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_VolumetricScatteringInterpMode_MetaData[] = {
-		{ "Category", "SkyLight Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LightColorCurve_MetaData[] = {
-		{ "Category", "SkyLight Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LightColorInterpMode_MetaData[] = {
 		{ "Category", "SkyLight Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1296,23 +1262,14 @@ struct Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics
 		{ "Category", "SkyLight Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_TextureEmissiveIntensityInterpMode_MetaData[] = {
-		{ "Category", "SkyLight Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 #endif // WITH_METADATA
 
 // ********** Begin ScriptStruct FTODSkyLightCurveData constinit property declarations *************
 	static const UECodeGen_Private::FStructPropertyParams NewProp_IntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_IntensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_IndirectIntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_IndirectIntensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_VolumetricScatteringIntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_VolumetricScatteringInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_LightColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_LightColorInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_TextureEmissiveIntensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_TextureEmissiveIntensityInterpMode;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End ScriptStruct FTODSkyLightCurveData constinit property declarations ***************
 	static void* NewStructOps()
@@ -1333,26 +1290,16 @@ class UScriptStruct* FTODSkyLightCurveData::StaticStruct()
 
 // ********** Begin ScriptStruct FTODSkyLightCurveData Property Definitions ************************
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IntensityCurve = { "IntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, IntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IntensityCurve_MetaData), NewProp_IntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IntensityInterpMode = { "IntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, IntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IntensityInterpMode_MetaData), NewProp_IntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IndirectIntensityCurve = { "IndirectIntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, IndirectIntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IndirectIntensityCurve_MetaData), NewProp_IndirectIntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IndirectIntensityInterpMode = { "IndirectIntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, IndirectIntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_IndirectIntensityInterpMode_MetaData), NewProp_IndirectIntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_VolumetricScatteringIntensityCurve = { "VolumetricScatteringIntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, VolumetricScatteringIntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_VolumetricScatteringIntensityCurve_MetaData), NewProp_VolumetricScatteringIntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_VolumetricScatteringInterpMode = { "VolumetricScatteringInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, VolumetricScatteringInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_VolumetricScatteringInterpMode_MetaData), NewProp_VolumetricScatteringInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_LightColorCurve = { "LightColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, LightColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LightColorCurve_MetaData), NewProp_LightColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_LightColorInterpMode = { "LightColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, LightColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LightColorInterpMode_MetaData), NewProp_LightColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_TextureEmissiveIntensityCurve = { "TextureEmissiveIntensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, TextureEmissiveIntensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TextureEmissiveIntensityCurve_MetaData), NewProp_TextureEmissiveIntensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_TextureEmissiveIntensityInterpMode = { "TextureEmissiveIntensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyLightCurveData, TextureEmissiveIntensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TextureEmissiveIntensityInterpMode_MetaData), NewProp_TextureEmissiveIntensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IntensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IndirectIntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_IndirectIntensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_VolumetricScatteringIntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_VolumetricScatteringInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_LightColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_LightColorInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_TextureEmissiveIntensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewProp_TextureEmissiveIntensityInterpMode,
 };
 static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::PropPointers) < 2048);
 // ********** End ScriptStruct FTODSkyLightCurveData Property Definitions **************************
@@ -1393,15 +1340,7 @@ struct Z_Construct_UScriptStruct_FTODFogCurveData_Statics
 		{ "Category", "Fog Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_DensityInterpMode_MetaData[] = {
-		{ "Category", "Fog Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_HeightFalloffCurve_MetaData[] = {
-		{ "Category", "Fog Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_HeightFalloffInterpMode_MetaData[] = {
 		{ "Category", "Fog Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1409,15 +1348,7 @@ struct Z_Construct_UScriptStruct_FTODFogCurveData_Statics
 		{ "Category", "Fog Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_InscatteringColorInterpMode_MetaData[] = {
-		{ "Category", "Fog Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_DirectionalColorCurve_MetaData[] = {
-		{ "Category", "Fog Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_DirectionalColorInterpMode_MetaData[] = {
 		{ "Category", "Fog Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1425,13 +1356,9 @@ struct Z_Construct_UScriptStruct_FTODFogCurveData_Statics
 
 // ********** Begin ScriptStruct FTODFogCurveData constinit property declarations ******************
 	static const UECodeGen_Private::FStructPropertyParams NewProp_DensityCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_DensityInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_HeightFalloffCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_HeightFalloffInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_InscatteringColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_InscatteringColorInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_DirectionalColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_DirectionalColorInterpMode;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End ScriptStruct FTODFogCurveData constinit property declarations ********************
 	static void* NewStructOps()
@@ -1452,22 +1379,14 @@ class UScriptStruct* FTODFogCurveData::StaticStruct()
 
 // ********** Begin ScriptStruct FTODFogCurveData Property Definitions *****************************
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DensityCurve = { "DensityCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, DensityCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_DensityCurve_MetaData), NewProp_DensityCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DensityInterpMode = { "DensityInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, DensityInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_DensityInterpMode_MetaData), NewProp_DensityInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_HeightFalloffCurve = { "HeightFalloffCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, HeightFalloffCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_HeightFalloffCurve_MetaData), NewProp_HeightFalloffCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_HeightFalloffInterpMode = { "HeightFalloffInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, HeightFalloffInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_HeightFalloffInterpMode_MetaData), NewProp_HeightFalloffInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_InscatteringColorCurve = { "InscatteringColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, InscatteringColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_InscatteringColorCurve_MetaData), NewProp_InscatteringColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_InscatteringColorInterpMode = { "InscatteringColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, InscatteringColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_InscatteringColorInterpMode_MetaData), NewProp_InscatteringColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DirectionalColorCurve = { "DirectionalColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, DirectionalColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_DirectionalColorCurve_MetaData), NewProp_DirectionalColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DirectionalColorInterpMode = { "DirectionalColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODFogCurveData, DirectionalColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_DirectionalColorInterpMode_MetaData), NewProp_DirectionalColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODFogCurveData_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DensityCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DensityInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_HeightFalloffCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_HeightFalloffInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_InscatteringColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_InscatteringColorInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DirectionalColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewProp_DirectionalColorInterpMode,
 };
 static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODFogCurveData_Statics::PropPointers) < 2048);
 // ********** End ScriptStruct FTODFogCurveData Property Definitions *******************************
@@ -1508,15 +1427,7 @@ struct Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics
 		{ "Category", "SkyAtmosphere Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MieScatteringScaleInterpMode_MetaData[] = {
-		{ "Category", "SkyAtmosphere Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_RayleighScatteringScaleCurve_MetaData[] = {
-		{ "Category", "SkyAtmosphere Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_RayleighScatteringScaleInterpMode_MetaData[] = {
 		{ "Category", "SkyAtmosphere Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1524,15 +1435,7 @@ struct Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics
 		{ "Category", "SkyAtmosphere Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_AerialPerspectiveDistanceScaleInterpMode_MetaData[] = {
-		{ "Category", "SkyAtmosphere Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MieScatteringColorCurve_MetaData[] = {
-		{ "Category", "SkyAtmosphere Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MieScatteringColorInterpMode_MetaData[] = {
 		{ "Category", "SkyAtmosphere Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1540,15 +1443,7 @@ struct Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics
 		{ "Category", "SkyAtmosphere Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_AbsorptionColorInterpMode_MetaData[] = {
-		{ "Category", "SkyAtmosphere Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SkyLuminanceFactorCurve_MetaData[] = {
-		{ "Category", "SkyAtmosphere Curves" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SkyLuminanceFactorInterpMode_MetaData[] = {
 		{ "Category", "SkyAtmosphere Curves" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
@@ -1556,17 +1451,11 @@ struct Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics
 
 // ********** Begin ScriptStruct FTODSkyAtmosphereCurveData constinit property declarations ********
 	static const UECodeGen_Private::FStructPropertyParams NewProp_MieScatteringScaleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_MieScatteringScaleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_RayleighScatteringScaleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_RayleighScatteringScaleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_AerialPerspectiveDistanceScaleCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_AerialPerspectiveDistanceScaleInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_MieScatteringColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_MieScatteringColorInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_AbsorptionColorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_AbsorptionColorInterpMode;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_SkyLuminanceFactorCurve;
-	static const UECodeGen_Private::FBytePropertyParams NewProp_SkyLuminanceFactorInterpMode;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End ScriptStruct FTODSkyAtmosphereCurveData constinit property declarations **********
 	static void* NewStructOps()
@@ -1587,30 +1476,18 @@ class UScriptStruct* FTODSkyAtmosphereCurveData::StaticStruct()
 
 // ********** Begin ScriptStruct FTODSkyAtmosphereCurveData Property Definitions *******************
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringScaleCurve = { "MieScatteringScaleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, MieScatteringScaleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MieScatteringScaleCurve_MetaData), NewProp_MieScatteringScaleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringScaleInterpMode = { "MieScatteringScaleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, MieScatteringScaleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MieScatteringScaleInterpMode_MetaData), NewProp_MieScatteringScaleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_RayleighScatteringScaleCurve = { "RayleighScatteringScaleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, RayleighScatteringScaleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_RayleighScatteringScaleCurve_MetaData), NewProp_RayleighScatteringScaleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_RayleighScatteringScaleInterpMode = { "RayleighScatteringScaleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, RayleighScatteringScaleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_RayleighScatteringScaleInterpMode_MetaData), NewProp_RayleighScatteringScaleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AerialPerspectiveDistanceScaleCurve = { "AerialPerspectiveDistanceScaleCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, AerialPerspectiveDistanceScaleCurve), Z_Construct_UScriptStruct_FRuntimeFloatCurve, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_AerialPerspectiveDistanceScaleCurve_MetaData), NewProp_AerialPerspectiveDistanceScaleCurve_MetaData) }; // 2560417949
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AerialPerspectiveDistanceScaleInterpMode = { "AerialPerspectiveDistanceScaleInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, AerialPerspectiveDistanceScaleInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_AerialPerspectiveDistanceScaleInterpMode_MetaData), NewProp_AerialPerspectiveDistanceScaleInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringColorCurve = { "MieScatteringColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, MieScatteringColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MieScatteringColorCurve_MetaData), NewProp_MieScatteringColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringColorInterpMode = { "MieScatteringColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, MieScatteringColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MieScatteringColorInterpMode_MetaData), NewProp_MieScatteringColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AbsorptionColorCurve = { "AbsorptionColorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, AbsorptionColorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_AbsorptionColorCurve_MetaData), NewProp_AbsorptionColorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AbsorptionColorInterpMode = { "AbsorptionColorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, AbsorptionColorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_AbsorptionColorInterpMode_MetaData), NewProp_AbsorptionColorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_SkyLuminanceFactorCurve = { "SkyLuminanceFactorCurve", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, SkyLuminanceFactorCurve), Z_Construct_UScriptStruct_FRuntimeCurveLinearColor, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SkyLuminanceFactorCurve_MetaData), NewProp_SkyLuminanceFactorCurve_MetaData) }; // 3548222332
-const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_SkyLuminanceFactorInterpMode = { "SkyLuminanceFactorInterpMode", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSkyAtmosphereCurveData, SkyLuminanceFactorInterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SkyLuminanceFactorInterpMode_MetaData), NewProp_SkyLuminanceFactorInterpMode_MetaData) }; // 3137508823
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringScaleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringScaleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_RayleighScatteringScaleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_RayleighScatteringScaleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AerialPerspectiveDistanceScaleCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AerialPerspectiveDistanceScaleInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_MieScatteringColorInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AbsorptionColorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_AbsorptionColorInterpMode,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_SkyLuminanceFactorCurve,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewProp_SkyLuminanceFactorInterpMode,
 };
 static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::PropPointers) < 2048);
 // ********** End ScriptStruct FTODSkyAtmosphereCurveData Property Definitions *********************
@@ -1636,6 +1513,223 @@ UScriptStruct* Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData()
 	return CastChecked<UScriptStruct>(Z_Registration_Info_UScriptStruct_FTODSkyAtmosphereCurveData.InnerSingleton);
 }
 // ********** End ScriptStruct FTODSkyAtmosphereCurveData ******************************************
+
+// ********** Begin ScriptStruct FTODCurveKeyMode **************************************************
+struct Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics
+{
+	static inline consteval int32 GetStructSize() { return sizeof(FTODCurveKeyMode); }
+	static inline consteval int16 GetStructAlignment() { return alignof(FTODCurveKeyMode); }
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Struct_MetaDataParams[] = {
+		{ "Comment", "// \xec\xbb\xa4\xeb\xb8\x8c \xed\x82\xa4 1\xea\xb0\x9c\xec\x9d\x98 \xec\x8b\x9c\xea\xb0\x84+\xeb\xb3\xb4\xea\xb0\x84\xeb\xaa\xa8\xeb\x93\x9c (\xed\x94\x84\xeb\xa6\xac\xec\x85\x8b \xec\xa0\x80\xec\x9e\xa5/\xeb\xa6\xac\xeb\xb2\xa0\xec\x9d\xb4\xed\x81\xac \xeb\xb3\xb4\xec\xa1\xb4\xec\x9a\xa9, UI\xec\x97\x90\xeb\x8a\x94 \xeb\x85\xb8\xec\xb6\x9c \xec\x95\x88 \xed\x95\xa8)\n" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+		{ "ToolTip", "\xec\xbb\xa4\xeb\xb8\x8c \xed\x82\xa4 1\xea\xb0\x9c\xec\x9d\x98 \xec\x8b\x9c\xea\xb0\x84+\xeb\xb3\xb4\xea\xb0\x84\xeb\xaa\xa8\xeb\x93\x9c (\xed\x94\x84\xeb\xa6\xac\xec\x85\x8b \xec\xa0\x80\xec\x9e\xa5/\xeb\xa6\xac\xeb\xb2\xa0\xec\x9d\xb4\xed\x81\xac \xeb\xb3\xb4\xec\xa1\xb4\xec\x9a\xa9, UI\xec\x97\x90\xeb\x8a\x94 \xeb\x85\xb8\xec\xb6\x9c \xec\x95\x88 \xed\x95\xa8)" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_Time_MetaData[] = {
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_InterpMode_MetaData[] = {
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin ScriptStruct FTODCurveKeyMode constinit property declarations ******************
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_Time;
+	static const UECodeGen_Private::FBytePropertyParams NewProp_InterpMode;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End ScriptStruct FTODCurveKeyMode constinit property declarations ********************
+	static void* NewStructOps()
+	{
+		return (UScriptStruct::ICppStructOps*)new UScriptStruct::TCppStructOps<FTODCurveKeyMode>();
+	}
+	static const UECodeGen_Private::FStructParams StructParams;
+}; // struct Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics
+static FStructRegistrationInfo Z_Registration_Info_UScriptStruct_FTODCurveKeyMode;
+class UScriptStruct* FTODCurveKeyMode::StaticStruct()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODCurveKeyMode.OuterSingleton)
+	{
+		Z_Registration_Info_UScriptStruct_FTODCurveKeyMode.OuterSingleton = GetStaticStruct(Z_Construct_UScriptStruct_FTODCurveKeyMode, (UObject*)Z_Construct_UPackage__Script_Fluid_TOD(), TEXT("TODCurveKeyMode"));
+	}
+	return Z_Registration_Info_UScriptStruct_FTODCurveKeyMode.OuterSingleton;
+	}
+
+// ********** Begin ScriptStruct FTODCurveKeyMode Property Definitions *****************************
+const UECodeGen_Private::FFloatPropertyParams Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::NewProp_Time = { "Time", nullptr, (EPropertyFlags)0x0010000000000000, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODCurveKeyMode, Time), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_Time_MetaData), NewProp_Time_MetaData) };
+const UECodeGen_Private::FBytePropertyParams Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::NewProp_InterpMode = { "InterpMode", nullptr, (EPropertyFlags)0x0010000000000000, UECodeGen_Private::EPropertyGenFlags::Byte, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODCurveKeyMode, InterpMode), Z_Construct_UEnum_Engine_ERichCurveInterpMode, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_InterpMode_MetaData), NewProp_InterpMode_MetaData) }; // 3137508823
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::NewProp_Time,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::NewProp_InterpMode,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::PropPointers) < 2048);
+// ********** End ScriptStruct FTODCurveKeyMode Property Definitions *******************************
+const UECodeGen_Private::FStructParams Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::StructParams = {
+	(UObject* (*)())Z_Construct_UPackage__Script_Fluid_TOD,
+	nullptr,
+	&NewStructOps,
+	"TODCurveKeyMode",
+	Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::PropPointers,
+	UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::PropPointers),
+	sizeof(FTODCurveKeyMode),
+	alignof(FTODCurveKeyMode),
+	RF_Public|RF_Transient|RF_MarkAsNative,
+	EStructFlags(0x00000001),
+	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::Struct_MetaDataParams), Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::Struct_MetaDataParams)
+};
+UScriptStruct* Z_Construct_UScriptStruct_FTODCurveKeyMode()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODCurveKeyMode.InnerSingleton)
+	{
+		UECodeGen_Private::ConstructUScriptStruct(Z_Registration_Info_UScriptStruct_FTODCurveKeyMode.InnerSingleton, Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::StructParams);
+	}
+	return CastChecked<UScriptStruct>(Z_Registration_Info_UScriptStruct_FTODCurveKeyMode.InnerSingleton);
+}
+// ********** End ScriptStruct FTODCurveKeyMode ****************************************************
+
+// ********** Begin ScriptStruct FTODSingleCurveModeList *******************************************
+struct Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics
+{
+	static inline consteval int32 GetStructSize() { return sizeof(FTODSingleCurveModeList); }
+	static inline consteval int16 GetStructAlignment() { return alignof(FTODSingleCurveModeList); }
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Struct_MetaDataParams[] = {
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_Keys_MetaData[] = {
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin ScriptStruct FTODSingleCurveModeList constinit property declarations ***********
+	static const UECodeGen_Private::FStructPropertyParams NewProp_Keys_Inner;
+	static const UECodeGen_Private::FArrayPropertyParams NewProp_Keys;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End ScriptStruct FTODSingleCurveModeList constinit property declarations *************
+	static void* NewStructOps()
+	{
+		return (UScriptStruct::ICppStructOps*)new UScriptStruct::TCppStructOps<FTODSingleCurveModeList>();
+	}
+	static const UECodeGen_Private::FStructParams StructParams;
+}; // struct Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics
+static FStructRegistrationInfo Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList;
+class UScriptStruct* FTODSingleCurveModeList::StaticStruct()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList.OuterSingleton)
+	{
+		Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList.OuterSingleton = GetStaticStruct(Z_Construct_UScriptStruct_FTODSingleCurveModeList, (UObject*)Z_Construct_UPackage__Script_Fluid_TOD(), TEXT("TODSingleCurveModeList"));
+	}
+	return Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList.OuterSingleton;
+	}
+
+// ********** Begin ScriptStruct FTODSingleCurveModeList Property Definitions **********************
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::NewProp_Keys_Inner = { "Keys", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODCurveKeyMode, METADATA_PARAMS(0, nullptr) }; // 133544755
+const UECodeGen_Private::FArrayPropertyParams Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::NewProp_Keys = { "Keys", nullptr, (EPropertyFlags)0x0010000000000000, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODSingleCurveModeList, Keys), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_Keys_MetaData), NewProp_Keys_MetaData) }; // 133544755
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::NewProp_Keys_Inner,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::NewProp_Keys,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::PropPointers) < 2048);
+// ********** End ScriptStruct FTODSingleCurveModeList Property Definitions ************************
+const UECodeGen_Private::FStructParams Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::StructParams = {
+	(UObject* (*)())Z_Construct_UPackage__Script_Fluid_TOD,
+	nullptr,
+	&NewStructOps,
+	"TODSingleCurveModeList",
+	Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::PropPointers,
+	UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::PropPointers),
+	sizeof(FTODSingleCurveModeList),
+	alignof(FTODSingleCurveModeList),
+	RF_Public|RF_Transient|RF_MarkAsNative,
+	EStructFlags(0x00000001),
+	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::Struct_MetaDataParams), Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::Struct_MetaDataParams)
+};
+UScriptStruct* Z_Construct_UScriptStruct_FTODSingleCurveModeList()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList.InnerSingleton)
+	{
+		UECodeGen_Private::ConstructUScriptStruct(Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList.InnerSingleton, Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::StructParams);
+	}
+	return CastChecked<UScriptStruct>(Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList.InnerSingleton);
+}
+// ********** End ScriptStruct FTODSingleCurveModeList *********************************************
+
+// ********** Begin ScriptStruct FTODCurveDataModeSnapshot *****************************************
+struct Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics
+{
+	static inline consteval int32 GetStructSize() { return sizeof(FTODCurveDataModeSnapshot); }
+	static inline consteval int16 GetStructAlignment() { return alignof(FTODCurveDataModeSnapshot); }
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Struct_MetaDataParams[] = {
+		{ "Comment", "// CurveData \xec\xa0\x84\xec\xb2\xb4(float 18\xea\xb0\x9c + color 8\xea\xb0\x9c\xc3\x97""4\xec\xb1\x84\xeb\x84\x90)\xec\x9d\x98 InterpMode \xec\x8a\xa4\xeb\x83\x85\xec\x83\xb7.\n// FTODCurveEvaluator::GetAllFloatCurves() / GetAllColorCurves()\xec\x99\x80 \xeb\x8f\x99\xec\x9d\xbc\xed\x95\x9c \xec\x88\x9c\xec\x84\x9c\xeb\xa1\x9c \xec\xa0\x80\xec\x9e\xa5\xeb\x90\xa8.\n" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+		{ "ToolTip", "CurveData \xec\xa0\x84\xec\xb2\xb4(float 18\xea\xb0\x9c + color 8\xea\xb0\x9c\xc3\x97""4\xec\xb1\x84\xeb\x84\x90)\xec\x9d\x98 InterpMode \xec\x8a\xa4\xeb\x83\x85\xec\x83\xb7.\nFTODCurveEvaluator::GetAllFloatCurves() / GetAllColorCurves()\xec\x99\x80 \xeb\x8f\x99\xec\x9d\xbc\xed\x95\x9c \xec\x88\x9c\xec\x84\x9c\xeb\xa1\x9c \xec\xa0\x80\xec\x9e\xa5\xeb\x90\xa8." },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_FloatCurveModes_MetaData[] = {
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_ColorCurveModes_MetaData[] = {
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin ScriptStruct FTODCurveDataModeSnapshot constinit property declarations *********
+	static const UECodeGen_Private::FStructPropertyParams NewProp_FloatCurveModes_Inner;
+	static const UECodeGen_Private::FArrayPropertyParams NewProp_FloatCurveModes;
+	static const UECodeGen_Private::FStructPropertyParams NewProp_ColorCurveModes_Inner;
+	static const UECodeGen_Private::FArrayPropertyParams NewProp_ColorCurveModes;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End ScriptStruct FTODCurveDataModeSnapshot constinit property declarations ***********
+	static void* NewStructOps()
+	{
+		return (UScriptStruct::ICppStructOps*)new UScriptStruct::TCppStructOps<FTODCurveDataModeSnapshot>();
+	}
+	static const UECodeGen_Private::FStructParams StructParams;
+}; // struct Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics
+static FStructRegistrationInfo Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot;
+class UScriptStruct* FTODCurveDataModeSnapshot::StaticStruct()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot.OuterSingleton)
+	{
+		Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot.OuterSingleton = GetStaticStruct(Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot, (UObject*)Z_Construct_UPackage__Script_Fluid_TOD(), TEXT("TODCurveDataModeSnapshot"));
+	}
+	return Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot.OuterSingleton;
+	}
+
+// ********** Begin ScriptStruct FTODCurveDataModeSnapshot Property Definitions ********************
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_FloatCurveModes_Inner = { "FloatCurveModes", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODSingleCurveModeList, METADATA_PARAMS(0, nullptr) }; // 1247844576
+const UECodeGen_Private::FArrayPropertyParams Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_FloatCurveModes = { "FloatCurveModes", nullptr, (EPropertyFlags)0x0010000000000000, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODCurveDataModeSnapshot, FloatCurveModes), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_FloatCurveModes_MetaData), NewProp_FloatCurveModes_MetaData) }; // 1247844576
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_ColorCurveModes_Inner = { "ColorCurveModes", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODSingleCurveModeList, METADATA_PARAMS(0, nullptr) }; // 1247844576
+const UECodeGen_Private::FArrayPropertyParams Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_ColorCurveModes = { "ColorCurveModes", nullptr, (EPropertyFlags)0x0010000000000000, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(FTODCurveDataModeSnapshot, ColorCurveModes), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_ColorCurveModes_MetaData), NewProp_ColorCurveModes_MetaData) }; // 1247844576
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_FloatCurveModes_Inner,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_FloatCurveModes,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_ColorCurveModes_Inner,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewProp_ColorCurveModes,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::PropPointers) < 2048);
+// ********** End ScriptStruct FTODCurveDataModeSnapshot Property Definitions **********************
+const UECodeGen_Private::FStructParams Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::StructParams = {
+	(UObject* (*)())Z_Construct_UPackage__Script_Fluid_TOD,
+	nullptr,
+	&NewStructOps,
+	"TODCurveDataModeSnapshot",
+	Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::PropPointers,
+	UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::PropPointers),
+	sizeof(FTODCurveDataModeSnapshot),
+	alignof(FTODCurveDataModeSnapshot),
+	RF_Public|RF_Transient|RF_MarkAsNative,
+	EStructFlags(0x00000001),
+	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::Struct_MetaDataParams), Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::Struct_MetaDataParams)
+};
+UScriptStruct* Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot()
+{
+	if (!Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot.InnerSingleton)
+	{
+		UECodeGen_Private::ConstructUScriptStruct(Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot.InnerSingleton, Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::StructParams);
+	}
+	return CastChecked<UScriptStruct>(Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot.InnerSingleton);
+}
+// ********** End ScriptStruct FTODCurveDataModeSnapshot *******************************************
 
 // ********** Begin Class UTOD_Types ***************************************************************
 FClassRegistrationInfo Z_Registration_Info_UClass_UTOD_Types;
@@ -1860,11 +1954,17 @@ struct Z_Construct_UClass_UTODPresetData_Statics
 		{ "Category", "TOD" },
 		{ "ModuleRelativePath", "Public/TOD_Types.h" },
 	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CurveInterpModes_MetaData[] = {
+		{ "Comment", "// \xec\xa0\x80\xec\x9e\xa5 \xec\x8b\x9c\xec\xa0\x90 \xec\xbb\xa4\xeb\xb8\x8c\xec\x9d\x98 \xed\x82\xa4\xeb\xb3\x84 Interpolation \xeb\xaa\xa8\xeb\x93\x9c \xec\x8a\xa4\xeb\x83\x85\xec\x83\xb7. \xed\x94\x84\xeb\xa6\xac\xec\x85\x8b \xeb\xa1\x9c\xeb\x93\x9c \xec\x8b\x9c \xeb\xb3\xb5\xec\x9b\x90\xeb\x90\xa8.\n" },
+		{ "ModuleRelativePath", "Public/TOD_Types.h" },
+		{ "ToolTip", "\xec\xa0\x80\xec\x9e\xa5 \xec\x8b\x9c\xec\xa0\x90 \xec\xbb\xa4\xeb\xb8\x8c\xec\x9d\x98 \xed\x82\xa4\xeb\xb3\x84 Interpolation \xeb\xaa\xa8\xeb\x93\x9c \xec\x8a\xa4\xeb\x83\x85\xec\x83\xb7. \xed\x94\x84\xeb\xa6\xac\xec\x85\x8b \xeb\xa1\x9c\xeb\x93\x9c \xec\x8b\x9c \xeb\xb3\xb5\xec\x9b\x90\xeb\x90\xa8." },
+	};
 #endif // WITH_METADATA
 
 // ********** Begin Class UTODPresetData constinit property declarations ***************************
 	static const UECodeGen_Private::FStructPropertyParams NewProp_TOD_DataArray_Inner;
 	static const UECodeGen_Private::FArrayPropertyParams NewProp_TOD_DataArray;
+	static const UECodeGen_Private::FStructPropertyParams NewProp_CurveInterpModes;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End Class UTODPresetData constinit property declarations *****************************
 	static UObject* (*const DependentSingletons[])();
@@ -1877,9 +1977,11 @@ struct Z_Construct_UClass_UTODPresetData_Statics
 // ********** Begin Class UTODPresetData Property Definitions **************************************
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_UTODPresetData_Statics::NewProp_TOD_DataArray_Inner = { "TOD_DataArray", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FTODMasterData, METADATA_PARAMS(0, nullptr) }; // 1494437275
 const UECodeGen_Private::FArrayPropertyParams Z_Construct_UClass_UTODPresetData_Statics::NewProp_TOD_DataArray = { "TOD_DataArray", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Array, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(UTODPresetData, TOD_DataArray), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TOD_DataArray_MetaData), NewProp_TOD_DataArray_MetaData) }; // 1494437275
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_UTODPresetData_Statics::NewProp_CurveInterpModes = { "CurveInterpModes", nullptr, (EPropertyFlags)0x0010000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(UTODPresetData, CurveInterpModes), Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CurveInterpModes_MetaData), NewProp_CurveInterpModes_MetaData) }; // 2504436887
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UClass_UTODPresetData_Statics::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_UTODPresetData_Statics::NewProp_TOD_DataArray_Inner,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_UTODPresetData_Statics::NewProp_TOD_DataArray,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_UTODPresetData_Statics::NewProp_CurveInterpModes,
 };
 static_assert(UE_ARRAY_COUNT(Z_Construct_UClass_UTODPresetData_Statics::PropPointers) < 2048);
 // ********** End Class UTODPresetData Property Definitions ****************************************
@@ -1924,6 +2026,7 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_
 {
 	static constexpr FEnumRegisterCompiledInInfo EnumInfo[] = {
 		{ ETODState_StaticEnum, TEXT("ETODState"), &Z_Registration_Info_UEnum_ETODState, CONSTRUCT_RELOAD_VERSION_INFO(FEnumReloadVersionInfo, 2526692313U) },
+		{ ETODSeason_StaticEnum, TEXT("ETODSeason"), &Z_Registration_Info_UEnum_ETODSeason, CONSTRUCT_RELOAD_VERSION_INFO(FEnumReloadVersionInfo, 3176123401U) },
 		{ ETODDirectionalLightType_StaticEnum, TEXT("ETODDirectionalLightType"), &Z_Registration_Info_UEnum_ETODDirectionalLightType, CONSTRUCT_RELOAD_VERSION_INFO(FEnumReloadVersionInfo, 734095136U) },
 		{ ETODComponentCategory_StaticEnum, TEXT("ETODComponentCategory"), &Z_Registration_Info_UEnum_ETODComponentCategory, CONSTRUCT_RELOAD_VERSION_INFO(FEnumReloadVersionInfo, 3871998882U) },
 	};
@@ -1935,19 +2038,22 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_
 		{ FTODFogSettings::StaticStruct, Z_Construct_UScriptStruct_FTODFogSettings_Statics::NewStructOps, TEXT("TODFogSettings"),&Z_Registration_Info_UScriptStruct_FTODFogSettings, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODFogSettings), 194493249U) },
 		{ FTODSkyAtmosphereSettings::StaticStruct, Z_Construct_UScriptStruct_FTODSkyAtmosphereSettings_Statics::NewStructOps, TEXT("TODSkyAtmosphereSettings"),&Z_Registration_Info_UScriptStruct_FTODSkyAtmosphereSettings, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSkyAtmosphereSettings), 3171145136U) },
 		{ FTODMasterData::StaticStruct, Z_Construct_UScriptStruct_FTODMasterData_Statics::NewStructOps, TEXT("TODMasterData"),&Z_Registration_Info_UScriptStruct_FTODMasterData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODMasterData), 1494437275U) },
-		{ FTODSunCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewStructOps, TEXT("TODSunCurveData"),&Z_Registration_Info_UScriptStruct_FTODSunCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSunCurveData), 2133515494U) },
-		{ FTODMoonCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewStructOps, TEXT("TODMoonCurveData"),&Z_Registration_Info_UScriptStruct_FTODMoonCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODMoonCurveData), 958035676U) },
-		{ FTODSkyLightCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewStructOps, TEXT("TODSkyLightCurveData"),&Z_Registration_Info_UScriptStruct_FTODSkyLightCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSkyLightCurveData), 3685823124U) },
-		{ FTODFogCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewStructOps, TEXT("TODFogCurveData"),&Z_Registration_Info_UScriptStruct_FTODFogCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODFogCurveData), 808622522U) },
-		{ FTODSkyAtmosphereCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewStructOps, TEXT("TODSkyAtmosphereCurveData"),&Z_Registration_Info_UScriptStruct_FTODSkyAtmosphereCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSkyAtmosphereCurveData), 2812713979U) },
+		{ FTODSunCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODSunCurveData_Statics::NewStructOps, TEXT("TODSunCurveData"),&Z_Registration_Info_UScriptStruct_FTODSunCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSunCurveData), 1103826936U) },
+		{ FTODMoonCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODMoonCurveData_Statics::NewStructOps, TEXT("TODMoonCurveData"),&Z_Registration_Info_UScriptStruct_FTODMoonCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODMoonCurveData), 1856334401U) },
+		{ FTODSkyLightCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODSkyLightCurveData_Statics::NewStructOps, TEXT("TODSkyLightCurveData"),&Z_Registration_Info_UScriptStruct_FTODSkyLightCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSkyLightCurveData), 2405587168U) },
+		{ FTODFogCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODFogCurveData_Statics::NewStructOps, TEXT("TODFogCurveData"),&Z_Registration_Info_UScriptStruct_FTODFogCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODFogCurveData), 2440446943U) },
+		{ FTODSkyAtmosphereCurveData::StaticStruct, Z_Construct_UScriptStruct_FTODSkyAtmosphereCurveData_Statics::NewStructOps, TEXT("TODSkyAtmosphereCurveData"),&Z_Registration_Info_UScriptStruct_FTODSkyAtmosphereCurveData, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSkyAtmosphereCurveData), 3775039494U) },
+		{ FTODCurveKeyMode::StaticStruct, Z_Construct_UScriptStruct_FTODCurveKeyMode_Statics::NewStructOps, TEXT("TODCurveKeyMode"),&Z_Registration_Info_UScriptStruct_FTODCurveKeyMode, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCurveKeyMode), 133544755U) },
+		{ FTODSingleCurveModeList::StaticStruct, Z_Construct_UScriptStruct_FTODSingleCurveModeList_Statics::NewStructOps, TEXT("TODSingleCurveModeList"),&Z_Registration_Info_UScriptStruct_FTODSingleCurveModeList, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODSingleCurveModeList), 1247844576U) },
+		{ FTODCurveDataModeSnapshot::StaticStruct, Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewStructOps, TEXT("TODCurveDataModeSnapshot"),&Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCurveDataModeSnapshot), 2504436887U) },
 	};
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
 		{ Z_Construct_UClass_UTOD_Types, UTOD_Types::StaticClass, TEXT("UTOD_Types"), &Z_Registration_Info_UClass_UTOD_Types, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTOD_Types), 4251130632U) },
 		{ Z_Construct_UClass_UTODSinglePreset, UTODSinglePreset::StaticClass, TEXT("UTODSinglePreset"), &Z_Registration_Info_UClass_UTODSinglePreset, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODSinglePreset), 4207087516U) },
-		{ Z_Construct_UClass_UTODPresetData, UTODPresetData::StaticClass, TEXT("UTODPresetData"), &Z_Registration_Info_UClass_UTODPresetData, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODPresetData), 1028413884U) },
+		{ Z_Construct_UClass_UTODPresetData, UTODPresetData::StaticClass, TEXT("UTODPresetData"), &Z_Registration_Info_UClass_UTODPresetData, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODPresetData), 3680208432U) },
 	};
 }; // Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_2635346789{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_860819625{
 	TEXT("/Script/Fluid_TOD"),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo),

@@ -486,8 +486,6 @@ void ATODManager::GetTODSettingsAtTime(
 
 void ATODManager::UpdateSkyAnchorPosition()
 {
-	if (!bFollowCameraPosition) return;
-
 	UWorld* World = GetWorld();
 	if (!World) return;
 
@@ -594,6 +592,8 @@ void ATODManager::OpenPresetDialog()
 void ATODManager::LoadSelectedPreset()
 {
 	EditorModule.LoadSelectedPreset(this);
+	BakeTODCurves();
+	UpdateTOD(CurrentSystemTime);
 }
 
 void ATODManager::ForceViewportRedraw()
@@ -617,10 +617,26 @@ void ATODManager::UpdateSunTimes()
 	TODSystem.UpdateSunTimes(this);
 }
 
-// ======= Editor 기능 관련 =========
 // =========================================================
-// 공통 및 런타임
+// 에디터 전용 기능 (패키징 시 완전 제외)
 // =========================================================
+
+#if WITH_EDITOR
+void ATODManager::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (GetWorld() &&
+		GetWorld()->WorldType == EWorldType::Editor)
+	{
+		SetActorLocation(FVector::ZeroVector);
+		SetActorRotation(FRotator::ZeroRotator);
+		SetActorScale3D(FVector::OneVector);
+	}
+
+	RequestDeferredRebake();
+
+}
 
 void ATODManager::RequestDeferredRebake()
 {
@@ -628,45 +644,49 @@ void ATODManager::RequestDeferredRebake()
 	{
 		return;
 	}
+
 	bRebakeRequested = true;
 
 	if (GEditor)
 	{
 		TWeakObjectPtr<ATODManager> WeakThis(this);
-		GEditor->GetTimerManager()->SetTimerForNextTick([WeakThis]()
+
+		GEditor->GetTimerManager()->SetTimerForNextTick(
+			[WeakThis]()
 			{
 				if (!WeakThis.IsValid())
 				{
 					return;
 				}
 
-				WeakThis->bRebakeRequested = false;
-				WeakThis->BakeTODCurves();
-				WeakThis->UpdateTOD(WeakThis->StartTime);
-				WeakThis->UpdateMoonMeshTransform();
-				WeakThis->ApplyStaticSunMoonOffsets();
-				WeakThis->UpdatePivotRotation(WeakThis->StartTime);
-				WeakThis->ForceViewportRedraw();
+				ATODManager* Manager = WeakThis.Get();
+
+				Manager->bRebakeRequested = false;
+				Manager->BakeTODCurves();
+				Manager->UpdateTOD(Manager->StartTime);
+				Manager->UpdateMoonMeshTransform();
+				Manager->ApplyStaticSunMoonOffsets();
+				Manager->UpdatePivotRotation(Manager->StartTime);
+				Manager->ForceViewportRedraw();
 			});
+
+		return;
 	}
-	else
-	{
-		bRebakeRequested = false;
-		BakeTODCurves();
-		UpdateTOD(StartTime);
-		UpdateMoonMeshTransform();
-		ApplyStaticSunMoonOffsets();
-		UpdatePivotRotation(StartTime);
-		ForceViewportRedraw();
-	}
+
+	bRebakeRequested = false;
+
+	BakeTODCurves();
+	UpdateTOD(StartTime);
+	UpdateMoonMeshTransform();
+	ApplyStaticSunMoonOffsets();
+	UpdatePivotRotation(StartTime);
+	ForceViewportRedraw();
 }
 
 void ATODManager::PostInitProperties()
 {
 	Super::PostInitProperties();
 
-	// 에디터에서만 델리게이트를 바인딩
-#if WITH_EDITOR
 	if (!HasAnyFlags(RF_ClassDefaultObject))
 	{
 		PropertyChangeDelegateHandle =
@@ -675,46 +695,21 @@ void ATODManager::PostInitProperties()
 				&ATODManager::OnExternalPropertyChanged
 			);
 	}
-#endif
 }
 
 void ATODManager::BeginDestroy()
 {
-	// 에디터에서만 델리게이트를 해제
-#if WITH_EDITOR
 	if (PropertyChangeDelegateHandle.IsValid())
 	{
 		FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(
 			PropertyChangeDelegateHandle
 		);
 	}
-#endif
 
 	Super::BeginDestroy();
 }
 
-void ATODManager::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-	// 에디터 환경에서만 위치를 0,0,0으로 고정
-#if WITH_EDITOR
-	if (GetWorld() &&
-		GetWorld()->WorldType == EWorldType::Editor)
-	{
-		SetActorLocation(FVector::ZeroVector);
-		SetActorRotation(FRotator::ZeroRotator);
-		SetActorScale3D(FVector::OneVector);
-	}
 #endif
-
-	RequestDeferredRebake();
-}
-
-
-// =========================================================
-// 에디터 전용 기능 (패키징 시 완전 제외)
-// =========================================================
 
 #if WITH_EDITOR
 void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)

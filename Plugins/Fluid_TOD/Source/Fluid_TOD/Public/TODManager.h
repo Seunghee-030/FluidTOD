@@ -60,7 +60,6 @@ protected:
 
     bool bIsTimePaused = false;
     bool bIsVisualOverridden = false;
-    bool bFollowCameraPosition = true;
 
 public:
     UFUNCTION()
@@ -437,6 +436,10 @@ private:
     // StartTime이 0~24 범위를 벗어나면 순환(wrap)시켜 되돌린다.
     static float WrapStartTime(float InTime);
 
+private:
+    bool bRebakeRequested = false;
+    void RequestDeferredRebake();
+
 #if WITH_EDITOR
 protected:
     virtual void PostInitProperties() override;
@@ -452,10 +455,6 @@ private:
     FDelegateHandle PropertyChangeDelegateHandle;
 
     bool bPendingPPVUpdate = false;
-
-    // 프레임당 1회로 묶어서 실행하기 위한 디바운스 플래그
-    bool bRebakeRequested = false;
-    void RequestDeferredRebake();
 
     // TOD_DataArray의 Time 필드가 바뀌기 직전 상태를 캐시
     TArray<FTODMasterData> PreEditTOD_DataArray;

@@ -55,6 +55,11 @@ struct FTODCinematicSetting;
 	DECLARE_FUNCTION(execBakeTODCurves); \
 	DECLARE_FUNCTION(execUpdateMoonMeshTransform); \
 	DECLARE_FUNCTION(execGetCalculatedMoonScale); \
+	DECLARE_FUNCTION(execUpdateSkyAnchorPosition); \
+	DECLARE_FUNCTION(execSetSunAzimuthOffset); \
+	DECLARE_FUNCTION(execGetFullDebugDumpString); \
+	DECLARE_FUNCTION(execToggleTimePause); \
+	DECLARE_FUNCTION(execToggleTimeDirection); \
 	DECLARE_FUNCTION(execIsTimeInState); \
 	DECLARE_FUNCTION(execGetCurrentTODState); \
 	DECLARE_FUNCTION(execCalculateCycleSpeed); \
