@@ -118,7 +118,7 @@ struct FTODMoonSettings : public FTODSunMoonSettings
 
 	// Moon Glow(Halo) Scale
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
-		meta = (DisplayPriority = "10", ClampMin = "0.0", UIMin = "0.0", UIMax = "100.0"))
+		meta = (DisplayPriority = "10", ClampMin = "0.0", UIMin = "0.0", UIMax = "500.0"))
 	float Moon_Glow_Scale = 1.0f;
 
 	// Moon Glow(Halo) Emissive Intensity
@@ -155,7 +155,7 @@ struct FTODSkyLightSettings
 	// Sky Dome Texture Emissive Intensity
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
 		meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float SkyDome_Texture_Emissive_Intensity = 1.0f;
+	float SkyDome_Texture_Emissive_Intensity = 0.0f;
 
 	// Sky Dome Stars Emissive Intensity
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
