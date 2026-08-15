@@ -129,7 +129,7 @@ public:
 public:
     UPROPERTY(VisibleAnywhere, Category = "TOD",
         meta = (DisplayPriority = "1", ToolTip = "Read-only display of the configured start time."))
-    FString StartTimeDisplay = TEXT("[ 12 : 00 ]");
+    FString StartTimeDisplay = TEXT("12 : 00");
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD",
         meta = (UIMin = "0.0", UIMax = "24.0",
@@ -240,18 +240,18 @@ public:
     ETODSeason Season = ETODSeason::Spring;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
-    float CalculatedSunriseTime = 6.0f;
+    float CalculatedSunriseTime = 5.0f;
 
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Geography")
-    float CalculatedSunsetTime = 18.0f;
+    float CalculatedSunsetTime = 17.0f;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography",
         meta = (ToolTip = "Calculated sunrise time based on the current latitude setting."))
-    FString SunriseTime = TEXT("[ 06 : 00 ]");
+    FString SunriseTime = TEXT("05 : 00");
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TOD|Geography",
         meta = (ToolTip = "Calculated sunset time based on the current latitude setting."))
-    FString SunsetTime = TEXT("[ 18 : 00 ]");
+    FString SunsetTime = TEXT("17 : 00");
 
     FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
     float SunLatitudeTiltMultiplier = -1.0f;

@@ -723,6 +723,7 @@ void ATODManager::RequestDeferredRebake()
 				ATODManager* Manager = WeakThis.Get();
 
 				Manager->bRebakeRequested = false;
+				Manager->UpdateSunTimes();
 				Manager->BakeTODCurves();
 				Manager->UpdateTOD(Manager->StartTime);
 				Manager->UpdateMoonMeshTransform();
@@ -737,6 +738,7 @@ void ATODManager::RequestDeferredRebake()
 	bRebakeRequested = false;
 
 	BakeTODCurves();
+	UpdateSunTimes();
 	UpdateTOD(StartTime);
 	UpdateMoonMeshTransform();
 	ApplyStaticSunMoonOffsets();

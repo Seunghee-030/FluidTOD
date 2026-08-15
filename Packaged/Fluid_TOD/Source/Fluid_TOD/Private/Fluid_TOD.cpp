@@ -8,19 +8,130 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 
+#if WITH_EDITOR
+#include "Editor.h"
+#include "ToolMenus.h"
+#include "EditorUtilitySubsystem.h"
+#include "EditorUtilityWidgetBlueprint.h"
+#endif
 
 #define LOCTEXT_NAMESPACE "FFluid_TODModule"
 
 void FFluid_TODModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+    // This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+
+#if WITH_EDITOR
+    UToolMenus::RegisterStartupCallback(
+        FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FFluid_TODModule::RegisterMenus));
+
+    if (GEngine)
+    {
+        LevelActorDeletedHandle = GEngine->OnLevelActorDeleted().AddRaw(this, &FFluid_TODModule::OnLevelActorDeleted);
+    }
+#endif
 }
 
 void FFluid_TODModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+    // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+    // we call this function before unloading the module.
+
+#if WITH_EDITOR
+    UToolMenus::UnRegisterStartupCallback(this);
+    UToolMenus::UnregisterOwner(this);
+
+    if (GEngine)
+    {
+        GEngine->OnLevelActorDeleted().Remove(LevelActorDeletedHandle);
+    }
+#endif
 }
+
+#if WITH_EDITOR
+
+void FFluid_TODModule::RegisterMenus()
+{
+    FToolMenuOwnerScoped OwnerScoped(this);
+
+    UToolMenu* WindowMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+    FToolMenuSection& Section = WindowMenu->FindOrAddSection("FluidTOD");
+
+    Section.AddSubMenu(
+        "FluidTODSubMenu",
+        LOCTEXT("FluidTODSubMenuLabel", "Fluid TOD"),
+        LOCTEXT("FluidTODSubMenuTooltip", "Fluid TOD plugin tools"),
+        FNewToolMenuDelegate::CreateRaw(this, &FFluid_TODModule::PopulateFluidTODSubMenu)
+    );
+}
+
+void FFluid_TODModule::PopulateFluidTODSubMenu(UToolMenu* Menu)
+{
+    FToolMenuSection& Section = Menu->FindOrAddSection("FluidTODTools");
+
+    Section.AddMenuEntry(
+        "OpenFluidTODEUW",
+        LOCTEXT("OpenFluidTODEUW", "Fluid TOD Control Panel"),
+        LOCTEXT("OpenFluidTODEUWTooltip", "Opens the Fluid TOD editor utility widget."),
+        FSlateIcon(),
+        FUIAction(FExecuteAction::CreateRaw(this, &FFluid_TODModule::OpenFluidTODEUW))
+    );
+}
+
+void FFluid_TODModule::OpenFluidTODEUW()
+{
+    static const TCHAR* EUWAssetPath = TEXT("/Fluid_TOD/TOD/Widget/EUW_FluidTOD_Panel.EUW_FluidTOD_Panel");
+
+
+    if (!GEditor) return;
+
+    UEditorUtilitySubsystem* EditorUtilitySubsystem = GEditor->GetEditorSubsystem<UEditorUtilitySubsystem>();
+    if (!EditorUtilitySubsystem) return;
+
+    // 이미 열려있으면 재사용 (중복 스폰 방지)
+    if (!SpawnedTabID.IsNone() && EditorUtilitySubsystem->DoesTabExist(SpawnedTabID))
+    {
+        return;
+    }
+
+    UEditorUtilityWidgetBlueprint* EUWBlueprint = LoadObject<UEditorUtilityWidgetBlueprint>(nullptr, EUWAssetPath);
+    if (!EUWBlueprint)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Fluid_TOD] EUW asset not found at path: %s"), EUWAssetPath);
+        return;
+    }
+
+    EditorUtilitySubsystem->SpawnAndRegisterTabAndGetID(EUWBlueprint, SpawnedTabID);
+}
+
+void FFluid_TODModule::OnLevelActorDeleted(AActor* Actor)
+{
+    if (!Actor || !Actor->IsA<ATODManager>()) return;
+    if (SpawnedTabID.IsNone()) return;
+
+    UWorld* World = Actor->GetWorld();
+    if (!World) return;
+
+    for (TActorIterator<ATODManager> It(World); It; ++It)
+    {
+        if (*It != Actor)
+        {
+            return;
+        }
+    }
+
+    if (!GEditor) return;
+
+    UEditorUtilitySubsystem* EditorUtilitySubsystem = GEditor->GetEditorSubsystem<UEditorUtilitySubsystem>();
+    if (EditorUtilitySubsystem && EditorUtilitySubsystem->DoesTabExist(SpawnedTabID))
+    {
+        EditorUtilitySubsystem->CloseTabByID(SpawnedTabID);
+    }
+
+    SpawnedTabID = NAME_None;
+}
+
+#endif // WITH_EDITOR
 
 // 콘솔 명령어: TOD 시간 즉시 변경
 static FAutoConsoleCommandWithWorldAndArgs CVar_TOD_SetTime(
