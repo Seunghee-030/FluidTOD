@@ -636,10 +636,6 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	// Indirect Color
 	LERP_COLOR_PPV(IndirectLightingColor);
 
-	// Lumen
-	LERP_PPV(LumenSceneLightingQuality);
-	LERP_PPV(LumenSceneDetail);
-
 	// Depth of Field
 	LERP_PPV(DepthOfFieldFocalDistance);
 	LERP_PPV(DepthOfFieldFstop);
