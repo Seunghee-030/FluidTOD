@@ -1084,8 +1084,7 @@ void ATODManager::OnExternalPropertyChanged(
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
+	if (!GEditor)
 	{
 		return;
 	}
@@ -1093,7 +1092,7 @@ void ATODManager::OnExternalPropertyChanged(
 	bPendingPPVUpdate = true;
 
 	TWeakObjectPtr<ATODManager> WeakThis(this);
-	World->GetTimerManager().SetTimerForNextTick([WeakThis]()
+	GEditor->GetTimerManager()->SetTimerForNextTick([WeakThis]()
 		{
 			if (!WeakThis.IsValid())
 			{
