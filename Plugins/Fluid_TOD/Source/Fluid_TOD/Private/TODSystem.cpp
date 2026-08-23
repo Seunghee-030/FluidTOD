@@ -357,12 +357,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Sun
 	if (IsValid(Owner->SunLightComponent))
 	{
-		if (!Owner->SunLightComponent->bAtmosphereSunLight)
-		{
-			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
-			Owner->SunLightComponent->MarkRenderStateDirty();
-		}
-
 		Owner->SunLightComponent->SetIntensity(Sun.Intensity);
 		Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
 		Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
@@ -373,11 +367,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Moon
 	if (IsValid(Owner->MoonLightComponent))
 	{
-		// 달의 대기 산란 영향 차단 (붉은 달 방지)
-		if (Owner->MoonLightComponent->bAtmosphereSunLight)
-		{
-			Owner->MoonLightComponent->MarkRenderStateDirty();
-		}
 		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
 		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
 
