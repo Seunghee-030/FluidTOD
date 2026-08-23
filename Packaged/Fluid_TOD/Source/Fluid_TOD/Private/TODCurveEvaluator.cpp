@@ -561,12 +561,6 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #define LERP_VEC4_PPV(Prop) LERP_PPV(Prop)
 
-#define LERP_PPV_FORCE_OVERRIDE(Prop) \
-	{ \
-		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = true; \
-		Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
-	}
-
 #define LERP_COLOR_PPV(Prop) \
 	{ \
 		const bool bPrevOverride = PrevPPV->Settings.bOverride_##Prop; \
@@ -579,11 +573,11 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 	}
 
 	// Exposure / EV100
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureMinBrightness);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureMaxBrightness);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureBias);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedUp);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedDown);
+	LERP_PPV(AutoExposureMinBrightness);
+	LERP_PPV(AutoExposureMaxBrightness);
+	LERP_PPV(AutoExposureBias);
+	LERP_PPV(AutoExposureSpeedUp);
+	LERP_PPV(AutoExposureSpeedDown);
 
 	// Bloom
 	LERP_PPV(BloomIntensity);
@@ -635,6 +629,10 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 	// Indirect Color
 	LERP_COLOR_PPV(IndirectLightingColor);
+
+	// Lumen
+	LERP_PPV(LumenSceneLightingQuality);
+	LERP_PPV(LumenSceneDetail);
 
 	// Depth of Field
 	LERP_PPV(DepthOfFieldFocalDistance);
@@ -713,7 +711,6 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #undef LERP_PPV
 #undef LERP_VEC4_PPV
-#undef LERP_PPV_FORCE_OVERRIDE
 #undef LERP_COLOR_PPV
 
 	ApplyPPVCompensation(Owner, CurrentTime);
