@@ -1,6 +1,6 @@
 #include "TODSystem.h"
 #include "TODManager.h"
-
+#include "Engine/StaticMesh.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -108,6 +108,15 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		Owner->MoonGlowMaterialInstance =
 			Owner->MoonGlowMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
+
+	if (Owner->MoonMesh && Owner->MoonMesh->GetStaticMesh())
+	{
+		Owner->CachedMoonMeshRadius = Owner->MoonMesh->GetStaticMesh()->GetBounds().SphereRadius;
+	}
+	else
+	{
+		Owner->CachedMoonMeshRadius = -1.0f;
+	}
 }
 
 float FTODSystem::GetSeasonDeclinationDeg(ETODSeason Season)
@@ -177,7 +186,9 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 float FTODSystem::NormalizeTime(float Time)
 {
 	float SafeTime = FMath::Fmod(Time, 24.0f);
-	return SafeTime < 0.f ? SafeTime + 24.f : SafeTime;
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+	if (FMath::IsNearlyEqual(SafeTime, 24.0f, 0.001f)) return 0.0f;
+	return SafeTime;
 }
 
 // 태양의 위치에 따라 Pivot 컴포넌트를 회전
@@ -310,20 +321,36 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 
 	Owner->ApplyPPVBlending(CurrentTime);
 
-	FTODSunMoonSettings Sun;
-	FTODMoonSettings Moon;
-	FTODSkyLightSettings Sky;
-	FTODFogSettings Fog;
-	FTODSkyAtmosphereSettings Atmos;
+	bool bTimeJumped = false;
+	if (Owner->LastEvaluatedTime >= 0.0f)
+	{
+		float LastSafe = NormalizeTime(Owner->LastEvaluatedTime);
+		float CurrSafe = NormalizeTime(CurrentTime);
+		// 시간이 1시간 이상 튀면(24->0 순환 등) Temporal 캐시를 비우기 위한 플래그
+		if (FMath::Abs(CurrSafe - LastSafe) > 1.0f)
+		{
+			bTimeJumped = true;
+		}
+	}
 
-	Owner->GetTODSettingsAtTime(
-		CurrentTime,
-		Sun,
-		Moon,
-		Sky,
-		Fog,
-		Atmos
-	);
+	if (!FMath::IsNearlyEqual(Owner->LastEvaluatedTime, CurrentTime, 0.001f))
+	{
+		Owner->GetTODSettingsAtTime(
+			CurrentTime,
+			Owner->CachedSun,
+			Owner->CachedMoon,
+			Owner->CachedSky,
+			Owner->CachedFog,
+			Owner->CachedAtmos
+		);
+		Owner->LastEvaluatedTime = CurrentTime;
+	}
+
+	const FTODSunMoonSettings& Sun = Owner->CachedSun;
+	const FTODMoonSettings& Moon = Owner->CachedMoon;
+	const FTODSkyLightSettings& Sky = Owner->CachedSky;
+	const FTODFogSettings& Fog = Owner->CachedFog;
+	const FTODSkyAtmosphereSettings& Atmos = Owner->CachedAtmos;
 
 	if (IsValid(Owner->SkyMaterialInstance))
 	{
@@ -357,34 +384,44 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Sun
 	if (IsValid(Owner->SunLightComponent))
 	{
-		if (!Owner->SunLightComponent->bAtmosphereSunLight)
+		// 상태 변경 트래킹 또는 시간 순환(팝핑 방지) 시에만 1회 호출
+		if (bTimeJumped || Owner->bCachedSunAtmosphere != Owner->SunLightComponent->bAtmosphereSunLight)
 		{
+			Owner->bCachedSunAtmosphere = Owner->SunLightComponent->bAtmosphereSunLight;
 			Owner->SunLightComponent->MarkRenderStateDirty();
 		}
-
-		Owner->SunLightComponent->SetIntensity(Sun.Intensity);
-		Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
+		
+		if (!FMath::IsNearlyEqual(Owner->SunLightComponent->Intensity, Sun.Intensity, 0.01f))
+			Owner->SunLightComponent->SetIntensity(Sun.Intensity);
+		if (Owner->SunLightComponent->LightColor != Sun.Light_Color.ToFColor(true))
+			Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
+		
 		Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
 		Owner->SunLightComponent->SetLightSourceSoftAngle(Sun.Source_Soft_Angle);
-		Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
+		
+		if (!FMath::IsNearlyEqual(Owner->SunLightComponent->IndirectLightingIntensity, Sun.Indirect_Light_Intensity, 0.01f))
+			Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
 	}
 
 	// Moon
 	if (IsValid(Owner->MoonLightComponent))
 	{
-		// 달의 대기 산란 영향 차단 (붉은 달 방지)
-		if (Owner->MoonLightComponent->bAtmosphereSunLight)
+		if (bTimeJumped || Owner->bCachedMoonAtmosphere != Owner->MoonLightComponent->bAtmosphereSunLight)
 		{
+			Owner->bCachedMoonAtmosphere = Owner->MoonLightComponent->bAtmosphereSunLight;
 			Owner->MoonLightComponent->MarkRenderStateDirty();
 		}
-		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
-		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
 
-		Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
-		Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
+		if (!FMath::IsNearlyEqual(Owner->MoonLightComponent->Intensity, Moon.Intensity, 0.01f))
+			Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
+		if (Owner->MoonLightComponent->LightColor != Moon.Light_Color.ToFColor(true))
+			Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
+		
 		Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
 		Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
-		Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
+		
+		if (!FMath::IsNearlyEqual(Owner->MoonLightComponent->IndirectLightingIntensity, Moon.Indirect_Light_Intensity, 0.01f))
+			Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
 	}
 
 	// Sky Light

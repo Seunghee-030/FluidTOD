@@ -15,19 +15,7 @@ namespace
 
 	float NormalizeTODTimeForBake(float Time)
 	{
-		float SafeTime = FMath::Fmod(Time, TODHours);
-		if (SafeTime < 0.0f)
-		{
-			SafeTime += TODHours;
-		}
-
-		if (FMath::IsNearlyEqual(SafeTime, TODHours, TODBoundaryTolerance) ||
-			FMath::IsNearlyEqual(SafeTime, 0.0f, TODBoundaryTolerance))
-		{
-			return 0.0f;
-		}
-
-		return SafeTime;
+		return FTODSystem::NormalizeTime(Time);
 	}
 
 	bool IsTwentyFourBoundary(float Time)
@@ -465,6 +453,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
+	Owner->CachedPPVBlendData.RemoveAll([](const FTODPPVEntry& Entry) { return !IsValid(Entry.PPV); });
 	const TArray<FTODPPVEntry>& ValidPPVs = Owner->CachedPPVBlendData;
 
 	const int32 Num = ValidPPVs.Num();
@@ -555,7 +544,9 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
 		if (bPrevOverride || bNextOverride) \
 		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+			const auto PrevVal = bPrevOverride ? PrevPPV->Settings.Prop : NextPPV->Settings.Prop; \
+			const auto NextVal = bNextOverride ? NextPPV->Settings.Prop : PrevPPV->Settings.Prop; \
+			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevVal, NextVal, Alpha); \
 		} \
 	}
 
@@ -568,7 +559,9 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
 		if (bPrevOverride || bNextOverride) \
 		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+			const auto PrevVal = bPrevOverride ? PrevPPV->Settings.Prop : NextPPV->Settings.Prop; \
+			const auto NextVal = bNextOverride ? NextPPV->Settings.Prop : PrevPPV->Settings.Prop; \
+			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevVal, NextVal, Alpha); \
 		} \
 	}
 
@@ -740,8 +733,11 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 	TArray<FRuntimeFloatCurve*> FloatCurves = GetAllFloatCurves(Owner->CurveData);
 	TArray<FRuntimeCurveLinearColor*> ColorCurves = GetAllColorCurves(Owner->CurveData);
 
-	// Clear 하기 전 InterpMode를 캡처 (리베이크 복원용)
-	const FTODCurveDataModeSnapshot PreviousModes = CaptureInterpModes(Owner->CurveData);
+	FTODCurveDataModeSnapshot PreviousModes;
+	if (!Owner->bApplyPresetCurveModesOnNextBake)
+	{
+		PreviousModes = CaptureInterpModes(Owner->CurveData);
+	}
 
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(*Curve); }

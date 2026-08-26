@@ -419,6 +419,7 @@ FString ATODManager::GetFormattedTimeAsString(float InTime) const
 	// 시간 0~24 보정
 	float SafeTime = FMath::Fmod(InTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
+	if (FMath::IsNearlyEqual(SafeTime, 24.0f, 0.001f)) SafeTime = 0.0f;
 
 	int32 Hours = FMath::FloorToInt(SafeTime);
 	int32 Minutes = FMath::FloorToInt((SafeTime - Hours) * 60.0f);
@@ -458,14 +459,12 @@ float ATODManager::GetScaledMoonDistance() const
 		return MoonDistance;
 	}
 
-	const float LocalRadius = Mesh->GetBounds().SphereRadius;
-
-	if (LocalRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
+	if (CachedMoonMeshRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
 	{
 		return MoonDistance;
 	}
 
-	return MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
+	return MoonDistance * (CachedMoonMeshRadius / MoonMeshReferenceRadius);
 }
 
 void ATODManager::UpdateMoonMeshTransform()
@@ -589,6 +588,7 @@ float ATODManager::WrapStartTime(float InTime)
 	{
 		Wrapped += 24.0f;
 	}
+	if (FMath::IsNearlyEqual(Wrapped, 24.0f, 0.001f)) return 0.0f;
 	return Wrapped;
 }
 

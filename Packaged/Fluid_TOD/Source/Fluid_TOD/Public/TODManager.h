@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -337,6 +337,22 @@ public:
     TObjectPtr<UTODPresetData> LoadPreset;
 
     bool bApplyPresetCurveModesOnNextBake = false;
+
+    // =========================================================================
+    // Runtime Cache
+    // =========================================================================
+public:
+    float LastEvaluatedTime = -1.0f;
+    float CachedMoonMeshRadius = -1.0f;
+    FTODSunMoonSettings CachedSun;
+    FTODMoonSettings CachedMoon;
+    FTODSkyLightSettings CachedSky;
+    FTODFogSettings CachedFog;
+    FTODSkyAtmosphereSettings CachedAtmos;
+    
+    // Atmosphere State Tracking for MarkRenderStateDirty optimization
+    bool bCachedSunAtmosphere = true;
+    bool bCachedMoonAtmosphere = true;
 
     // =========================================================================
     // Properties: Debug
