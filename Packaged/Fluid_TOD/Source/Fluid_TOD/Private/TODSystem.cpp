@@ -9,6 +9,30 @@
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
+namespace
+{
+	// 상대 오차(0.05%) + 최소 절대치 중 큰 값을 임계치로 사용.
+	// 임계치 이하 변화는 육안으로 구분되지 않으므로 SetXXX(-> MarkRenderStateDirty) 호출 자체를 생략한다.
+	FORCEINLINE bool HasChangedNoticeably(float NewValue, float OldValue, float AbsEpsilon)
+	{
+		const float Threshold = FMath::Max(AbsEpsilon, FMath::Abs(OldValue) * 0.0005f);
+		return FMath::Abs(NewValue - OldValue) > Threshold;
+	}
+
+	FORCEINLINE bool HasChangedNoticeably(const FLinearColor& NewValue, const FLinearColor& OldValue, float AbsEpsilon)
+	{
+		return HasChangedNoticeably(NewValue.R, OldValue.R, AbsEpsilon)
+			|| HasChangedNoticeably(NewValue.G, OldValue.G, AbsEpsilon)
+			|| HasChangedNoticeably(NewValue.B, OldValue.B, AbsEpsilon)
+			|| HasChangedNoticeably(NewValue.A, OldValue.A, AbsEpsilon);
+	}
+
+	constexpr float EpsIntensityLarge = 0.01f;  // Sun/Moon Intensity
+	constexpr float EpsAngleDeg = 0.001f;       // Source Angle / Soft Angle
+	constexpr float EpsUnitScale = 0.0001f;     // 0~1 근방 배율/보정값 (density, falloff, indirect 등)
+	constexpr float EpsColor = 0.0008f;         // 색상 채널당
+}
+
 void FTODSystem::FindComponents(ATODManager* Owner)
 {
 	if (!Owner) return;
@@ -108,6 +132,9 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		Owner->MoonGlowMaterialInstance =
 			Owner->MoonGlowMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
+
+	// 컴포넌트가 교체되었을 수 있으므로, 적용 캐시를 무효화해 다음 UpdateTOD에서 전체 재적용되게 한다.
+	AppliedState.ResetAll();
 }
 
 float FTODSystem::GetSeasonDeclinationDeg(ETODSeason Season)
@@ -291,7 +318,16 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 
 	if (Owner->IsVisualOverridden())
 	{
+		bWasVisuallyOverridden = true;
 		return;
+	}
+
+	// 컷신 오버라이드가 방금 끝났다면 그동안 외부(시퀀서 등)가 컴포넌트 값을 바꿔놨을 수 있으므로
+	// 캐시를 무시하고 이번 틱에는 전체를 강제로 재적용한다.
+	if (bWasVisuallyOverridden)
+	{
+		AppliedState.ResetAll();
+		bWasVisuallyOverridden = false;
 	}
 
 	if (
@@ -363,11 +399,36 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 			Owner->SunLightComponent->MarkRenderStateDirty();
 		}
 
-		Owner->SunLightComponent->SetIntensity(Sun.Intensity);
-		Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
-		Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
-		Owner->SunLightComponent->SetLightSourceSoftAngle(Sun.Source_Soft_Angle);
-		Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
+		FTODSunMoonSettings& Cache = AppliedState.Sun;
+		const bool bForce = !AppliedState.bSunInitialized;
+
+		if (bForce || HasChangedNoticeably(Sun.Intensity, Cache.Intensity, EpsIntensityLarge))
+		{
+			Owner->SunLightComponent->SetIntensity(Sun.Intensity);
+			Cache.Intensity = Sun.Intensity;
+		}
+		if (bForce || HasChangedNoticeably(Sun.Light_Color, Cache.Light_Color, EpsColor))
+		{
+			Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
+			Cache.Light_Color = Sun.Light_Color;
+		}
+		if (bForce || HasChangedNoticeably(Sun.Source_Angle, Cache.Source_Angle, EpsAngleDeg))
+		{
+			Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
+			Cache.Source_Angle = Sun.Source_Angle;
+		}
+		if (bForce || HasChangedNoticeably(Sun.Source_Soft_Angle, Cache.Source_Soft_Angle, EpsAngleDeg))
+		{
+			Owner->SunLightComponent->SetLightSourceSoftAngle(Sun.Source_Soft_Angle);
+			Cache.Source_Soft_Angle = Sun.Source_Soft_Angle;
+		}
+		if (bForce || HasChangedNoticeably(Sun.Indirect_Light_Intensity, Cache.Indirect_Light_Intensity, EpsUnitScale))
+		{
+			Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
+			Cache.Indirect_Light_Intensity = Sun.Indirect_Light_Intensity;
+		}
+
+		AppliedState.bSunInitialized = true;
 	}
 
 	// Moon
@@ -381,40 +442,136 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
 		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
 
-		Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
-		Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
-		Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
-		Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
-		Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
+		FTODMoonSettings& Cache = AppliedState.Moon;
+		const bool bForce = !AppliedState.bMoonInitialized;
+
+		if (bForce || HasChangedNoticeably(Moon.Intensity, Cache.Intensity, EpsIntensityLarge))
+		{
+			Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
+			Cache.Intensity = Moon.Intensity;
+		}
+		if (bForce || HasChangedNoticeably(Moon.Light_Color, Cache.Light_Color, EpsColor))
+		{
+			Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
+			Cache.Light_Color = Moon.Light_Color;
+		}
+		if (bForce || HasChangedNoticeably(Moon.Source_Angle, Cache.Source_Angle, EpsAngleDeg))
+		{
+			Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
+			Cache.Source_Angle = Moon.Source_Angle;
+		}
+		if (bForce || HasChangedNoticeably(Moon.Source_Soft_Angle, Cache.Source_Soft_Angle, EpsAngleDeg))
+		{
+			Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
+			Cache.Source_Soft_Angle = Moon.Source_Soft_Angle;
+		}
+		if (bForce || HasChangedNoticeably(Moon.Indirect_Light_Intensity, Cache.Indirect_Light_Intensity, EpsUnitScale))
+		{
+			Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
+			Cache.Indirect_Light_Intensity = Moon.Indirect_Light_Intensity;
+		}
+
+		AppliedState.bMoonInitialized = true;
 	}
 
 	// Sky Light
 	if (IsValid(Owner->SkyLightComponent))
 	{
-		Owner->SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
-		Owner->SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
-		Owner->SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
-		Owner->SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
+		FTODSkyLightSettings& Cache = AppliedState.SkyLight;
+		const bool bForce = !AppliedState.bSkyLightInitialized;
+
+		if (bForce || HasChangedNoticeably(Sky.Sky_Light_Intensity, Cache.Sky_Light_Intensity, EpsUnitScale))
+		{
+			Owner->SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
+			Cache.Sky_Light_Intensity = Sky.Sky_Light_Intensity;
+		}
+		if (bForce || HasChangedNoticeably(Sky.Sky_Light_Color, Cache.Sky_Light_Color, EpsColor))
+		{
+			Owner->SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
+			Cache.Sky_Light_Color = Sky.Sky_Light_Color;
+		}
+		if (bForce || HasChangedNoticeably(Sky.Sky_Indirect_Lighting_Intensity, Cache.Sky_Indirect_Lighting_Intensity, EpsUnitScale))
+		{
+			Owner->SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
+			Cache.Sky_Indirect_Lighting_Intensity = Sky.Sky_Indirect_Lighting_Intensity;
+		}
+		if (bForce || HasChangedNoticeably(Sky.Sky_Volumetric_Scattering_Intensity, Cache.Sky_Volumetric_Scattering_Intensity, EpsUnitScale))
+		{
+			Owner->SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
+			Cache.Sky_Volumetric_Scattering_Intensity = Sky.Sky_Volumetric_Scattering_Intensity;
+		}
+
+		AppliedState.bSkyLightInitialized = true;
 	}
 
 	// Fog
 	if (IsValid(Owner->FogComponent))
 	{
-		Owner->FogComponent->SetFogDensity(Fog.Fog_Density);
-		Owner->FogComponent->SetFogHeightFalloff(Fog.Fog_Height_Falloff);
-		Owner->FogComponent->SetFogInscatteringColor(Fog.Fog_Inscattering_Color);
-		Owner->FogComponent->SetDirectionalInscatteringColor(Fog.Fog_Directional_Inscattering);
+		FTODFogSettings& Cache = AppliedState.Fog;
+		const bool bForce = !AppliedState.bFogInitialized;
+
+		if (bForce || HasChangedNoticeably(Fog.Fog_Density, Cache.Fog_Density, EpsUnitScale))
+		{
+			Owner->FogComponent->SetFogDensity(Fog.Fog_Density);
+			Cache.Fog_Density = Fog.Fog_Density;
+		}
+		if (bForce || HasChangedNoticeably(Fog.Fog_Height_Falloff, Cache.Fog_Height_Falloff, EpsUnitScale))
+		{
+			Owner->FogComponent->SetFogHeightFalloff(Fog.Fog_Height_Falloff);
+			Cache.Fog_Height_Falloff = Fog.Fog_Height_Falloff;
+		}
+		if (bForce || HasChangedNoticeably(Fog.Fog_Inscattering_Color, Cache.Fog_Inscattering_Color, EpsColor))
+		{
+			Owner->FogComponent->SetFogInscatteringColor(Fog.Fog_Inscattering_Color);
+			Cache.Fog_Inscattering_Color = Fog.Fog_Inscattering_Color;
+		}
+		if (bForce || HasChangedNoticeably(Fog.Fog_Directional_Inscattering, Cache.Fog_Directional_Inscattering, EpsColor))
+		{
+			Owner->FogComponent->SetDirectionalInscatteringColor(Fog.Fog_Directional_Inscattering);
+			Cache.Fog_Directional_Inscattering = Fog.Fog_Directional_Inscattering;
+		}
+
+		AppliedState.bFogInitialized = true;
 	}
 
 	// Sky Atmosphere
 	if (IsValid(Owner->SkyAtmosphereComponent))
 	{
-		Owner->SkyAtmosphereComponent->SetMieScatteringScale(Atmos.Mie_Scattering_Scale);
-		Owner->SkyAtmosphereComponent->SetMieScattering(Atmos.Mie_Scattering_Color);
-		Owner->SkyAtmosphereComponent->SetOtherAbsorption(Atmos.Absorption_Color);
-		Owner->SkyAtmosphereComponent->SetRayleighScatteringScale(Atmos.Rayleigh_Scattering_Scale);
-		Owner->SkyAtmosphereComponent->SetAerialPespectiveViewDistanceScale(Atmos.Aerial_Perspective_Distance_Scale);
-		Owner->SkyAtmosphereComponent->SetSkyLuminanceFactor(Atmos.Sky_Luminance_Factor);
+		FTODSkyAtmosphereSettings& Cache = AppliedState.SkyAtmosphere;
+		const bool bForce = !AppliedState.bSkyAtmosphereInitialized;
+
+		if (bForce || HasChangedNoticeably(Atmos.Mie_Scattering_Scale, Cache.Mie_Scattering_Scale, EpsUnitScale))
+		{
+			Owner->SkyAtmosphereComponent->SetMieScatteringScale(Atmos.Mie_Scattering_Scale);
+			Cache.Mie_Scattering_Scale = Atmos.Mie_Scattering_Scale;
+		}
+		if (bForce || HasChangedNoticeably(Atmos.Mie_Scattering_Color, Cache.Mie_Scattering_Color, EpsColor))
+		{
+			Owner->SkyAtmosphereComponent->SetMieScattering(Atmos.Mie_Scattering_Color);
+			Cache.Mie_Scattering_Color = Atmos.Mie_Scattering_Color;
+		}
+		if (bForce || HasChangedNoticeably(Atmos.Absorption_Color, Cache.Absorption_Color, EpsColor))
+		{
+			Owner->SkyAtmosphereComponent->SetOtherAbsorption(Atmos.Absorption_Color);
+			Cache.Absorption_Color = Atmos.Absorption_Color;
+		}
+		if (bForce || HasChangedNoticeably(Atmos.Rayleigh_Scattering_Scale, Cache.Rayleigh_Scattering_Scale, EpsUnitScale))
+		{
+			Owner->SkyAtmosphereComponent->SetRayleighScatteringScale(Atmos.Rayleigh_Scattering_Scale);
+			Cache.Rayleigh_Scattering_Scale = Atmos.Rayleigh_Scattering_Scale;
+		}
+		if (bForce || HasChangedNoticeably(Atmos.Aerial_Perspective_Distance_Scale, Cache.Aerial_Perspective_Distance_Scale, EpsUnitScale))
+		{
+			Owner->SkyAtmosphereComponent->SetAerialPespectiveViewDistanceScale(Atmos.Aerial_Perspective_Distance_Scale);
+			Cache.Aerial_Perspective_Distance_Scale = Atmos.Aerial_Perspective_Distance_Scale;
+		}
+		if (bForce || HasChangedNoticeably(Atmos.Sky_Luminance_Factor, Cache.Sky_Luminance_Factor, EpsColor))
+		{
+			Owner->SkyAtmosphereComponent->SetSkyLuminanceFactor(Atmos.Sky_Luminance_Factor);
+			Cache.Sky_Luminance_Factor = Atmos.Sky_Luminance_Factor;
+		}
+
+		AppliedState.bSkyAtmosphereInitialized = true;
 	}
 
 	// Custom Material Updates
