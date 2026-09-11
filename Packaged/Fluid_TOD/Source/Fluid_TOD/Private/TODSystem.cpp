@@ -316,6 +316,13 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	Owner->CurrentSystemTime = CurrentTime;
 	UpdateState(Owner, CurrentTime);
 
+	// 데디케이티드 서버는 렌더링하지 않으므로 커브 평가/PPV 블렌딩/라이트 Set 등
+	// 시각 갱신은 건너뛴다. CurrentSystemTime과 상태(StateBlendAlpha 등)는 위에서 이미 갱신됨.
+	if (Owner->GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
 	if (Owner->IsVisualOverridden())
 	{
 		bWasVisuallyOverridden = true;

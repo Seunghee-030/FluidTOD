@@ -119,8 +119,12 @@ void ATODManager::Tick(float DeltaSeconds)
 	const UWorld* World = GetWorld();
 	if (!World) return;
 
-	// 앵커는 시간 정지/컷신/에디터 여부와 무관하게 항상 뷰를 따라간다.
-	const bool bAnchorMoved = UpdateSkyAnchorPosition();
+	// 데디케이티드 서버는 화면을 렌더링하지 않으므로 뷰 추종/메쉬 트랜스폼 등
+	// 시각 전용 갱신은 아무도 보지 않는 값을 계산하는 순수 낭비다. 전부 건너뛴다.
+	const bool bIsDedicatedServer = World->GetNetMode() == NM_DedicatedServer;
+
+	// 앵커는 시간 정지/컷신/에디터 여부와 무관하게 항상 뷰를 따라간다. (서버 제외)
+	const bool bAnchorMoved = !bIsDedicatedServer && UpdateSkyAnchorPosition();
 
 	if (!World->IsGameWorld())
 	{
@@ -150,9 +154,19 @@ void ATODManager::Tick(float DeltaSeconds)
 		NewTime += 24.0f;
 	}
 
-	UpdatePivotRotation(NewTime);
+	if (!bIsDedicatedServer)
+	{
+		UpdatePivotRotation(NewTime);
+	}
+
+	// CurrentSystemTime/상태(GetCurrentTODState 등 게임플레이 조회용)는 항상 갱신된다.
+	// 커브 평가·라이트 Set 등 시각 갱신은 UpdateTOD 내부에서 서버일 때 다시 한번 스킵된다.
 	UpdateTOD(NewTime);
-	UpdateMoonMeshTransform();
+
+	if (!bIsDedicatedServer)
+	{
+		UpdateMoonMeshTransform();
+	}
 }
 
 void ATODManager::SetMaterialScalarByName(
