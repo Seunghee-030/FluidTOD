@@ -55,8 +55,6 @@ struct FTODCinematicSetting;
 	DECLARE_FUNCTION(execGetMoonSourceScaleAtTime); \
 	DECLARE_FUNCTION(execUpdateTOD); \
 	DECLARE_FUNCTION(execBakeTODCurves); \
-	DECLARE_FUNCTION(execUpdateMoonMeshTransform); \
-	DECLARE_FUNCTION(execGetCalculatedMoonScale); \
 	DECLARE_FUNCTION(execUpdateSkyAnchorPosition); \
 	DECLARE_FUNCTION(execSetSunAzimuthOffset); \
 	DECLARE_FUNCTION(execToggleTimePause); \

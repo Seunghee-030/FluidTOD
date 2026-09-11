@@ -973,7 +973,14 @@ float FTODCurveEvaluator::GetMoonGlowScaleAtTime(const ATODManager* Owner, float
 
 float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, float InTime) const
 {
-	if (!Owner || !Owner->CurveData) return 0.0f;
+	if (!Owner) return 0.0f;
+
+	if (Owner->bOverrideMoonSourceScale)
+	{
+		return Owner->OverriddenMoonSourceScale;
+	}
+
+	if (!Owner->CurveData) return 0.0f;
 
 	const float SafeTime = NormalizeTODTimeForBake(InTime);
 
@@ -984,6 +991,7 @@ float FTODCurveEvaluator::GetMoonSourceScaleAtTime(const ATODManager* Owner, flo
 
 	return 0.0f;
 }
+
 
 float FTODCurveEvaluator::GetMoonIntensity(const ATODManager* Owner, float InTime) const
 {
@@ -1312,7 +1320,6 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 
 		Owner->BakeTODCurves();
 		Owner->UpdateTOD(Owner->GetCurrentTime());
-		Owner->UpdateMoonMeshTransform();
 		Owner->ForceViewportRedraw();
 		return;
 	}
@@ -1322,7 +1329,6 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 		Owner->MarkPackageDirty();
 		Owner->OnTODDataChanged.Broadcast();
 		Owner->UpdateTOD(Owner->GetCurrentTime());
-		Owner->UpdateMoonMeshTransform();
 		Owner->ForceViewportRedraw();
 	}
 }

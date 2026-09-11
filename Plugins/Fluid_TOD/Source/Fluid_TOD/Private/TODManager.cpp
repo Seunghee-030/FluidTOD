@@ -122,7 +122,6 @@ void ATODManager::Tick(float DeltaSeconds)
 	UpdateSkyAnchorPosition();
 	UpdatePivotRotation(NewTime);
 	UpdateTOD(NewTime);
-	UpdateMoonMeshTransform();
 }
 
 void ATODManager::SetMaterialScalarByName(
@@ -130,10 +129,7 @@ void ATODManager::SetMaterialScalarByName(
 	float Value,
 	bool bSkyDome)
 {
-	UMaterialInstanceDynamic* MID =
-		bSkyDome
-		? SkyMaterialInstance
-		: MoonMaterialInstance;
+	UMaterialInstanceDynamic* MID = SkyMaterialInstance;
 
 	if (!IsValid(MID))
 	{
@@ -148,10 +144,7 @@ void ATODManager::SetMaterialVectorByName(
 	FLinearColor Value,
 	bool bSkyDome)
 {
-	UMaterialInstanceDynamic* MID =
-		bSkyDome
-		? SkyMaterialInstance
-		: MoonMaterialInstance;
+	UMaterialInstanceDynamic* MID = SkyMaterialInstance;
 
 	if (!IsValid(MID))
 	{
@@ -199,7 +192,6 @@ void ATODManager::SetStartTime(float NewTime)
 	SortTODDataArray();
 	UpdatePivotRotation(StartTime);
 	UpdateTOD(StartTime);
-	UpdateMoonMeshTransform();
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
@@ -217,7 +209,6 @@ void ATODManager::SetCurrentTime(float NewTime)
 
 	UpdatePivotRotation(CurrentSystemTime);
 	UpdateTOD(CurrentSystemTime);
-	UpdateMoonMeshTransform();
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
@@ -331,22 +322,16 @@ void ATODManager::PrintTODDebugInfo()
 			FMaterialParameterInfo(TEXT("SkyTextureEmissiveIntensity")),
 			ActualSkyEmissive
 		);
-	}
-
-	if (IsValid(MoonMaterialInstance))
-	{
-		MoonMaterialInstance->GetScalarParameterValue(
+		SkyMaterialInstance->GetScalarParameterValue(
 			FMaterialParameterInfo(TEXT("MoonSourceEmissiveIntensity")),
 			ActualMoonEmissive
 		);
-	}
 
-	if(IsValid(MoonGlowMaterialInstance))
-	{
-		MoonGlowMaterialInstance->GetScalarParameterValue(
+		SkyMaterialInstance->GetScalarParameterValue(
 			FMaterialParameterInfo(TEXT("MoonGlowEmissiveIntensity")),
 			ActualMoonGlowEmissive
 		);
+
 	}
 
 	float CurrentBloom = 0.0f;
@@ -402,7 +387,7 @@ void ATODManager::PrintTODDebugInfo()
 		Sky.Sky_Light_Intensity, Sky.Sky_Indirect_Lighting_Intensity,
 		ActualSkyEmissive,
 		Sky.Star_Emissive_Intensity,
-		Fog.Fog_Density,Fog.Fog_Height_Falloff,
+		Fog.Fog_Density, Fog.Fog_Height_Falloff,
 		Atmos.Mie_Scattering_Scale,
 		CurrentBloom,
 		CurrentExpMin, CurrentExpMax,
@@ -431,80 +416,6 @@ void ATODManager::SortTODDataArray()
 {
 	if (TOD_DataArray.Num() < 2) return;
 	TOD_DataArray.StableSort([](const FTODMasterData& A, const FTODMasterData& B) { return A.Time < B.Time; });
-}
-
-float ATODManager::GetCalculatedMoonScale(float InTime) const
-{
-	float TargetScale = bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(InTime);
-
-	TargetScale = FMath::Max(TargetScale, 0.001f);
-
-	const float ReferenceDistance = 10000.0f;
-	float DistanceRatio = GetScaledMoonDistance() / ReferenceDistance;
-
-	return TargetScale * DistanceRatio;
-}
-
-float ATODManager::GetScaledMoonDistance() const
-{
-	if (!bAutoScaleMoonDistanceByMeshSize || !IsValid(MoonMesh))
-	{
-		return MoonDistance;
-	}
-
-	UStaticMesh* Mesh = MoonMesh->GetStaticMesh();
-	if (!Mesh)
-	{
-		return MoonDistance;
-	}
-
-	const float LocalRadius = Mesh->GetBounds().SphereRadius;
-
-	if (LocalRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
-	{
-		return MoonDistance;
-	}
-
-	return MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
-}
-
-void ATODManager::UpdateMoonMeshTransform()
-{
-	if (!IsValid(MoonMesh)) return;
-
-	if (IsValid(MeshPivotComponent))
-	{
-		MeshPivotComponent->SetRelativeRotation(MoonLocalRotationOffset);
-	}
-
-	const float ActualDistance = GetScaledMoonDistance();
-	MoonMesh->SetRelativeLocation(FVector(-ActualDistance, 0.0f, 0.0f));
-
-	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
-	MoonMesh->SetRelativeScale3D(FVector((BaseScale * (ActualDistance / 100000.0f)))); // moon 크기 조절
-
-	if (IsValid(MoonGlowMesh))
-	{
-		const float GlowScale = FMath::Max(GetMoonGlowScaleAtTime(CurrentSystemTime), 0.001f);
-		MoonGlowMesh->SetRelativeScale3D(FVector((GlowScale * (ActualDistance / 100000.0f)))); // moon glow 크기 조절
-
-		const FVector MoonWorldLocation = MoonMesh->GetComponentLocation();
-		const FVector PivotWorldLocation = MeshPivotComponent->GetComponentLocation();
-		const FVector DirectionToPivot = (PivotWorldLocation - MoonWorldLocation).GetSafeNormal();
-
-		// Moon의 현재 실제(월드) 반지름 계산
-		float MoonWorldRadius = 0.0f;
-		if (const UStaticMesh* MoonStaticMesh = MoonMesh->GetStaticMesh())
-		{
-			MoonWorldRadius = MoonStaticMesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().X;
-		}
-
-		// 반지름보다 살짝 크게 (10% 여유)
-		constexpr float FrontOffsetMultiplier = 1.1f;
-		const float FrontOffset = MoonWorldRadius * FrontOffsetMultiplier;
-
-		MoonGlowMesh->SetWorldLocation(MoonWorldLocation + DirectionToPivot * FrontOffset);
-	}
 }
 
 // ======== Curve Evaluation =========
@@ -549,9 +460,9 @@ void ATODManager::UpdateSkyAnchorPosition()
 	if (!Pawn) return;
 
 	if (IsValid(PivotOrbitTiltComponent))
-	{
+		{
 		PivotOrbitTiltComponent->SetWorldLocation(Pawn->GetActorLocation());
-	}
+		}
 }
 
 float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
@@ -613,16 +524,6 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 		const FRotator OrbitTiltRotation(0.0f, SunAzimuthOffset, 0.0f);
 
 		PivotOrbitTiltComponent->SetRelativeRotation(OrbitTiltRotation);
-	}
-
-	if (IsValid(MoonLightComponent))
-	{
-		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
-	}
-
-	if (IsValid(MoonGlowMesh))
-	{
-		MoonGlowMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	}
 }
 
@@ -726,7 +627,6 @@ void ATODManager::RequestDeferredRebake()
 				Manager->UpdateSunTimes();
 				Manager->BakeTODCurves();
 				Manager->UpdateTOD(Manager->StartTime);
-				Manager->UpdateMoonMeshTransform();
 				Manager->ApplyStaticSunMoonOffsets();
 				Manager->UpdatePivotRotation(Manager->StartTime);
 				Manager->ForceViewportRedraw();
@@ -740,7 +640,6 @@ void ATODManager::RequestDeferredRebake()
 	BakeTODCurves();
 	UpdateSunTimes();
 	UpdateTOD(StartTime);
-	UpdateMoonMeshTransform();
 	ApplyStaticSunMoonOffsets();
 	UpdatePivotRotation(StartTime);
 	ForceViewportRedraw();
@@ -1084,8 +983,7 @@ void ATODManager::OnExternalPropertyChanged(
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
+	if (!GEditor)
 	{
 		return;
 	}
@@ -1093,7 +991,7 @@ void ATODManager::OnExternalPropertyChanged(
 	bPendingPPVUpdate = true;
 
 	TWeakObjectPtr<ATODManager> WeakThis(this);
-	World->GetTimerManager().SetTimerForNextTick([WeakThis]()
+	GEditor->GetTimerManager()->SetTimerForNextTick([WeakThis]()
 		{
 			if (!WeakThis.IsValid())
 			{

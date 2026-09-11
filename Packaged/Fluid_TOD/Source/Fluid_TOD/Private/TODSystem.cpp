@@ -15,8 +15,6 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 
 	// Store previous meshes
 	UStaticMeshComponent* PreviousSkyDomeMesh = Owner->SkyDomeMesh;
-	UStaticMeshComponent* PreviousMoonMesh = Owner->MoonMesh;
-	UStaticMeshComponent* PreviousMoonGlowMesh = Owner->MoonGlowMesh;
 
 	// Reset
 	Owner->SunLightComponent = nullptr;
@@ -27,11 +25,8 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 
 	Owner->PivotOrbitTiltComponent = nullptr;
 	Owner->PivotSunMoonComponent = nullptr;
-	Owner->MeshPivotComponent = nullptr;
 
 	Owner->SkyDomeMesh = nullptr;
-	Owner->MoonMesh = nullptr;
-	Owner->MoonGlowMesh = nullptr;
 
 	// Sun & Moon
 	TArray<UDirectionalLightComponent*> Lights;
@@ -51,7 +46,6 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	// Pivot Components
 	Owner->PivotOrbitTiltComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("PivotOrbitTilt"));
 	Owner->PivotSunMoonComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("PivotSunMoon"));
-	Owner->MeshPivotComponent = Owner->FindComponentByTag<USceneComponent>(TEXT("MeshPivot"));
 
 	// SkyDome & Moon Mesh
 	TArray<UStaticMeshComponent*> Meshes;
@@ -63,28 +57,12 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		{
 			Owner->SkyDomeMesh = Mesh;
 		}
-		else if (Mesh->ComponentHasTag(TEXT("MoonMesh")))
-		{
-			Owner->MoonMesh = Mesh;
-		}
-		else if (Mesh->ComponentHasTag(TEXT("MoonGlow")))
-		{
-			Owner->MoonGlowMesh = Mesh;
-		}
 	}
 
 	// if Meshes Changed
 	if (Owner->SkyDomeMesh != PreviousSkyDomeMesh)
 	{
 		Owner->SkyMaterialInstance = nullptr;
-	}
-	if (Owner->MoonMesh != PreviousMoonMesh)
-	{
-		Owner->MoonMaterialInstance = nullptr;
-	}
-	if (Owner->MoonGlowMesh != PreviousMoonGlowMesh)
-	{
-		Owner->MoonGlowMaterialInstance = nullptr;
 	}
 
 	// Create Material Instances
@@ -93,20 +71,6 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 	{
 		Owner->SkyMaterialInstance =
 			Owner->SkyDomeMesh->CreateAndSetMaterialInstanceDynamic(0);
-	}
-
-	if (IsValid(Owner->MoonMesh) &&
-		!IsValid(Owner->MoonMaterialInstance))
-	{
-		Owner->MoonMaterialInstance =
-			Owner->MoonMesh->CreateAndSetMaterialInstanceDynamic(0);
-	}
-
-	if (IsValid(Owner->MoonGlowMesh) &&
-		!IsValid(Owner->MoonGlowMaterialInstance))
-	{
-		Owner->MoonGlowMaterialInstance =
-			Owner->MoonGlowMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
 }
 
@@ -301,7 +265,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		!IsValid(Owner->FogComponent) ||
 		!IsValid(Owner->SkyAtmosphereComponent) ||
 		!IsValid(Owner->SkyDomeMesh) ||
-		!IsValid(Owner->MoonMesh) ||
 		!IsValid(Owner->PivotSunMoonComponent)
 		)
 	{
@@ -336,21 +299,25 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 			TEXT("StarEmissiveIntensity"),
 			Sky.Star_Emissive_Intensity
 		);
-	}
-
-	if (IsValid(Owner->MoonMaterialInstance))
-	{
-		Owner->MoonMaterialInstance->SetScalarParameterValue(
+		Owner->SkyMaterialInstance->SetScalarParameterValue(
 			TEXT("MoonSourceEmissiveIntensity"),
 			Moon.Moon_Source_Emissive_Intensity
 		);
-	}
-
-	if (IsValid(Owner->MoonGlowMaterialInstance))
-	{
-		Owner->MoonGlowMaterialInstance->SetScalarParameterValue(
+		Owner->SkyMaterialInstance->SetScalarParameterValue(
 			TEXT("MoonGlowEmissiveIntensity"),
 			Moon.Moon_Glow_Emissive_Intensity
+		);
+
+		float ActualMoonScale = Owner->bOverrideMoonSourceScale ? Owner->OverriddenMoonSourceScale : Moon.Moon_Source_Scale;
+
+		Owner->SkyMaterialInstance->SetScalarParameterValue(
+			TEXT("MoonScale"),
+			ActualMoonScale
+		);
+
+		Owner->SkyMaterialInstance->SetScalarParameterValue(
+			TEXT("MoonGlowScale"),
+			Moon.Moon_Glow_Scale
 		);
 	}
 
@@ -359,7 +326,6 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	{
 		if (!Owner->SunLightComponent->bAtmosphereSunLight)
 		{
-			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
 			Owner->SunLightComponent->MarkRenderStateDirty();
 		}
 

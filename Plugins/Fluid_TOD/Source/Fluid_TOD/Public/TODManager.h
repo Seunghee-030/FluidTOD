@@ -96,23 +96,8 @@ public:
     UPROPERTY()
     TObjectPtr<class USceneComponent> PivotSunMoonComponent;
 
-    UPROPERTY()
-    TObjectPtr<class USceneComponent> MeshPivotComponent;
-
     UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
     TObjectPtr<UStaticMeshComponent> SkyDomeMesh;
-
-    UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
-    TObjectPtr<UStaticMeshComponent> MoonMesh;
-
-    UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
-    TObjectPtr<UMaterialInstanceDynamic> MoonMaterialInstance;
-
-    UPROPERTY(BlueprintReadOnly, Category = "TOD|Material")
-    TObjectPtr<UStaticMeshComponent> MoonGlowMesh;
-
-    UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
-    TObjectPtr<UMaterialInstanceDynamic> MoonGlowMaterialInstance;
 
     UPROPERTY(BlueprintReadWrite, Category = "TOD|Material")
     TObjectPtr<UMaterialInstanceDynamic> SkyMaterialInstance;
@@ -253,7 +238,6 @@ public:
         meta = (ToolTip = "Calculated sunset time based on the current latitude setting."))
     FString SunsetTime = TEXT("17 : 00");
 
-    FRotator MoonLocalRotationOffset = FRotator(0.0f, 180.0f, 0.0f);
     float SunLatitudeTiltMultiplier = -1.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Geography", meta = (ClampMin = "-360.0", ClampMax = "360.0", UIMin = "-180.0", UIMax = "180.0", Tooltip = "태양/달이 떠오르는 방위각(Yaw)입니다. 0도일 때 기본 동쪽에서 떠오릅니다. 물리 계산과 무관한 아티스틱 값입니다."))
@@ -265,31 +249,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void UpdateSkyAnchorPosition();
 
-    // =========================================================================
-    // Properties: Moon
-    // =========================================================================
-public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
-        meta = (ClampMin = "0.0", UIMin = "0.0", ToolTip = "Reference mesh radius distance for Moon."))
-    float MoonDistance = 50000.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
-        meta = (ToolTip = "Auto-scale MoonDistance based on Moon Mesh bounding size."))
-    bool bAutoScaleMoonDistanceByMeshSize = true;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Moon",
-        meta = (EditCondition = "bAutoScaleMoonDistanceByMeshSize", ClampMin = "1.0",
-            ToolTip = "Reference mesh radius (uu) that MoonDistance corresponds to."))
-    float MoonMeshReferenceRadius = 100.0f;
-
-    UFUNCTION(BlueprintPure, Category = "TOD|Moon")
-    float GetCalculatedMoonScale(float InTime) const;
-
-    UFUNCTION(BlueprintCallable, Category = "TOD|Moon")
-    void UpdateMoonMeshTransform();
-
-private:
-    float GetScaledMoonDistance() const;
+    FVector GetActiveViewLocation() const;
 
     // =========================================================================
     // Properties: Curves
