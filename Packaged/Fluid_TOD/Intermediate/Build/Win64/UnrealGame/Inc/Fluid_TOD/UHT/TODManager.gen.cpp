@@ -17,6 +17,7 @@ void EmptyLinkFunctionForGeneratedCodeTODManager() {}
 // ********** Begin Cross Module References ********************************************************
 COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FLinearColor();
 COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FQuat();
+COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FVector();
 ENGINE_API UClass* Z_Construct_UClass_AActor();
 ENGINE_API UClass* Z_Construct_UClass_ACharacter_NoRegister();
 ENGINE_API UClass* Z_Construct_UClass_UDirectionalLightComponent_NoRegister();
@@ -428,6 +429,69 @@ DEFINE_FUNCTION(ATODManager::execForceViewportRedraw)
 }
 // ********** End Class ATODManager Function ForceViewportRedraw ***********************************
 
+// ********** Begin Class ATODManager Function GetActiveViewLocation *******************************
+struct Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics
+{
+	struct TODManager_eventGetActiveViewLocation_Parms
+	{
+		FVector OutViewLocation;
+		bool ReturnValue;
+	};
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
+		{ "Category", "TOD|Sky Anchor" },
+		{ "Comment", "// \xea\xb2\x8c\xec\x9e\x84: PlayerCameraManager(Camera Cut / MRQ \xed\x8f\xac\xed\x95\xa8) / \xec\x97\x90\xeb\x94\x94\xed\x84\xb0: \xed\x99\x9c\xec\x84\xb1 \xeb\xb7\xb0\xed\x8f\xac\xed\x8a\xb8 \xed\x81\xb4\xeb\x9d\xbc\xec\x9d\xb4\xec\x96\xb8\xed\x8a\xb8\n" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+		{ "ToolTip", "\xea\xb2\x8c\xec\x9e\x84: PlayerCameraManager(Camera Cut / MRQ \xed\x8f\xac\xed\x95\xa8) / \xec\x97\x90\xeb\x94\x94\xed\x84\xb0: \xed\x99\x9c\xec\x84\xb1 \xeb\xb7\xb0\xed\x8f\xac\xed\x8a\xb8 \xed\x81\xb4\xeb\x9d\xbc\xec\x9d\xb4\xec\x96\xb8\xed\x8a\xb8" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin Function GetActiveViewLocation constinit property declarations *****************
+	static const UECodeGen_Private::FStructPropertyParams NewProp_OutViewLocation;
+	static void NewProp_ReturnValue_SetBit(void* Obj);
+	static const UECodeGen_Private::FBoolPropertyParams NewProp_ReturnValue;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End Function GetActiveViewLocation constinit property declarations *******************
+	static const UECodeGen_Private::FFunctionParams FuncParams;
+};
+
+// ********** Begin Function GetActiveViewLocation Property Definitions ****************************
+const UECodeGen_Private::FStructPropertyParams Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::NewProp_OutViewLocation = { "OutViewLocation", nullptr, (EPropertyFlags)0x0010000000000180, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(TODManager_eventGetActiveViewLocation_Parms, OutViewLocation), Z_Construct_UScriptStruct_FVector, METADATA_PARAMS(0, nullptr) };
+void Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::NewProp_ReturnValue_SetBit(void* Obj)
+{
+	((TODManager_eventGetActiveViewLocation_Parms*)Obj)->ReturnValue = 1;
+}
+const UECodeGen_Private::FBoolPropertyParams Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::NewProp_ReturnValue = { "ReturnValue", nullptr, (EPropertyFlags)0x0010000000000580, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, sizeof(bool), sizeof(TODManager_eventGetActiveViewLocation_Parms), &Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::NewProp_ReturnValue_SetBit, METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::NewProp_OutViewLocation,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::NewProp_ReturnValue,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::PropPointers) < 2048);
+// ********** End Function GetActiveViewLocation Property Definitions ******************************
+const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "GetActiveViewLocation", 	Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::PropPointers, 
+	UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::PropPointers), 
+sizeof(Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::TODManager_eventGetActiveViewLocation_Parms),
+RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x54C20401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::Function_MetaDataParams), Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::Function_MetaDataParams)},  };
+static_assert(sizeof(Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::TODManager_eventGetActiveViewLocation_Parms) < MAX_uint16);
+UFunction* Z_Construct_UFunction_ATODManager_GetActiveViewLocation()
+{
+	static UFunction* ReturnFunction = nullptr;
+	if (!ReturnFunction)
+	{
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, Z_Construct_UFunction_ATODManager_GetActiveViewLocation_Statics::FuncParams);
+	}
+	return ReturnFunction;
+}
+DEFINE_FUNCTION(ATODManager::execGetActiveViewLocation)
+{
+	P_GET_STRUCT_REF(FVector,Z_Param_Out_OutViewLocation);
+	P_FINISH;
+	P_NATIVE_BEGIN;
+	*(bool*)Z_Param__Result=P_THIS->GetActiveViewLocation(Z_Param_Out_OutViewLocation);
+	P_NATIVE_END;
+}
+// ********** End Class ATODManager Function GetActiveViewLocation *********************************
+
 // ********** Begin Class ATODManager Function GetCalculatedMoonScale ******************************
 struct Z_Construct_UFunction_ATODManager_GetCalculatedMoonScale_Statics
 {
@@ -705,6 +769,59 @@ DEFINE_FUNCTION(ATODManager::execGetFormattedTimeAsString)
 	P_NATIVE_END;
 }
 // ********** End Class ATODManager Function GetFormattedTimeAsString ******************************
+
+// ********** Begin Class ATODManager Function GetMoonAlignmentErrorDeg ****************************
+struct Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics
+{
+	struct TODManager_eventGetMoonAlignmentErrorDeg_Parms
+	{
+		float ReturnValue;
+	};
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
+		{ "Category", "TOD|Sky Anchor" },
+		{ "Comment", "// -MoonLight Forward \xec\x99\x80 (MoonMesh - ViewLocation) \xec\x82\xac\xec\x9d\xb4 \xea\xb0\x81\xeb\x8f\x84(deg). 0\xec\x9d\xb4\xeb\xa9\xb4 \xec\xa0\x95\xeb\xa0\xac\xeb\x90\xa8\n" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+		{ "ToolTip", "-MoonLight Forward \xec\x99\x80 (MoonMesh - ViewLocation) \xec\x82\xac\xec\x9d\xb4 \xea\xb0\x81\xeb\x8f\x84(deg). 0\xec\x9d\xb4\xeb\xa9\xb4 \xec\xa0\x95\xeb\xa0\xac\xeb\x90\xa8" },
+	};
+#endif // WITH_METADATA
+
+// ********** Begin Function GetMoonAlignmentErrorDeg constinit property declarations **************
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_ReturnValue;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End Function GetMoonAlignmentErrorDeg constinit property declarations ****************
+	static const UECodeGen_Private::FFunctionParams FuncParams;
+};
+
+// ********** Begin Function GetMoonAlignmentErrorDeg Property Definitions *************************
+const UECodeGen_Private::FFloatPropertyParams Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::NewProp_ReturnValue = { "ReturnValue", nullptr, (EPropertyFlags)0x0010000000000580, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(TODManager_eventGetMoonAlignmentErrorDeg_Parms, ReturnValue), METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::NewProp_ReturnValue,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::PropPointers) < 2048);
+// ********** End Function GetMoonAlignmentErrorDeg Property Definitions ***************************
+const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "GetMoonAlignmentErrorDeg", 	Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::PropPointers, 
+	UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::PropPointers), 
+sizeof(Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::TODManager_eventGetMoonAlignmentErrorDeg_Parms),
+RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x54020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::Function_MetaDataParams), Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::Function_MetaDataParams)},  };
+static_assert(sizeof(Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::TODManager_eventGetMoonAlignmentErrorDeg_Parms) < MAX_uint16);
+UFunction* Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg()
+{
+	static UFunction* ReturnFunction = nullptr;
+	if (!ReturnFunction)
+	{
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg_Statics::FuncParams);
+	}
+	return ReturnFunction;
+}
+DEFINE_FUNCTION(ATODManager::execGetMoonAlignmentErrorDeg)
+{
+	P_FINISH;
+	P_NATIVE_BEGIN;
+	*(float*)Z_Param__Result=P_THIS->GetMoonAlignmentErrorDeg();
+	P_NATIVE_END;
+}
+// ********** End Class ATODManager Function GetMoonAlignmentErrorDeg ******************************
 
 // ********** Begin Class ATODManager Function GetMoonGlowScaleAtTime ******************************
 struct Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime_Statics
@@ -1742,21 +1859,43 @@ DEFINE_FUNCTION(ATODManager::execUpdatePivotRotation)
 // ********** Begin Class ATODManager Function UpdateSkyAnchorPosition *****************************
 struct Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics
 {
+	struct TODManager_eventUpdateSkyAnchorPosition_Parms
+	{
+		bool ReturnValue;
+	};
 #if WITH_METADATA
 	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
-		{ "Category", "TOD|Geography" },
+		{ "Category", "TOD|Sky Anchor" },
+		{ "Comment", "// \xec\x95\xb5\xec\xbb\xa4\xea\xb0\x80 \xec\x8b\xa4\xec\xa0\x9c\xeb\xa1\x9c \xec\x9d\xb4\xeb\x8f\x99\xed\x96\x88\xec\x9c\xbc\xeb\xa9\xb4 true\n" },
 		{ "ModuleRelativePath", "Public/TODManager.h" },
+		{ "ToolTip", "\xec\x95\xb5\xec\xbb\xa4\xea\xb0\x80 \xec\x8b\xa4\xec\xa0\x9c\xeb\xa1\x9c \xec\x9d\xb4\xeb\x8f\x99\xed\x96\x88\xec\x9c\xbc\xeb\xa9\xb4 true" },
 	};
 #endif // WITH_METADATA
 
 // ********** Begin Function UpdateSkyAnchorPosition constinit property declarations ***************
+	static void NewProp_ReturnValue_SetBit(void* Obj);
+	static const UECodeGen_Private::FBoolPropertyParams NewProp_ReturnValue;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End Function UpdateSkyAnchorPosition constinit property declarations *****************
 	static const UECodeGen_Private::FFunctionParams FuncParams;
 };
-const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "UpdateSkyAnchorPosition", 	nullptr, 
-	0, 
-0,
+
+// ********** Begin Function UpdateSkyAnchorPosition Property Definitions **************************
+void Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::NewProp_ReturnValue_SetBit(void* Obj)
+{
+	((TODManager_eventUpdateSkyAnchorPosition_Parms*)Obj)->ReturnValue = 1;
+}
+const UECodeGen_Private::FBoolPropertyParams Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::NewProp_ReturnValue = { "ReturnValue", nullptr, (EPropertyFlags)0x0010000000000580, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, sizeof(bool), sizeof(TODManager_eventUpdateSkyAnchorPosition_Parms), &Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::NewProp_ReturnValue_SetBit, METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::NewProp_ReturnValue,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::PropPointers) < 2048);
+// ********** End Function UpdateSkyAnchorPosition Property Definitions ****************************
+const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_ATODManager, nullptr, "UpdateSkyAnchorPosition", 	Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::PropPointers, 
+	UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::PropPointers), 
+sizeof(Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::TODManager_eventUpdateSkyAnchorPosition_Parms),
 RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::Function_MetaDataParams), Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::Function_MetaDataParams)},  };
+static_assert(sizeof(Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition_Statics::TODManager_eventUpdateSkyAnchorPosition_Parms) < MAX_uint16);
 UFunction* Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition()
 {
 	static UFunction* ReturnFunction = nullptr;
@@ -1770,7 +1909,7 @@ DEFINE_FUNCTION(ATODManager::execUpdateSkyAnchorPosition)
 {
 	P_FINISH;
 	P_NATIVE_BEGIN;
-	P_THIS->UpdateSkyAnchorPosition();
+	*(bool*)Z_Param__Result=P_THIS->UpdateSkyAnchorPosition();
 	P_NATIVE_END;
 }
 // ********** End Class ATODManager Function UpdateSkyAnchorPosition *******************************
@@ -2107,6 +2246,17 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ "UIMax", "180.0" },
 		{ "UIMin", "-180.0" },
 	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_bSkyFollowsActiveView_MetaData[] = {
+		{ "Category", "TOD|Sky Anchor" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+		{ "ToolTip", "Centers the sun/moon rig on the active rendering view so the moon mesh stays aligned with the moon light direction (no parallax)." },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_bFollowEditorViewport_MetaData[] = {
+		{ "Category", "TOD|Sky Anchor" },
+		{ "EditCondition", "bSkyFollowsActiveView" },
+		{ "ModuleRelativePath", "Public/TODManager.h" },
+		{ "ToolTip", "Track the active level editor viewport camera outside of PIE. Only one viewport can be correct at a time." },
+	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MoonDistance_MetaData[] = {
 		{ "Category", "TOD|Moon" },
 		{ "ClampMin", "0.0" },
@@ -2228,6 +2378,10 @@ struct Z_Construct_UClass_ATODManager_Statics
 	static const UECodeGen_Private::FStrPropertyParams NewProp_SunriseTime;
 	static const UECodeGen_Private::FStrPropertyParams NewProp_SunsetTime;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_SunAzimuthOffset;
+	static void NewProp_bSkyFollowsActiveView_SetBit(void* Obj);
+	static const UECodeGen_Private::FBoolPropertyParams NewProp_bSkyFollowsActiveView;
+	static void NewProp_bFollowEditorViewport_SetBit(void* Obj);
+	static const UECodeGen_Private::FBoolPropertyParams NewProp_bFollowEditorViewport;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_MoonDistance;
 	static void NewProp_bAutoScaleMoonDistanceByMeshSize_SetBit(void* Obj);
 	static const UECodeGen_Private::FBoolPropertyParams NewProp_bAutoScaleMoonDistanceByMeshSize;
@@ -2253,11 +2407,13 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ .NameUTF8 = UTF8TEXT("EvaluateCinematicState"), .Pointer = &ATODManager::execEvaluateCinematicState },
 		{ .NameUTF8 = UTF8TEXT("FindComponents"), .Pointer = &ATODManager::execFindComponents },
 		{ .NameUTF8 = UTF8TEXT("ForceViewportRedraw"), .Pointer = &ATODManager::execForceViewportRedraw },
+		{ .NameUTF8 = UTF8TEXT("GetActiveViewLocation"), .Pointer = &ATODManager::execGetActiveViewLocation },
 		{ .NameUTF8 = UTF8TEXT("GetCalculatedMoonScale"), .Pointer = &ATODManager::execGetCalculatedMoonScale },
 		{ .NameUTF8 = UTF8TEXT("GetCurrentTime"), .Pointer = &ATODManager::execGetCurrentTime },
 		{ .NameUTF8 = UTF8TEXT("GetCurrentTODState"), .Pointer = &ATODManager::execGetCurrentTODState },
 		{ .NameUTF8 = UTF8TEXT("GetFinalSpeed"), .Pointer = &ATODManager::execGetFinalSpeed },
 		{ .NameUTF8 = UTF8TEXT("GetFormattedTimeAsString"), .Pointer = &ATODManager::execGetFormattedTimeAsString },
+		{ .NameUTF8 = UTF8TEXT("GetMoonAlignmentErrorDeg"), .Pointer = &ATODManager::execGetMoonAlignmentErrorDeg },
 		{ .NameUTF8 = UTF8TEXT("GetMoonGlowScaleAtTime"), .Pointer = &ATODManager::execGetMoonGlowScaleAtTime },
 		{ .NameUTF8 = UTF8TEXT("GetMoonIntensity"), .Pointer = &ATODManager::execGetMoonIntensity },
 		{ .NameUTF8 = UTF8TEXT("GetMoonSourceScaleAtTime"), .Pointer = &ATODManager::execGetMoonSourceScaleAtTime },
@@ -2290,11 +2446,13 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ &Z_Construct_UFunction_ATODManager_EvaluateCinematicState, "EvaluateCinematicState" }, // 2988512050
 		{ &Z_Construct_UFunction_ATODManager_FindComponents, "FindComponents" }, // 1145738159
 		{ &Z_Construct_UFunction_ATODManager_ForceViewportRedraw, "ForceViewportRedraw" }, // 1059176239
+		{ &Z_Construct_UFunction_ATODManager_GetActiveViewLocation, "GetActiveViewLocation" }, // 329554750
 		{ &Z_Construct_UFunction_ATODManager_GetCalculatedMoonScale, "GetCalculatedMoonScale" }, // 1850207794
 		{ &Z_Construct_UFunction_ATODManager_GetCurrentTime, "GetCurrentTime" }, // 2657729296
 		{ &Z_Construct_UFunction_ATODManager_GetCurrentTODState, "GetCurrentTODState" }, // 2978199089
 		{ &Z_Construct_UFunction_ATODManager_GetFinalSpeed, "GetFinalSpeed" }, // 3744602356
 		{ &Z_Construct_UFunction_ATODManager_GetFormattedTimeAsString, "GetFormattedTimeAsString" }, // 1742728493
+		{ &Z_Construct_UFunction_ATODManager_GetMoonAlignmentErrorDeg, "GetMoonAlignmentErrorDeg" }, // 1941481426
 		{ &Z_Construct_UFunction_ATODManager_GetMoonGlowScaleAtTime, "GetMoonGlowScaleAtTime" }, // 1499360453
 		{ &Z_Construct_UFunction_ATODManager_GetMoonIntensity, "GetMoonIntensity" }, // 3770409508
 		{ &Z_Construct_UFunction_ATODManager_GetMoonSourceScaleAtTime, "GetMoonSourceScaleAtTime" }, // 2135344243
@@ -2316,7 +2474,7 @@ struct Z_Construct_UClass_ATODManager_Statics
 		{ &Z_Construct_UFunction_ATODManager_ToggleTimePause, "ToggleTimePause" }, // 3309869841
 		{ &Z_Construct_UFunction_ATODManager_UpdateMoonMeshTransform, "UpdateMoonMeshTransform" }, // 3469328852
 		{ &Z_Construct_UFunction_ATODManager_UpdatePivotRotation, "UpdatePivotRotation" }, // 3999286077
-		{ &Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition, "UpdateSkyAnchorPosition" }, // 2689230197
+		{ &Z_Construct_UFunction_ATODManager_UpdateSkyAnchorPosition, "UpdateSkyAnchorPosition" }, // 3359468373
 		{ &Z_Construct_UFunction_ATODManager_UpdateSunTimes, "UpdateSunTimes" }, // 52231678
 		{ &Z_Construct_UFunction_ATODManager_UpdateTOD, "UpdateTOD" }, // 4202388907
 	};
@@ -2370,6 +2528,16 @@ const UECodeGen_Private::FFloatPropertyParams Z_Construct_UClass_ATODManager_Sta
 const UECodeGen_Private::FStrPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_SunriseTime = { "SunriseTime", nullptr, (EPropertyFlags)0x0010000000020015, UECodeGen_Private::EPropertyGenFlags::Str, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, SunriseTime), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SunriseTime_MetaData), NewProp_SunriseTime_MetaData) };
 const UECodeGen_Private::FStrPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_SunsetTime = { "SunsetTime", nullptr, (EPropertyFlags)0x0010000000020015, UECodeGen_Private::EPropertyGenFlags::Str, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, SunsetTime), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SunsetTime_MetaData), NewProp_SunsetTime_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_SunAzimuthOffset = { "SunAzimuthOffset", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, SunAzimuthOffset), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SunAzimuthOffset_MetaData), NewProp_SunAzimuthOffset_MetaData) };
+void Z_Construct_UClass_ATODManager_Statics::NewProp_bSkyFollowsActiveView_SetBit(void* Obj)
+{
+	((ATODManager*)Obj)->bSkyFollowsActiveView = 1;
+}
+const UECodeGen_Private::FBoolPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_bSkyFollowsActiveView = { "bSkyFollowsActiveView", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, sizeof(bool), sizeof(ATODManager), &Z_Construct_UClass_ATODManager_Statics::NewProp_bSkyFollowsActiveView_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bSkyFollowsActiveView_MetaData), NewProp_bSkyFollowsActiveView_MetaData) };
+void Z_Construct_UClass_ATODManager_Statics::NewProp_bFollowEditorViewport_SetBit(void* Obj)
+{
+	((ATODManager*)Obj)->bFollowEditorViewport = 1;
+}
+const UECodeGen_Private::FBoolPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_bFollowEditorViewport = { "bFollowEditorViewport", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, sizeof(bool), sizeof(ATODManager), &Z_Construct_UClass_ATODManager_Statics::NewProp_bFollowEditorViewport_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bFollowEditorViewport_MetaData), NewProp_bFollowEditorViewport_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams Z_Construct_UClass_ATODManager_Statics::NewProp_MoonDistance = { "MoonDistance", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ATODManager, MoonDistance), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MoonDistance_MetaData), NewProp_MoonDistance_MetaData) };
 void Z_Construct_UClass_ATODManager_Statics::NewProp_bAutoScaleMoonDistanceByMeshSize_SetBit(void* Obj)
 {
@@ -2438,6 +2606,8 @@ const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UClass_ATODManag
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_SunriseTime,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_SunsetTime,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_SunAzimuthOffset,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_bSkyFollowsActiveView,
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_bFollowEditorViewport,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_MoonDistance,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_bAutoScaleMoonDistanceByMeshSize,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_ATODManager_Statics::NewProp_MoonMeshReferenceRadius,
@@ -2498,10 +2668,10 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_
 		{ FTODCinematicSetting::StaticStruct, Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewStructOps, TEXT("TODCinematicSetting"),&Z_Registration_Info_UScriptStruct_FTODCinematicSetting, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCinematicSetting), 3645121645U) },
 	};
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_ATODManager, ATODManager::StaticClass, TEXT("ATODManager"), &Z_Registration_Info_UClass_ATODManager, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(ATODManager), 748456611U) },
+		{ Z_Construct_UClass_ATODManager, ATODManager::StaticClass, TEXT("ATODManager"), &Z_Registration_Info_UClass_ATODManager, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(ATODManager), 1192965615U) },
 	};
 }; // Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_3474823457{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_1421916153{
 	TEXT("/Script/Fluid_TOD"),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ClassInfo),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ScriptStructInfo),

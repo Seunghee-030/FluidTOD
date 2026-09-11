@@ -10,6 +10,8 @@
 #include "Engine/PostProcessVolume.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 #include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
 #include "EngineUtils.h"
@@ -20,6 +22,8 @@
 
 #if WITH_EDITOR
 #include "Editor.h"
+#include "LevelEditorViewport.h"
+#include "UObject/ObjectSaveContext.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
@@ -28,6 +32,8 @@
 ATODManager::ATODManager()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	// 카메라/시퀀서 평가 이후에 앵커를 갱신해야 프레임 지연 없이 정렬된다.
+	PrimaryActorTick.TickGroup = TG_PostUpdateWork;
 
 	RuntimePPVComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("RuntimePPVComponent"));
 
@@ -77,6 +83,10 @@ void ATODManager::BeginPlay()
 	ApplyStaticSunMoonOffsets();
 	UpdatePivotRotation(StartTime);
 
+	// 0번째 프레임부터 정렬 상태로 시작
+	UpdateSkyAnchorPosition();
+	UpdateMoonMeshTransform();
+
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
 
@@ -107,8 +117,29 @@ void ATODManager::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	const UWorld* World = GetWorld();
-	if (!World || !World->IsGameWorld()) return;
-	if (bIsTimePaused) return;
+	if (!World) return;
+
+	// 앵커는 시간 정지/컷신/에디터 여부와 무관하게 항상 뷰를 따라간다.
+	const bool bAnchorMoved = UpdateSkyAnchorPosition();
+
+	if (!World->IsGameWorld())
+	{
+		// 에디터 뷰포트: 시간은 진행시키지 않고 앵커 이동분만 메쉬에 반영
+		if (bAnchorMoved)
+		{
+			UpdateMoonMeshTransform();
+		}
+		return;
+	}
+
+	if (bIsTimePaused)
+	{
+		if (bAnchorMoved)
+		{
+			UpdateMoonMeshTransform();
+		}
+		return;
+	}
 
 	const float Speed = CalculateCycleSpeed(CurrentSystemTime) * TimeDirection;
 
@@ -119,7 +150,6 @@ void ATODManager::Tick(float DeltaSeconds)
 		NewTime += 24.0f;
 	}
 
-	UpdateSkyAnchorPosition();
 	UpdatePivotRotation(NewTime);
 	UpdateTOD(NewTime);
 	UpdateMoonMeshTransform();
@@ -341,7 +371,7 @@ void ATODManager::PrintTODDebugInfo()
 		);
 	}
 
-	if(IsValid(MoonGlowMaterialInstance))
+	if (IsValid(MoonGlowMaterialInstance))
 	{
 		MoonGlowMaterialInstance->GetScalarParameterValue(
 			FMaterialParameterInfo(TEXT("MoonGlowEmissiveIntensity")),
@@ -368,7 +398,7 @@ void ATODManager::PrintTODDebugInfo()
 
 	FString DebugMsg = FString::Printf(TEXT(
 		"=========== TOD System Debug ===========\n"
-		"	Time   %s					[%s]\n"
+		"\tTime   %s\t\t\t\t\t[%s]\n"
 		"--------------------------------------------------\n"
 		"[Sun] Intensity %.2f | Angle %.1f\n"
 		"[SunIndirect] Intensity %.2f\n"
@@ -377,6 +407,7 @@ void ATODManager::PrintTODDebugInfo()
 		"[MoonIndirect] Intensity %.2f\n"
 		"[MoonSource] Scale %.1f | Emissive Intensity %.1f\n"
 		"[MoonGlow] Scale %.1f | Emissive Intensity %.1f\n"
+		"[MoonAlign] View Alignment Error %.3f deg\n"
 		"\n"
 		"[SkyLight] Intensity %.2f | Indirect Intensity %.1f\n"
 		"[SkyDome] Sky Emissive Intensity %.2f\n"
@@ -399,10 +430,11 @@ void ATODManager::PrintTODDebugInfo()
 		Moon.Indirect_Light_Intensity,
 		ActualMoonScale, ActualMoonEmissive,
 		ActualMoonGlowScale, ActualMoonGlowEmissive,
+		GetMoonAlignmentErrorDeg(),
 		Sky.Sky_Light_Intensity, Sky.Sky_Indirect_Lighting_Intensity,
 		ActualSkyEmissive,
 		Sky.Star_Emissive_Intensity,
-		Fog.Fog_Density,Fog.Fog_Height_Falloff,
+		Fog.Fog_Density, Fog.Fog_Height_Falloff,
 		Atmos.Mie_Scattering_Scale,
 		CurrentBloom,
 		CurrentExpMin, CurrentExpMax,
@@ -483,7 +515,7 @@ void ATODManager::UpdateMoonMeshTransform()
 	const float BaseScale = FMath::Max(bOverrideMoonSourceScale ? OverriddenMoonSourceScale : GetMoonSourceScaleAtTime(CurrentSystemTime), 0.001f);
 	MoonMesh->SetRelativeScale3D(FVector((BaseScale * (ActualDistance / 100000.0f)))); // moon 크기 조절
 
-	if (IsValid(MoonGlowMesh))
+	if (IsValid(MoonGlowMesh) && IsValid(MeshPivotComponent))
 	{
 		const float GlowScale = FMath::Max(GetMoonGlowScaleAtTime(CurrentSystemTime), 0.001f);
 		MoonGlowMesh->SetRelativeScale3D(FVector((GlowScale * (ActualDistance / 100000.0f)))); // moon glow 크기 조절
@@ -537,21 +569,155 @@ void ATODManager::GetTODSettingsAtTime(
 	);
 }
 
-void ATODManager::UpdateSkyAnchorPosition()
+// =========================================================
+// Sky Anchor: 활성 뷰 추종
+// =========================================================
+
+bool ATODManager::GetActiveViewLocation(FVector& OutViewLocation) const
 {
-	UWorld* World = GetWorld();
-	if (!World) return;
+	const UWorld* World = GetWorld();
+	if (!World) return false;
 
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (!PC) return;
-
-	APawn* Pawn = PC->GetPawn();
-	if (!Pawn) return;
-
-	if (IsValid(PivotOrbitTiltComponent))
+	if (World->IsGameWorld())
 	{
-		PivotOrbitTiltComponent->SetWorldLocation(Pawn->GetActorLocation());
+		// Camera Cut 트랙 / CineCamera / Movie Render Queue 모두
+		// 로컬 플레이어의 뷰 타겟을 거치므로 PlayerCameraManager 하나로 커버된다.
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PC = It->Get();
+			if (!PC || !PC->IsLocalPlayerController())
+			{
+				continue;
+			}
+
+			if (const APlayerCameraManager* CamMgr = PC->PlayerCameraManager)
+			{
+				OutViewLocation = CamMgr->GetCameraLocation();
+				return true;
+			}
+
+			FVector ViewLoc = FVector::ZeroVector;
+			FRotator ViewRot = FRotator::ZeroRotator;
+			PC->GetPlayerViewPoint(ViewLoc, ViewRot);
+			OutViewLocation = ViewLoc;
+			return true;
+		}
+
+		return false;
 	}
+
+#if WITH_EDITOR
+	if (!bFollowEditorViewport || !GEditor)
+	{
+		return false;
+	}
+
+	// 시퀀서 프리뷰 시 레벨 뷰포트는 씨네카메라에 락되므로
+	// 뷰포트 클라이언트의 ViewLocation 이 곧 씨네카메라 위치가 된다.
+	const FLevelEditorViewportClient* Client = GCurrentLevelEditingViewportClient;
+
+	if (!Client || !Client->IsPerspective() || Client->GetWorld() != World)
+	{
+		Client = nullptr;
+
+		for (const FLevelEditorViewportClient* Candidate : GEditor->GetLevelViewportClients())
+		{
+			if (Candidate &&
+				Candidate->IsPerspective() &&
+				Candidate->IsVisible() &&
+				Candidate->GetWorld() == World)
+			{
+				Client = Candidate;
+				break;
+			}
+		}
+	}
+
+	if (Client)
+	{
+		OutViewLocation = Client->GetViewLocation();
+		return true;
+	}
+#endif
+
+	return false;
+}
+
+void ATODManager::ResetSkyAnchorToActorOrigin()
+{
+	if (!IsValid(PivotOrbitTiltComponent))
+	{
+		return;
+	}
+
+	const FVector ActorLocation = GetActorLocation();
+	if (PivotOrbitTiltComponent->GetComponentLocation().Equals(ActorLocation, 0.01f))
+	{
+		return;
+	}
+
+	PivotOrbitTiltComponent->SetWorldLocation(ActorLocation, false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+bool ATODManager::UpdateSkyAnchorPosition()
+{
+	if (!IsValid(PivotOrbitTiltComponent))
+	{
+		return false;
+	}
+
+#if WITH_EDITOR
+	// Undo/Redo 중 트랜스폼을 건드리면 트랜잭션이 오염된다.
+	if (GIsTransacting)
+	{
+		return false;
+	}
+#endif
+
+	if (!bSkyFollowsActiveView)
+	{
+		ResetSkyAnchorToActorOrigin();
+		return false;
+	}
+
+	FVector ViewLocation = FVector::ZeroVector;
+	if (!GetActiveViewLocation(ViewLocation))
+	{
+		return false;
+	}
+
+	if (PivotOrbitTiltComponent->GetComponentLocation().Equals(ViewLocation, 0.01f))
+	{
+		return false;
+	}
+
+	PivotOrbitTiltComponent->SetWorldLocation(ViewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	return true;
+}
+
+float ATODManager::GetMoonAlignmentErrorDeg() const
+{
+	if (!IsValid(MoonMesh) || !IsValid(MoonLightComponent))
+	{
+		return 0.0f;
+	}
+
+	FVector ViewLocation = FVector::ZeroVector;
+	if (!GetActiveViewLocation(ViewLocation))
+	{
+		return 0.0f;
+	}
+
+	const FVector ToMoon = (MoonMesh->GetComponentLocation() - ViewLocation).GetSafeNormal();
+	const FVector ToMoonFromLight = -MoonLightComponent->GetForwardVector();
+
+	if (ToMoon.IsNearlyZero())
+	{
+		return 0.0f;
+	}
+
+	const float Dot = FMath::Clamp(FVector::DotProduct(ToMoon, ToMoonFromLight), -1.0f, 1.0f);
+	return FMath::RadiansToDegrees(FMath::Acos(Dot));
 }
 
 float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
@@ -726,9 +892,10 @@ void ATODManager::RequestDeferredRebake()
 				Manager->UpdateSunTimes();
 				Manager->BakeTODCurves();
 				Manager->UpdateTOD(Manager->StartTime);
-				Manager->UpdateMoonMeshTransform();
 				Manager->ApplyStaticSunMoonOffsets();
 				Manager->UpdatePivotRotation(Manager->StartTime);
+				Manager->UpdateSkyAnchorPosition();
+				Manager->UpdateMoonMeshTransform();
 				Manager->ForceViewportRedraw();
 			});
 
@@ -740,9 +907,10 @@ void ATODManager::RequestDeferredRebake()
 	BakeTODCurves();
 	UpdateSunTimes();
 	UpdateTOD(StartTime);
-	UpdateMoonMeshTransform();
 	ApplyStaticSunMoonOffsets();
 	UpdatePivotRotation(StartTime);
+	UpdateSkyAnchorPosition();
+	UpdateMoonMeshTransform();
 	ForceViewportRedraw();
 }
 
@@ -757,6 +925,18 @@ void ATODManager::PostInitProperties()
 				this,
 				&ATODManager::OnExternalPropertyChanged
 			);
+
+		PreSaveWorldHandle =
+			FEditorDelegates::PreSaveWorldWithContext.AddUObject(
+				this,
+				&ATODManager::OnPreSaveWorld
+			);
+
+		PostSaveWorldHandle =
+			FEditorDelegates::PostSaveWorldWithContext.AddUObject(
+				this,
+				&ATODManager::OnPostSaveWorld
+			);
 	}
 }
 
@@ -769,7 +949,41 @@ void ATODManager::BeginDestroy()
 		);
 	}
 
+	if (PreSaveWorldHandle.IsValid())
+	{
+		FEditorDelegates::PreSaveWorldWithContext.Remove(PreSaveWorldHandle);
+	}
+
+	if (PostSaveWorldHandle.IsValid())
+	{
+		FEditorDelegates::PostSaveWorldWithContext.Remove(PostSaveWorldHandle);
+	}
+
 	Super::BeginDestroy();
+}
+
+// 저장 직전: 뷰 추종으로 밀려난 앵커 오프셋이 레벨에 직렬화되지 않도록 원점 복귀
+void ATODManager::OnPreSaveWorld(UWorld* InWorld, FObjectPreSaveContext InContext)
+{
+	if (InWorld != GetWorld())
+	{
+		return;
+	}
+
+	ResetSkyAnchorToActorOrigin();
+}
+
+void ATODManager::OnPostSaveWorld(UWorld* InWorld, FObjectPostSaveContext InContext)
+{
+	if (InWorld != GetWorld())
+	{
+		return;
+	}
+
+	if (UpdateSkyAnchorPosition())
+	{
+		UpdateMoonMeshTransform();
+	}
 }
 
 #endif
@@ -790,6 +1004,15 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	{
 		LoadSelectedPreset();
 		RequestDeferredRebake();
+		return;
+	}
+
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, bSkyFollowsActiveView) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, bFollowEditorViewport))
+	{
+		UpdateSkyAnchorPosition();
+		UpdateMoonMeshTransform();
+		ForceViewportRedraw();
 		return;
 	}
 
@@ -1084,8 +1307,7 @@ void ATODManager::OnExternalPropertyChanged(
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
+	if (!GEditor)
 	{
 		return;
 	}
@@ -1093,7 +1315,7 @@ void ATODManager::OnExternalPropertyChanged(
 	bPendingPPVUpdate = true;
 
 	TWeakObjectPtr<ATODManager> WeakThis(this);
-	World->GetTimerManager().SetTimerForNextTick([WeakThis]()
+	GEditor->GetTimerManager()->SetTimerForNextTick([WeakThis]()
 		{
 			if (!WeakThis.IsValid())
 			{

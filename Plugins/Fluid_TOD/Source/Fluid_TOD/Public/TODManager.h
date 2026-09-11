@@ -11,6 +11,11 @@
 #include "TODCurveEvaluator.h"
 #include "TODEditor.h"
 #include "TODSystem.h"
+
+#if WITH_EDITOR
+#include "UObject/ObjectSaveContext.h"
+#endif
+
 #include "TODManager.generated.h"
 
 class UMaterialInstanceDynamic;
@@ -141,7 +146,7 @@ public:
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
 
-	/// Cached PPV Blend Data for runtime evaluation
+    /// Cached PPV Blend Data for runtime evaluation
     TArray<FTODPPVEntry> CachedPPVBlendData;
 
     // =========================================================================
@@ -262,8 +267,33 @@ public:
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void SetSunAzimuthOffset(float InAzimuthOffset);
 
-    UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
-    void UpdateSkyAnchorPosition();
+    // =========================================================================
+    // Properties: Sky Anchor (Active View Tracking)
+    // =========================================================================
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Sky Anchor",
+        meta = (ToolTip = "Centers the sun/moon rig on the active rendering view so the moon mesh stays aligned with the moon light direction (no parallax)."))
+    bool bSkyFollowsActiveView = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Sky Anchor",
+        meta = (EditCondition = "bSkyFollowsActiveView",
+            ToolTip = "Track the active level editor viewport camera outside of PIE. Only one viewport can be correct at a time."))
+    bool bFollowEditorViewport = true;
+
+    // 앵커가 실제로 이동했으면 true
+    UFUNCTION(BlueprintCallable, Category = "TOD|Sky Anchor")
+    bool UpdateSkyAnchorPosition();
+
+    // 게임: PlayerCameraManager(Camera Cut / MRQ 포함) / 에디터: 활성 뷰포트 클라이언트
+    UFUNCTION(BlueprintPure, Category = "TOD|Sky Anchor")
+    bool GetActiveViewLocation(FVector& OutViewLocation) const;
+
+    // -MoonLight Forward 와 (MoonMesh - ViewLocation) 사이 각도(deg). 0이면 정렬됨
+    UFUNCTION(BlueprintPure, Category = "TOD|Sky Anchor")
+    float GetMoonAlignmentErrorDeg() const;
+
+private:
+    void ResetSkyAnchorToActorOrigin();
 
     // =========================================================================
     // Properties: Moon
@@ -436,6 +466,9 @@ protected:
     void EndPlay(const EEndPlayReason::Type EndPlayReason);
     virtual void Tick(float DeltaSeconds) override;
 
+    // 에디터 뷰포트(LEVELTICK_ViewportsOnly)에서도 Tick 하여 앵커를 갱신한다.
+    virtual bool ShouldTickIfViewportsOnly() const override { return true; }
+
 private:
     FTODCurveEvaluator CurveEvaluator;
     FTODEditor EditorModule;
@@ -467,6 +500,12 @@ protected:
 private:
     void OnExternalPropertyChanged(UObject* Object, FPropertyChangedEvent& PropertyChangedEvent);
     FDelegateHandle PropertyChangeDelegateHandle;
+
+    // 앵커 오프셋이 레벨에 직렬화되지 않도록 저장 직전/직후 보정
+    void OnPreSaveWorld(class UWorld* InWorld, FObjectPreSaveContext InContext);
+    void OnPostSaveWorld(class UWorld* InWorld, FObjectPostSaveContext InContext);
+    FDelegateHandle PreSaveWorldHandle;
+    FDelegateHandle PostSaveWorldHandle;
 
     bool bPendingPPVUpdate = false;
 
