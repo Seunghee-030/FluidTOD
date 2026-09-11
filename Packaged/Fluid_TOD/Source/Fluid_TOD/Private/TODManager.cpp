@@ -23,7 +23,6 @@
 #if WITH_EDITOR
 #include "Editor.h"
 #include "LevelEditorViewport.h"
-#include "UObject/ObjectSaveContext.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
@@ -74,18 +73,20 @@ void ATODManager::BeginPlay()
 		}
 	}
 
+	EnsureCycleSpeedCurveDefaults();
+
 	FindComponents();
 	UpdateSunTimes();
 	SortTODDataArray();
 
 	BakeTODCurves();
-	UpdateTOD(StartTime);
-	ApplyStaticSunMoonOffsets();
-	UpdatePivotRotation(StartTime);
 
-	// 0번째 프레임부터 정렬 상태로 시작
+	CurrentSystemTime = StartTime;
+	ApplyStaticSunMoonOffsets();
+
+	// 0번째 프레임부터 정렬·적용 상태로 시작
 	UpdateSkyAnchorPosition();
-	UpdateMoonMeshTransform();
+	ForceFullTODUpdate();
 
 	if (bEnableDebugPrint) GetWorldTimerManager().SetTimer(DebugTimerHandle, this, &ATODManager::PrintTODDebugInfo, DebugPrintInterval, true);
 }
@@ -112,6 +113,12 @@ void ATODManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+bool ATODManager::ShouldTickIfViewportsOnly() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->WorldType == EWorldType::Editor;
+}
+
 void ATODManager::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -119,7 +126,8 @@ void ATODManager::Tick(float DeltaSeconds)
 	const UWorld* World = GetWorld();
 	if (!World) return;
 
-	// 앵커는 시간 정지/컷신/에디터 여부와 무관하게 항상 뷰를 따라간다.
+	// 앵커는 뷰 정렬용이라 스로틀 대상이 아니다.
+	// 위치가 실제로 바뀐 프레임에만 트랜스폼을 건드린다.
 	const bool bAnchorMoved = UpdateSkyAnchorPosition();
 
 	if (!World->IsGameWorld())
@@ -150,8 +158,38 @@ void ATODManager::Tick(float DeltaSeconds)
 		NewTime += 24.0f;
 	}
 
-	UpdatePivotRotation(NewTime);
+	// 시간 자체는 매 프레임 진행시킨다. 게임 로직이 GetCurrentTime()을 참조하기 때문.
+	CurrentSystemTime = NewTime;
+
+	// 컷신 중에는 태양이 계단식으로 튀면 안 되므로 스로틀을 끈다.
+	const bool bBypassThrottle = bDisableThrottleDuringCinematics && bIsCinematicActive;
+
+	TODUpdateAccumulator += DeltaSeconds;
+
+	if (!bBypassThrottle && TODUpdateInterval > 0.0f && TODUpdateAccumulator < TODUpdateInterval)
+	{
+		if (bAnchorMoved)
+		{
+			UpdateMoonMeshTransform();
+		}
+		return;
+	}
+
+	TODUpdateAccumulator = 0.0f;
+
+	ApplyPivotRotation(NewTime, bBypassThrottle);
 	UpdateTOD(NewTime);
+	UpdateMoonMeshTransform();
+}
+
+void ATODManager::ForceFullTODUpdate()
+{
+	TODUpdateAccumulator = 0.0f;
+	bHasAppliedTODSettings = false;
+	CurveEvaluator.InvalidatePPVBlendState();
+
+	ApplyPivotRotation(CurrentSystemTime, true);
+	UpdateTOD(CurrentSystemTime);
 	UpdateMoonMeshTransform();
 }
 
@@ -194,8 +232,11 @@ void ATODManager::SetMaterialVectorByName(
 // 컷신 재생 상태에 따라 시간 흐름과 시각 요소 갱신 여부 결정
 void ATODManager::EvaluateCinematicState()
 {
+	const bool bWasVisualOverridden = bIsVisualOverridden;
+
 	bIsTimePaused = false;
 	bIsVisualOverridden = false;
+	bIsCinematicActive = false;
 
 	// 재생 중인 컷신 확인
 	for (const FTODCinematicSetting& Setting : TargetCinematics)
@@ -211,8 +252,18 @@ void ATODManager::EvaluateCinematicState()
 			continue;
 		}
 
+		bIsCinematicActive = true;
+
 		if (Setting.bPauseTime) bIsTimePaused = true;
 		if (Setting.bOverrideVisuals) bIsVisualOverridden = true;
+	}
+
+	// 시퀀서가 컴포넌트 값을 덮어썼을 수 있으므로,
+	// 오버라이드가 끝나는 순간 캐시를 버리고 전체를 다시 적용한다.
+	if (bWasVisualOverridden && !bIsVisualOverridden)
+	{
+		bHasAppliedTODSettings = false;
+		CurveEvaluator.InvalidatePPVBlendState();
 	}
 }
 
@@ -227,9 +278,7 @@ void ATODManager::SetStartTime(float NewTime)
 	CurrentSystemTime = StartTime;
 
 	SortTODDataArray();
-	UpdatePivotRotation(StartTime);
-	UpdateTOD(StartTime);
-	UpdateMoonMeshTransform();
+	ForceFullTODUpdate();
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
@@ -245,16 +294,16 @@ void ATODManager::SetCurrentTime(float NewTime)
 {
 	CurrentSystemTime = NewTime;
 
-	UpdatePivotRotation(CurrentSystemTime);
-	UpdateTOD(CurrentSystemTime);
-	UpdateMoonMeshTransform();
+	ForceFullTODUpdate();
 
 #if WITH_EDITOR
 	ForceViewportRedraw();
 #endif
 }
 
-float ATODManager::CalculateCycleSpeed(float InTime)
+// CycleSpeedCurve가 비어 있으면 기본 키를 채운다.
+// 조회 함수(CalculateCycleSpeed)가 데이터를 변이시키지 않도록 분리했다.
+void ATODManager::EnsureCycleSpeedCurveDefaults()
 {
 #if WITH_EDITOR
 	if (FRichCurve* RichCurve = CycleSpeedCurve.GetRichCurve())
@@ -269,9 +318,13 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 		}
 	}
 #endif
+}
 
+float ATODManager::CalculateCycleSpeed(float InTime)
+{
 	if (bIsTimePaused)
 	{
+		LastComputedCycleSpeed = 0.0f;
 		return 0.0f;
 	}
 
@@ -295,7 +348,10 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 	float CurveValue = 1.0f;
 	if (const FRichCurve* EvalCurve = CycleSpeedCurve.GetRichCurveConst())
 	{
-		CurveValue = EvalCurve->Eval(SafeTime);
+		if (EvalCurve->GetNumKeys() > 0)
+		{
+			CurveValue = EvalCurve->Eval(SafeTime);
+		}
 	}
 #if !WITH_EDITOR
 	else if (!CycleSpeedCurve.ExternalCurve)
@@ -309,7 +365,8 @@ float ATODManager::CalculateCycleSpeed(float InTime)
 	}
 #endif
 
-	return CurrentSpeed * BaseMultiplier * CurveValue;
+	LastComputedCycleSpeed = CurrentSpeed * BaseMultiplier * CurveValue;
+	return LastComputedCycleSpeed;
 }
 
 ETODState ATODManager::GetCurrentTODState(float InTime) const
@@ -740,21 +797,43 @@ float ATODManager::GetSunIntensity(float InTime) const
 	return CurveEvaluator.GetSunIntensity(this, InTime);
 }
 
+// 마지막으로 계산된 속도를 반환한다. 조회 함수가 적분 상태를 변이시키지 않는다.
 float ATODManager::GetFinalSpeed(float InTime)
 {
-	return CalculateCycleSpeed(CurrentSystemTime) * 50.0f;
+	return LastComputedCycleSpeed * 50.0f;
 }
 
 void ATODManager::UpdatePivotRotation(float InTime)
 {
+	ApplyPivotRotation(InTime, true);
+}
+
+// SunRotationStepDeg 미만의 변화는 트랜스폼을 건드리지 않는다.
+// 디렉셔널 라이트 트랜스폼이 바뀌면 VSM 캐시가 통째로 무효화되기 때문.
+bool ATODManager::ApplyPivotRotation(float InTime, bool bForce)
+{
 	if (!IsValid(PivotSunMoonComponent))
 	{
-		return;
+		return false;
 	}
 
-	PivotSunMoonComponent->SetRelativeRotation(
-		CalculatePivotRotation(InTime)
-	);
+	const FQuat NewRotation = CalculatePivotRotation(InTime);
+
+	if (!bForce && bHasAppliedPivotRotation && SunRotationStepDeg > 0.0f)
+	{
+		const float DeltaDeg = static_cast<float>(
+			FMath::RadiansToDegrees(NewRotation.AngularDistance(LastAppliedPivotRotation)));
+
+		if (DeltaDeg < SunRotationStepDeg)
+		{
+			return false;
+		}
+	}
+
+	PivotSunMoonComponent->SetRelativeRotation(NewRotation);
+	LastAppliedPivotRotation = NewRotation;
+	bHasAppliedPivotRotation = true;
+	return true;
 }
 
 FQuat ATODManager::CalculatePivotRotation(float InTime) const
@@ -790,6 +869,58 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 	{
 		MoonGlowMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	}
+
+	ApplyAtmosphereLightSetup();
+}
+
+// 대기 광원 인덱스 / 절대 위치 설정.
+// 절대 반드시 1회성이어야 한다. 매 프레임 호출하면 라이트 씬 프록시가 계속 재생성된다.
+void ATODManager::ApplyAtmosphereLightSetup()
+{
+	if (IsValid(SunLightComponent))
+	{
+		// 디렉셔널 라이트는 위치가 렌더링에 무의미하다.
+		// 카메라 추종 앵커의 이동이 라이트 트랜스폼을 매 프레임 더럽히지 않도록 차단한다.
+		// (부모의 회전은 그대로 상속된다)
+		if (!SunLightComponent->IsUsingAbsoluteLocation())
+		{
+			SunLightComponent->SetUsingAbsoluteLocation(true);
+		}
+	}
+
+	if (IsValid(MoonLightComponent))
+	{
+		MoonLightComponent->SetAtmosphereSunLightIndex(1);
+
+		// 달의 대기 산란 영향 차단 (붉은 달 방지)
+		if (MoonLightComponent->bPerPixelAtmosphereTransmittance)
+		{
+			MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
+			MoonLightComponent->MarkRenderStateDirty();
+		}
+
+		if (!MoonLightComponent->IsUsingAbsoluteLocation())
+		{
+			MoonLightComponent->SetUsingAbsoluteLocation(true);
+		}
+	}
+}
+
+// 쿨다운이 지났을 때만 컴포넌트 재탐색.
+// 선택적 컴포넌트가 없는 액터에서 매 프레임 GetComponents<> 순회가 도는 것을 막는다.
+bool ATODManager::TryRefreshComponents()
+{
+	const double Now = FPlatformTime::Seconds();
+
+	if (LastComponentSearchTime > 0.0 &&
+		(Now - LastComponentSearchTime) < static_cast<double>(FMath::Max(ComponentSearchRetryInterval, 0.1f)))
+	{
+		return false;
+	}
+
+	LastComponentSearchTime = Now;
+	FindComponents();
+	return true;
 }
 
 // 태양 방위각 변경 Setter
@@ -820,7 +951,7 @@ void ATODManager::LoadSelectedPreset()
 {
 	EditorModule.LoadSelectedPreset(this);
 	BakeTODCurves();
-	UpdateTOD(CurrentSystemTime);
+	ForceFullTODUpdate();
 }
 
 void ATODManager::ForceViewportRedraw()
@@ -889,13 +1020,13 @@ void ATODManager::RequestDeferredRebake()
 				ATODManager* Manager = WeakThis.Get();
 
 				Manager->bRebakeRequested = false;
+				Manager->EnsureCycleSpeedCurveDefaults();
 				Manager->UpdateSunTimes();
 				Manager->BakeTODCurves();
-				Manager->UpdateTOD(Manager->StartTime);
+				Manager->CurrentSystemTime = Manager->StartTime;
 				Manager->ApplyStaticSunMoonOffsets();
-				Manager->UpdatePivotRotation(Manager->StartTime);
 				Manager->UpdateSkyAnchorPosition();
-				Manager->UpdateMoonMeshTransform();
+				Manager->ForceFullTODUpdate();
 				Manager->ForceViewportRedraw();
 			});
 
@@ -904,13 +1035,13 @@ void ATODManager::RequestDeferredRebake()
 
 	bRebakeRequested = false;
 
-	BakeTODCurves();
+	EnsureCycleSpeedCurveDefaults();
 	UpdateSunTimes();
-	UpdateTOD(StartTime);
+	BakeTODCurves();
+	CurrentSystemTime = StartTime;
 	ApplyStaticSunMoonOffsets();
-	UpdatePivotRotation(StartTime);
 	UpdateSkyAnchorPosition();
-	UpdateMoonMeshTransform();
+	ForceFullTODUpdate();
 	ForceViewportRedraw();
 }
 
@@ -1016,6 +1147,15 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		return;
 	}
 
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, TODUpdateInterval) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, SunRotationStepDeg) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, ValueChangeTolerance))
+	{
+		ForceFullTODUpdate();
+		ForceViewportRedraw();
+		return;
+	}
+
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, StartTime))
 	{
 		// Start Time 슬라이더 순환
@@ -1027,8 +1167,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 		{
 			SortTODDataArray();
 		}
-		UpdatePivotRotation(StartTime);
-		UpdateTOD(StartTime);
+		ForceFullTODUpdate();
 		ForceViewportRedraw();
 		return;
 	}
@@ -1043,7 +1182,7 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	{
 		UpdateSunTimes();
 		ApplyStaticSunMoonOffsets();
-		UpdatePivotRotation(CurrentSystemTime);
+		ApplyPivotRotation(CurrentSystemTime, true);
 		ForceViewportRedraw();
 		return;
 	}
@@ -1323,7 +1462,7 @@ void ATODManager::OnExternalPropertyChanged(
 			}
 
 			WeakThis->bPendingPPVUpdate = false;
-			WeakThis->UpdateTOD(WeakThis->CurrentSystemTime);
+			WeakThis->ForceFullTODUpdate();
 			WeakThis->ForceViewportRedraw();
 		});
 }

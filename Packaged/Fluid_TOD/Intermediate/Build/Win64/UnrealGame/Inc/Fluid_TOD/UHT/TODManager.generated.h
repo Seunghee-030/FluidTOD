@@ -61,6 +61,7 @@ struct FTODCinematicSetting;
 	DECLARE_FUNCTION(execGetActiveViewLocation); \
 	DECLARE_FUNCTION(execUpdateSkyAnchorPosition); \
 	DECLARE_FUNCTION(execSetSunAzimuthOffset); \
+	DECLARE_FUNCTION(execForceFullTODUpdate); \
 	DECLARE_FUNCTION(execToggleTimePause); \
 	DECLARE_FUNCTION(execToggleTimeDirection); \
 	DECLARE_FUNCTION(execIsTimeInState); \

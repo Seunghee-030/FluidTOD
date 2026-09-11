@@ -73,14 +73,22 @@ namespace
 					return FMath::IsNearlyEqual(Entry.Data.Time, NormalizedTime, TODBoundaryTolerance);
 				});
 
+			FTODPPVEntry NewData;
+			NewData.Time = NormalizedTime;
+			NewData.PPV = Source.PPV;
+
 			if (ExistingIndex == INDEX_NONE)
 			{
-				Entries.Add({ FTODPPVEntry{ NormalizedTime, Source.PPV }, bCameFromTwentyFour });
+				FCanonicalPPVEntry NewEntry;
+				NewEntry.Data = NewData;
+				NewEntry.bCameFromTwentyFour = bCameFromTwentyFour;
+				Entries.Add(NewEntry);
 			}
 			else if (Entries[ExistingIndex].bCameFromTwentyFour && !bCameFromTwentyFour)
 			{
 				// 0h이 24h 자리를 대체
-				Entries[ExistingIndex] = { FTODPPVEntry{ NormalizedTime, Source.PPV }, false };
+				Entries[ExistingIndex].Data = NewData;
+				Entries[ExistingIndex].bCameFromTwentyFour = false;
 			}
 			else
 			{
@@ -461,89 +469,114 @@ void FTODCurveEvaluator::RestoreInterpModes(UTODCurveContainer* CurveData, const
 	}
 }
 
+void FTODCurveEvaluator::InvalidatePPVBlendState()
+{
+	LastPrevIndex = INDEX_NONE;
+	LastNextIndex = INDEX_NONE;
+	LastAlpha = -1.0f;
+	bPPVBlendStateValid = false;
+}
+
 void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
 	const TArray<FTODPPVEntry>& ValidPPVs = Owner->CachedPPVBlendData;
-
 	const int32 Num = ValidPPVs.Num();
+
+	// 블렌드 구간과 Alpha가 사실상 그대로면 FPostProcessSettings 재구성 전체를 건너뛴다.
+	// FPostProcessSettings는 수 KB 구조체이고 내부에 배열을 들고 있어 매 프레임 기본생성하면 안 된다.
+	constexpr float AlphaTolerance = 0.001f;
+
 	if (Num == 0)
 	{
+		if (bPPVBlendStateValid && LastPrevIndex == INDEX_NONE)
+		{
+			return;
+		}
+
 		// TOD 데이터가 모두 삭제되면 런타임 PPV 리셋
 		Owner->RuntimePPVComponent->bEnabled = false;
 		Owner->RuntimePPVComponent->BlendWeight = 0.0f;
 		Owner->RuntimePPVComponent->Settings = FPostProcessSettings();
+
+		LastPrevIndex = INDEX_NONE;
+		LastNextIndex = INDEX_NONE;
+		LastAlpha = 0.0f;
+		bPPVBlendStateValid = true;
 		return;
 	}
 
-	for (const FTODPPVEntry& Data : ValidPPVs)
-	{
-		if (!IsValid(Data.PPV)) continue;
-
-		Data.PPV->bEnabled = true;
-		Data.PPV->bUnbound = true;
-		Data.PPV->Priority = 1.0f;
-		Data.PPV->BlendWeight = 0.0f;
-	}
-
-	// PPV 1개뿐 일 때.
-	if (Num == 1)
-	{
-		APostProcessVolume* OnlyPPV = ValidPPVs[0].PPV;
-		if (!IsValid(OnlyPPV)) return;
-
-		Owner->RuntimePPVComponent->bEnabled = true;
-		Owner->RuntimePPVComponent->bUnbound = true;
-		Owner->RuntimePPVComponent->Priority = 1.0f;
-		Owner->RuntimePPVComponent->BlendWeight = 1.0f;
-		Owner->RuntimePPVComponent->Settings = OnlyPPV->Settings;
-		return;
-	}
-
-	const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
-
-	int32 PrevIndex = Num - 1;
+	int32 PrevIndex = 0;
 	int32 NextIndex = 0;
+	float Alpha = 0.0f;
 
-	for (int32 i = 0; i < Num; ++i)
+	if (Num > 1)
 	{
-		if (SafeTime < ValidPPVs[i].Time)
-		{
-			NextIndex = i;
-			PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
-			break;
-		}
-	}
+		const float SafeTime = NormalizeTODTimeForBake(CurrentTime);
 
-	if (SafeTime >= ValidPPVs[Num - 1].Time)
-	{
 		PrevIndex = Num - 1;
 		NextIndex = 0;
+
+		for (int32 i = 0; i < Num; ++i)
+		{
+			if (SafeTime < ValidPPVs[i].Time)
+			{
+				NextIndex = i;
+				PrevIndex = (i == 0) ? (Num - 1) : (i - 1);
+				break;
+			}
+		}
+
+		if (SafeTime >= ValidPPVs[Num - 1].Time)
+		{
+			PrevIndex = Num - 1;
+			NextIndex = 0;
+		}
+
+		float Range = ValidPPVs[NextIndex].Time - ValidPPVs[PrevIndex].Time;
+		while (Range <= 0.0f) Range += TODHours;
+
+		float Elapsed = SafeTime - ValidPPVs[PrevIndex].Time;
+		while (Elapsed < 0.0f) Elapsed += TODHours;
+
+		Alpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
 	}
 
-	float PrevTime = ValidPPVs[PrevIndex].Time;
-	float NextTime = ValidPPVs[NextIndex].Time;
-
-	float Range = NextTime - PrevTime;
-	while (Range <= 0.0f) Range += TODHours;
-
-	float Elapsed = SafeTime - PrevTime;
-	while (Elapsed < 0.0f) Elapsed += TODHours;
-
-	const float RawAlpha = FMath::Clamp(Elapsed / Range, 0.0f, 1.0f);
-
-	const float Alpha = RawAlpha;
+	if (bPPVBlendStateValid &&
+		PrevIndex == LastPrevIndex &&
+		NextIndex == LastNextIndex &&
+		FMath::Abs(Alpha - LastAlpha) < AlphaTolerance)
+	{
+		return;
+	}
 
 	APostProcessVolume* PrevPPV = ValidPPVs[PrevIndex].PPV;
 	APostProcessVolume* NextPPV = ValidPPVs[NextIndex].PPV;
 
-	if (!IsValid(PrevPPV) || !IsValid(NextPPV)) return;
+	if (!IsValid(PrevPPV) || !IsValid(NextPPV))
+	{
+		// 캐시가 오래됐다. 다음 호출에서 다시 계산하도록 상태를 버린다.
+		InvalidatePPVBlendState();
+		return;
+	}
+
+	LastPrevIndex = PrevIndex;
+	LastNextIndex = NextIndex;
+	LastAlpha = Alpha;
+	bPPVBlendStateValid = true;
 
 	Owner->RuntimePPVComponent->bEnabled = true;
 	Owner->RuntimePPVComponent->bUnbound = true;
 	Owner->RuntimePPVComponent->Priority = 1.0f;
 	Owner->RuntimePPVComponent->BlendWeight = 1.0f;
+
+	// PPV 1개뿐 일 때.
+	if (Num == 1)
+	{
+		Owner->RuntimePPVComponent->Settings = PrevPPV->Settings;
+		return;
+	}
 
 	// 초기화
 	Owner->RuntimePPVComponent->Settings = FPostProcessSettings();
@@ -727,6 +760,20 @@ void FTODCurveEvaluator::RebuildPPVCache(ATODManager* Owner)
 	AddTwentyFourBoundaryFromEarliestPPV(ValidPPVs);
 
 	Owner->CachedPPVBlendData = MoveTemp(ValidPPVs);
+
+	// 소스 PPV의 강제 설정은 캐시 재빌드 시점에만 수행한다.
+	// 매 프레임 사용자 레벨 액터의 속성을 덮어쓰면 안 된다.
+	for (const FTODPPVEntry& Data : Owner->CachedPPVBlendData)
+	{
+		if (!IsValid(Data.PPV)) continue;
+
+		Data.PPV->bEnabled = true;
+		Data.PPV->bUnbound = true;
+		Data.PPV->Priority = 1.0f;
+		Data.PPV->BlendWeight = 0.0f;
+	}
+
+	InvalidatePPVBlendState();
 }
 
 void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
@@ -1311,8 +1358,7 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 		FSlateNotificationManager::Get().AddNotification(Info);
 
 		Owner->BakeTODCurves();
-		Owner->UpdateTOD(Owner->GetCurrentTime());
-		Owner->UpdateMoonMeshTransform();
+		Owner->ForceFullTODUpdate();
 		Owner->ForceViewportRedraw();
 		return;
 	}
@@ -1321,8 +1367,7 @@ void FTODCurveEvaluator::SyncGraphEditToDataArray(ATODManager* Owner, UTODCurveC
 	{
 		Owner->MarkPackageDirty();
 		Owner->OnTODDataChanged.Broadcast();
-		Owner->UpdateTOD(Owner->GetCurrentTime());
-		Owner->UpdateMoonMeshTransform();
+		Owner->ForceFullTODUpdate();
 		Owner->ForceViewportRedraw();
 	}
 }

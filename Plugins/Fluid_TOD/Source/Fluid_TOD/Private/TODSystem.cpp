@@ -7,7 +7,41 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+
+namespace
+{
+	FORCEINLINE bool TODValueChanged(float Last, float New, float RelTolerance)
+	{
+		if (RelTolerance <= 0.0f)
+		{
+			return Last != New;
+		}
+
+		const float Scale = FMath::Max3(FMath::Abs(Last), FMath::Abs(New), UE_SMALL_NUMBER);
+		return FMath::Abs(New - Last) > RelTolerance * Scale;
+	}
+
+	FORCEINLINE bool TODColorChanged(const FLinearColor& Last, const FLinearColor& New, float RelTolerance)
+	{
+		if (RelTolerance <= 0.0f)
+		{
+			return !Last.Equals(New, 0.0f);
+		}
+
+		return TODValueChanged(Last.R, New.R, RelTolerance)
+			|| TODValueChanged(Last.G, New.G, RelTolerance)
+			|| TODValueChanged(Last.B, New.B, RelTolerance)
+			|| TODValueChanged(Last.A, New.A, RelTolerance);
+	}
+}
+
+#define TOD_APPLY_FLOAT(LastRef, NewVal, SetterExpr) \
+	if (bForceApply || TODValueChanged((LastRef), (NewVal), Tol)) { SetterExpr; (LastRef) = (NewVal); }
+
+#define TOD_APPLY_COLOR(LastRef, NewVal, SetterExpr) \
+	if (bForceApply || TODColorChanged((LastRef), (NewVal), Tol)) { SetterExpr; (LastRef) = (NewVal); }
 
 void FTODSystem::FindComponents(ATODManager* Owner)
 {
@@ -108,6 +142,12 @@ void FTODSystem::FindComponents(ATODManager* Owner)
 		Owner->MoonGlowMaterialInstance =
 			Owner->MoonGlowMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
+
+	// 컴포넌트가 교체됐으므로 "마지막 적용값" 캐시는 더 이상 신뢰할 수 없다.
+	Owner->bHasAppliedTODSettings = false;
+
+	// 대기 광원 인덱스 등 1회성 설정은 여기서만 수행한다.
+	Owner->ApplyAtmosphereLightSetup();
 }
 
 float FTODSystem::GetSeasonDeclinationDeg(ETODSeason Season)
@@ -174,6 +214,7 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 	Owner->SunriseTime = Owner->GetFormattedTimeAsString(Owner->CalculatedSunriseTime);
 	Owner->SunsetTime = Owner->GetFormattedTimeAsString(Owner->CalculatedSunsetTime);
 }
+
 float FTODSystem::NormalizeTime(float Time)
 {
 	float SafeTime = FMath::Fmod(Time, 24.0f);
@@ -305,10 +346,35 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		!IsValid(Owner->PivotSunMoonComponent)
 		)
 	{
-		FindComponents(Owner);
+		// 쿨다운 백오프. 선택적 컴포넌트가 아예 없는 셋업에서
+		// 매 프레임 GetComponents<> 전체 순회가 도는 것을 막는다.
+		Owner->TryRefreshComponents();
 	}
 
 	Owner->ApplyPPVBlending(CurrentTime);
+
+#if !UE_BUILD_SHIPPING
+	// [진단] 0/24 이음매 PPV 상태. 원인 확정 후 제거할 것.
+	if (CurrentTime < 0.05f || CurrentTime > 23.95f)
+	{
+		if (const UPostProcessComponent* P = Owner->RuntimePPVComponent)
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("[SeamPPV] T=%.5f En=%d BW=%.3f ExpBias=%.4f MinEV=%.3f MaxEV=%.3f Temp=%.1f Tint=%.3f Bloom=%.4f Sat=(%.3f,%.3f,%.3f) Gain=(%.3f,%.3f,%.3f)"),
+				CurrentTime,
+				P->bEnabled ? 1 : 0,
+				P->BlendWeight,
+				P->Settings.AutoExposureBias,
+				P->Settings.AutoExposureMinBrightness,
+				P->Settings.AutoExposureMaxBrightness,
+				P->Settings.WhiteTemp,
+				P->Settings.WhiteTint,
+				P->Settings.BloomIntensity,
+				P->Settings.ColorSaturation.X, P->Settings.ColorSaturation.Y, P->Settings.ColorSaturation.Z,
+				P->Settings.ColorGain.X, P->Settings.ColorGain.Y, P->Settings.ColorGain.Z);
+		}
+	}
+#endif
 
 	FTODSunMoonSettings Sun;
 	FTODMoonSettings Moon;
@@ -325,99 +391,188 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 		Atmos
 	);
 
+	const float Tol = FMath::Max(Owner->ValueChangeTolerance, 0.0f);
+	const bool bForceApply = !Owner->bHasAppliedTODSettings;
+
+	// ===== Sky Dome / Star Material =====
 	if (IsValid(Owner->SkyMaterialInstance))
 	{
-		Owner->SkyMaterialInstance->SetScalarParameterValue(
-			TEXT("SkyTextureEmissiveIntensity"),
-			Sky.SkyDome_Texture_Emissive_Intensity
-		);
+		TOD_APPLY_FLOAT(
+			Owner->LastAppliedSkyLight.SkyDome_Texture_Emissive_Intensity,
+			Sky.SkyDome_Texture_Emissive_Intensity,
+			Owner->SkyMaterialInstance->SetScalarParameterValue(TEXT("SkyTextureEmissiveIntensity"), Sky.SkyDome_Texture_Emissive_Intensity));
 
-		Owner->SkyMaterialInstance->SetScalarParameterValue(
-			TEXT("StarEmissiveIntensity"),
-			Sky.Star_Emissive_Intensity
-		);
+		TOD_APPLY_FLOAT(
+			Owner->LastAppliedSkyLight.Star_Emissive_Intensity,
+			Sky.Star_Emissive_Intensity,
+			Owner->SkyMaterialInstance->SetScalarParameterValue(TEXT("StarEmissiveIntensity"), Sky.Star_Emissive_Intensity));
 	}
 
+	// ===== Moon Material =====
 	if (IsValid(Owner->MoonMaterialInstance))
 	{
-		Owner->MoonMaterialInstance->SetScalarParameterValue(
-			TEXT("MoonSourceEmissiveIntensity"),
-			Moon.Moon_Source_Emissive_Intensity
-		);
+		TOD_APPLY_FLOAT(
+			Owner->LastAppliedMoon.Moon_Source_Emissive_Intensity,
+			Moon.Moon_Source_Emissive_Intensity,
+			Owner->MoonMaterialInstance->SetScalarParameterValue(TEXT("MoonSourceEmissiveIntensity"), Moon.Moon_Source_Emissive_Intensity));
 	}
 
 	if (IsValid(Owner->MoonGlowMaterialInstance))
 	{
-		Owner->MoonGlowMaterialInstance->SetScalarParameterValue(
-			TEXT("MoonGlowEmissiveIntensity"),
-			Moon.Moon_Glow_Emissive_Intensity
-		);
+		TOD_APPLY_FLOAT(
+			Owner->LastAppliedMoon.Moon_Glow_Emissive_Intensity,
+			Moon.Moon_Glow_Emissive_Intensity,
+			Owner->MoonGlowMaterialInstance->SetScalarParameterValue(TEXT("MoonGlowEmissiveIntensity"), Moon.Moon_Glow_Emissive_Intensity));
 	}
 
-	// Sun
+	// ===== Sun =====
 	if (IsValid(Owner->SunLightComponent))
 	{
-		if (!Owner->SunLightComponent->bAtmosphereSunLight)
-		{
-			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
-			Owner->SunLightComponent->MarkRenderStateDirty();
-		}
+		UDirectionalLightComponent* SunLight = Owner->SunLightComponent;
 
-		Owner->SunLightComponent->SetIntensity(Sun.Intensity);
-		Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
-		Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
-		Owner->SunLightComponent->SetLightSourceSoftAngle(Sun.Source_Soft_Angle);
-		Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
+		// 0 lux 경계를 넘으면 엔진이 라이트를 씬 목록에 넣고 뺀다.
+		// 대기 광원 바인딩이 같은 프레임에 갱신되지 않으면 하늘이 한 프레임 튄다.
+		const bool bSunLitStateChanged =
+			(Owner->LastAppliedSun.Intensity > 0.0f) != (Sun.Intensity > 0.0f);
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSun.Intensity, Sun.Intensity,
+			SunLight->SetIntensity(Sun.Intensity));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedSun.Light_Color, Sun.Light_Color,
+			SunLight->SetLightColor(Sun.Light_Color));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSun.Source_Angle, Sun.Source_Angle,
+			SunLight->SetLightSourceAngle(Sun.Source_Angle));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSun.Source_Soft_Angle, Sun.Source_Soft_Angle,
+			SunLight->SetLightSourceSoftAngle(Sun.Source_Soft_Angle));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSun.Indirect_Light_Intensity, Sun.Indirect_Light_Intensity,
+			SunLight->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity));
+
+		// bForceApply(값 전량 재적용)로는 프록시를 재생성하지 않는다.
+		// 프록시 재생성은 대기 광원 재등록을 유발해 하늘이 한 프레임 튄다.
+		// 실제로 라이트가 켜지고 꺼지는 0 lux 경계에서만 필요하다.
+		if (Owner->bForceAtmosphereLightRefreshEveryFrame ||
+			(Owner->bRefreshAtmosphereLightOnStateChange && bSunLitStateChanged))
+		{
+			SunLight->MarkRenderStateDirty();
+		}
 	}
 
-	// Moon
+	// ===== Moon =====
 	if (IsValid(Owner->MoonLightComponent))
 	{
-		// 달의 대기 산란 영향 차단 (붉은 달 방지)
-		if (Owner->MoonLightComponent->bAtmosphereSunLight)
-		{
-			Owner->MoonLightComponent->MarkRenderStateDirty();
-		}
-		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
-		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
+		UDirectionalLightComponent* MoonLight = Owner->MoonLightComponent;
 
-		Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
-		Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
-		Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
-		Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
-		Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
+		const bool bMoonLitStateChanged =
+			(Owner->LastAppliedMoon.Intensity > 0.0f) != (Moon.Intensity > 0.0f);
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedMoon.Intensity, Moon.Intensity,
+			MoonLight->SetIntensity(Moon.Intensity));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedMoon.Light_Color, Moon.Light_Color,
+			MoonLight->SetLightColor(Moon.Light_Color));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedMoon.Source_Angle, Moon.Source_Angle,
+			MoonLight->SetLightSourceAngle(Moon.Source_Angle));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedMoon.Source_Soft_Angle, Moon.Source_Soft_Angle,
+			MoonLight->SetLightSourceSoftAngle(Moon.Source_Soft_Angle));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedMoon.Indirect_Light_Intensity, Moon.Indirect_Light_Intensity,
+			MoonLight->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity));
+
+		if (Owner->bForceAtmosphereLightRefreshEveryFrame ||
+			(Owner->bRefreshAtmosphereLightOnStateChange && bMoonLitStateChanged))
+		{
+			// 대기 광원 인덱스를 다시 못 박고 프록시를 갱신한다.
+			MoonLight->SetAtmosphereSunLightIndex(1);
+			MoonLight->MarkRenderStateDirty();
+		}
 	}
 
-	// Sky Light
+	// ===== Sky Light =====
 	if (IsValid(Owner->SkyLightComponent))
 	{
-		Owner->SkyLightComponent->SetIntensity(Sky.Sky_Light_Intensity);
-		Owner->SkyLightComponent->SetLightColor(Sky.Sky_Light_Color);
-		Owner->SkyLightComponent->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity);
-		Owner->SkyLightComponent->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity);
+		USkyLightComponent* SkyLight = Owner->SkyLightComponent;
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSkyLight.Sky_Light_Intensity, Sky.Sky_Light_Intensity,
+			SkyLight->SetIntensity(Sky.Sky_Light_Intensity));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedSkyLight.Sky_Light_Color, Sky.Sky_Light_Color,
+			SkyLight->SetLightColor(Sky.Sky_Light_Color));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSkyLight.Sky_Indirect_Lighting_Intensity, Sky.Sky_Indirect_Lighting_Intensity,
+			SkyLight->SetIndirectLightingIntensity(Sky.Sky_Indirect_Lighting_Intensity));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedSkyLight.Sky_Volumetric_Scattering_Intensity, Sky.Sky_Volumetric_Scattering_Intensity,
+			SkyLight->SetVolumetricScatteringIntensity(Sky.Sky_Volumetric_Scattering_Intensity));
 	}
 
-	// Fog
+	// ===== Fog =====
 	if (IsValid(Owner->FogComponent))
 	{
-		Owner->FogComponent->SetFogDensity(Fog.Fog_Density);
-		Owner->FogComponent->SetFogHeightFalloff(Fog.Fog_Height_Falloff);
-		Owner->FogComponent->SetFogInscatteringColor(Fog.Fog_Inscattering_Color);
-		Owner->FogComponent->SetDirectionalInscatteringColor(Fog.Fog_Directional_Inscattering);
+		UExponentialHeightFogComponent* FogComp = Owner->FogComponent;
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedFog.Fog_Density, Fog.Fog_Density,
+			FogComp->SetFogDensity(Fog.Fog_Density));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedFog.Fog_Height_Falloff, Fog.Fog_Height_Falloff,
+			FogComp->SetFogHeightFalloff(Fog.Fog_Height_Falloff));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedFog.Fog_Inscattering_Color, Fog.Fog_Inscattering_Color,
+			FogComp->SetFogInscatteringColor(Fog.Fog_Inscattering_Color));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedFog.Fog_Directional_Inscattering, Fog.Fog_Directional_Inscattering,
+			FogComp->SetDirectionalInscatteringColor(Fog.Fog_Directional_Inscattering));
 	}
 
-	// Sky Atmosphere
-	if (IsValid(Owner->SkyAtmosphereComponent))
+	// ===== Sky Atmosphere =====
+	if (false && IsValid(Owner->SkyAtmosphereComponent))
 	{
-		Owner->SkyAtmosphereComponent->SetMieScatteringScale(Atmos.Mie_Scattering_Scale);
-		Owner->SkyAtmosphereComponent->SetMieScattering(Atmos.Mie_Scattering_Color);
-		Owner->SkyAtmosphereComponent->SetOtherAbsorption(Atmos.Absorption_Color);
-		Owner->SkyAtmosphereComponent->SetRayleighScatteringScale(Atmos.Rayleigh_Scattering_Scale);
-		Owner->SkyAtmosphereComponent->SetAerialPespectiveViewDistanceScale(Atmos.Aerial_Perspective_Distance_Scale);
-		Owner->SkyAtmosphereComponent->SetSkyLuminanceFactor(Atmos.Sky_Luminance_Factor);
+		USkyAtmosphereComponent* Atmosphere = Owner->SkyAtmosphereComponent;
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedAtmos.Mie_Scattering_Scale, Atmos.Mie_Scattering_Scale,
+			Atmosphere->SetMieScatteringScale(Atmos.Mie_Scattering_Scale));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedAtmos.Mie_Scattering_Color, Atmos.Mie_Scattering_Color,
+			Atmosphere->SetMieScattering(Atmos.Mie_Scattering_Color));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedAtmos.Absorption_Color, Atmos.Absorption_Color,
+			Atmosphere->SetOtherAbsorption(Atmos.Absorption_Color));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedAtmos.Rayleigh_Scattering_Scale, Atmos.Rayleigh_Scattering_Scale,
+			Atmosphere->SetRayleighScatteringScale(Atmos.Rayleigh_Scattering_Scale));
+
+		TOD_APPLY_FLOAT(Owner->LastAppliedAtmos.Aerial_Perspective_Distance_Scale, Atmos.Aerial_Perspective_Distance_Scale,
+			Atmosphere->SetAerialPespectiveViewDistanceScale(Atmos.Aerial_Perspective_Distance_Scale));
+
+		TOD_APPLY_COLOR(Owner->LastAppliedAtmos.Sky_Luminance_Factor, Atmos.Sky_Luminance_Factor,
+			Atmosphere->SetSkyLuminanceFactor(Atmos.Sky_Luminance_Factor));
 	}
+
+	Owner->bHasAppliedTODSettings = true;
 
 	// Custom Material Updates
 	Owner->OnUpdateCustomMaterials(CurrentTime);
 
+#if !UE_BUILD_SHIPPING
+	if (CurrentTime < 0.05f || CurrentTime > 23.95f)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("[Seam] T=%.5f Mie=%.6f Ray=%.6f Lum=(%.3f,%.3f,%.3f) SkyEm=%.3f Star=%.3f SunI=%.2f MoonI=%.2f Pivot=%s"),
+			CurrentTime,
+			Atmos.Mie_Scattering_Scale,
+			Atmos.Rayleigh_Scattering_Scale,
+			Atmos.Sky_Luminance_Factor.R, Atmos.Sky_Luminance_Factor.G, Atmos.Sky_Luminance_Factor.B,
+			Sky.SkyDome_Texture_Emissive_Intensity,
+			Sky.Star_Emissive_Intensity,
+			Sun.Intensity, Moon.Intensity,
+			*Owner->PivotSunMoonComponent->GetRelativeRotation().ToCompactString());
+	}
+#endif
 }
+
+#undef TOD_APPLY_FLOAT
+#undef TOD_APPLY_COLOR

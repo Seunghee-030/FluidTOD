@@ -65,6 +65,7 @@ protected:
 
     bool bIsTimePaused = false;
     bool bIsVisualOverridden = false;
+    bool bIsCinematicActive = false;
 
 public:
     UFUNCTION()
@@ -72,6 +73,7 @@ public:
 
     bool IsVisualOverridden() const { return bIsVisualOverridden; }
     bool IsTimePaused() const { return bIsTimePaused; }
+    bool IsCinematicActive() const { return bIsCinematicActive; }
 
     // =========================================================================
     // Components
@@ -146,7 +148,8 @@ public:
             ToolTip = "TOD Data array containing all time-of-day settings."))
     TArray<FTODMasterData> TOD_DataArray;
 
-    /// Cached PPV Blend Data for runtime evaluation
+    // 런타임 PPV 블렌드 캐시. UPROPERTY 여야 GC가 PPV 참조를 추적한다.
+    UPROPERTY(Transient)
     TArray<FTODPPVEntry> CachedPPVBlendData;
 
     // =========================================================================
@@ -214,6 +217,74 @@ protected:
 private:
     float TargetSpeed = 0.0f;
     float CurrentSpeed = 1.0f;
+    float LastComputedCycleSpeed = 0.0f;
+
+    // =========================================================================
+    // Properties: Performance
+    // =========================================================================
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Performance",
+        meta = (ClampMin = "0.0", UIMin = "0.0", UIMax = "0.2", Units = "s",
+            ToolTip = "Minimum interval between full TOD updates. 0 = every frame. Curve evaluation, PPV blending and component setters all run on this cadence."))
+    float TODUpdateInterval = 0.0333f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Performance",
+        meta = (ClampMin = "0.0", UIMin = "0.0", UIMax = "2.0",
+            ToolTip = "Minimum sun/moon pivot rotation delta in degrees before the transform is pushed. 0 = always. Protects virtual shadow map caches from per-frame invalidation."))
+    float SunRotationStepDeg = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Performance",
+        meta = (ClampMin = "0.0", UIMin = "0.0", UIMax = "0.01",
+            ToolTip = "Relative change required before a light / fog / atmosphere / material setter is called. 0.001 = 0.1%. Each skipped setter avoids a render state update."))
+    float ValueChangeTolerance = 0.001f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Performance",
+        meta = (ToolTip = "Bypass all update throttling while a registered cinematic is playing, so the sun cannot visibly step during a cut."))
+    bool bDisableThrottleDuringCinematics = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD|Performance",
+        meta = (ClampMin = "0.1", UIMin = "0.1", Units = "s",
+            ToolTip = "Retry interval for component discovery while a required component is missing. Prevents a per-frame component scan on a partially configured actor."))
+    float ComponentSearchRetryInterval = 1.0f;
+
+    // 스로틀을 무시하고 즉시 전체 갱신
+    UFUNCTION(BlueprintCallable, Category = "TOD|Performance")
+    void ForceFullTODUpdate();
+
+    // 마지막으로 컴포넌트에 실제 적용된 값. setter 호출 게이트 기준
+    UPROPERTY(Transient)
+    FTODSunMoonSettings LastAppliedSun;
+
+    UPROPERTY(Transient)
+    FTODMoonSettings LastAppliedMoon;
+
+    UPROPERTY(Transient)
+    FTODSkyLightSettings LastAppliedSkyLight;
+
+    UPROPERTY(Transient)
+    FTODFogSettings LastAppliedFog;
+
+    UPROPERTY(Transient)
+    FTODSkyAtmosphereSettings LastAppliedAtmos;
+
+    bool bHasAppliedTODSettings = false;
+
+    // 대기 광원 인덱스 / 절대 위치 등 1회성 설정
+    void ApplyAtmosphereLightSetup();
+
+    // 쿨다운이 지났을 때만 FindComponents 재시도
+    bool TryRefreshComponents();
+
+private:
+    float TODUpdateAccumulator = 0.0f;
+    FQuat LastAppliedPivotRotation = FQuat::Identity;
+    bool bHasAppliedPivotRotation = false;
+    double LastComponentSearchTime = 0.0;
+
+    // 임계값 적용 여부를 포함한 실제 회전 갱신
+    bool ApplyPivotRotation(float InTime, bool bForce);
+
+    void EnsureCycleSpeedCurveDefaults();
 
     // =========================================================================
     // Properties: State
@@ -222,7 +293,8 @@ public:
     UPROPERTY()
     float TransitionDuration = 1.0f;
 
-    UPROPERTY()
+    // 현재 TOD 세그먼트 내 진행도(0~1). UpdateState가 갱신한다.
+    UPROPERTY(BlueprintReadOnly, Category = "TOD|Time")
     float StateBlendAlpha = 1.0f;
 
     // =========================================================================
@@ -415,6 +487,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "TOD|Speed")
     float GetFinalSpeed(float InTime);
 
+    // 임계값을 무시하고 즉시 회전을 적용한다.
     UFUNCTION(BlueprintCallable, Category = "TOD|Geography")
     void UpdatePivotRotation(float InTime);
 
@@ -466,8 +539,8 @@ protected:
     void EndPlay(const EEndPlayReason::Type EndPlayReason);
     virtual void Tick(float DeltaSeconds) override;
 
-    // 에디터 뷰포트(LEVELTICK_ViewportsOnly)에서도 Tick 하여 앵커를 갱신한다.
-    virtual bool ShouldTickIfViewportsOnly() const override { return true; }
+    // 에디터 레벨 뷰포트에서만 틱한다. BP 프리뷰·썸네일 월드는 제외.
+    virtual bool ShouldTickIfViewportsOnly() const override;
 
 private:
     FTODCurveEvaluator CurveEvaluator;

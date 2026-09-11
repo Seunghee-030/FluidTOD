@@ -4,69 +4,68 @@ using UnrealBuildTool;
 
 public class Fluid_TOD : ModuleRules
 {
-	public Fluid_TOD(ReadOnlyTargetRules Target) : base(Target)
-	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		PublicIncludePaths.AddRange(
-			new string[] {
+    public Fluid_TOD(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicIncludePaths.AddRange(
+            new string[] {
 				// ... add public include paths required here ...
 			}
-			);
-				
-		
-		PrivateIncludePaths.AddRange(
-			new string[] {
+            );
+
+
+        PrivateIncludePaths.AddRange(
+            new string[] {
 				// ... add other private include paths required here ...
 			}
-			);
-			
-		
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				"LevelSequence",
-				"MovieScene"
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
-			
-		
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-        			"InputCore",
-				"LevelSequence", 
-				"MovieScene"
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
-		
-		if (Target.bBuildEditor)
-		{
-    			PrivateDependencyModuleNames.AddRange(
-        			new string[]
-        			{
-            				"UnrealEd",
-					"AssetTools",
-				        "ContentBrowser",
-					"ToolMenus",
-					"UMG",
-    					"UMGEditor",
-					"Blutility"
-        			}
-    			);
-		}
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
+            );
+
+
+        // LevelSequence / MovieScene 은 .cpp 에서만 사용된다.
+        // Public 에 두면 이 모듈에 의존하는 모든 모듈이 불필요하게 링크하게 된다.
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core"
+            }
+            );
+
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
+                "InputCore",
+                "LevelSequence",
+                "MovieScene"
+            }
+            );
+
+        if (Target.bBuildEditor)
+        {
+            PrivateDependencyModuleNames.AddRange(
+                new string[]
+                {
+                    "UnrealEd",
+                    "AssetTools",
+                    "ContentBrowser",
+                    "ToolMenus",
+                    "UMG",
+                    "UMGEditor",
+                    "Blutility"
+                }
+            );
+        }
+
+        DynamicallyLoadedModuleNames.AddRange(
+            new string[]
+            {
 				// ... add any modules that your module loads dynamically here ...
 			}
-			);
-	}
+            );
+    }
 }

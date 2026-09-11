@@ -12,7 +12,6 @@
 	"SupportURL": "https://linktr.ee/SeungheeLee",
 	"EngineVersion": "5.7.0",
 	"CanContainContent": true,
-	"Installed": true,
 	"Modules": [
 		{
 			"Name": "Fluid_TOD",
