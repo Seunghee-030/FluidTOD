@@ -400,14 +400,15 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Sun
 	if (IsValid(Owner->SunLightComponent))
 	{
-		if (!Owner->SunLightComponent->bAtmosphereSunLight)
+		FTODSunMoonSettings& Cache = AppliedState.Sun;
+		const bool bForce = !AppliedState.bSunInitialized;
+
+		// 라이트가 (재)탐색된 직후 한 번만 확인해 불필요한 렌더 스테이트 갱신을 막는다.
+		if (bForce && !Owner->SunLightComponent->bAtmosphereSunLight)
 		{
 			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
 			Owner->SunLightComponent->MarkRenderStateDirty();
 		}
-
-		FTODSunMoonSettings& Cache = AppliedState.Sun;
-		const bool bForce = !AppliedState.bSunInitialized;
 
 		if (bForce || HasChangedNoticeably(Sun.Intensity, Cache.Intensity, EpsIntensityLarge))
 		{
@@ -441,16 +442,15 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Moon
 	if (IsValid(Owner->MoonLightComponent))
 	{
-		// 달의 대기 산란 영향 차단 (붉은 달 방지)
-		if (Owner->MoonLightComponent->bAtmosphereSunLight)
+		FTODMoonSettings& Cache = AppliedState.Moon;
+		const bool bForce = !AppliedState.bMoonInitialized;
+
+		if (bForce && Owner->MoonLightComponent->bAtmosphereSunLight)
 		{
 			Owner->MoonLightComponent->MarkRenderStateDirty();
 		}
 		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
 		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
-
-		FTODMoonSettings& Cache = AppliedState.Moon;
-		const bool bForce = !AppliedState.bMoonInitialized;
 
 		if (bForce || HasChangedNoticeably(Moon.Intensity, Cache.Intensity, EpsIntensityLarge))
 		{
