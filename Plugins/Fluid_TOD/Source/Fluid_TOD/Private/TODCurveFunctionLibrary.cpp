@@ -1,4 +1,4 @@
-#include "MyBlueprintFunctionLibrary.h"
+#include "TODCurveFunctionLibrary.h"
 #include "TOD_Types.h"
 #include "Curves/RichCurve.h"
 #include "Engine/Engine.h"
@@ -6,7 +6,7 @@
 
 // Curve Control
 
-void UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(FRuntimeFloatCurve& InCurve)
+void UTODCurveFunctionLibrary::ClearRuntimeFloatCurve(FRuntimeFloatCurve& InCurve)
 {
 	if (FRichCurve* RichCurve = InCurve.GetRichCurve())
 	{
@@ -16,7 +16,7 @@ void UMyBlueprintFunctionLibrary::ClearRuntimeFloatCurve(FRuntimeFloatCurve& InC
 	}
 }
 
-void UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(FRuntimeFloatCurve& InCurve, float InTime, float InValue, ERichCurveInterpMode InterpMode)
+void UTODCurveFunctionLibrary::AddKeyToRuntimeFloatCurve(FRuntimeFloatCurve& InCurve, float InTime, float InValue, ERichCurveInterpMode InterpMode)
 {
 	if (FRichCurve* RichCurve = InCurve.GetRichCurve())
 	{
@@ -33,7 +33,7 @@ void UMyBlueprintFunctionLibrary::AddKeyToRuntimeFloatCurve(FRuntimeFloatCurve& 
 	}
 }
 
-void UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(FRuntimeCurveLinearColor& InCurve)
+void UTODCurveFunctionLibrary::ClearRuntimeColorCurve(FRuntimeCurveLinearColor& InCurve)
 {
 	for (int32 i = 0; i < 4; ++i)
 	{
@@ -43,7 +43,7 @@ void UMyBlueprintFunctionLibrary::ClearRuntimeColorCurve(FRuntimeCurveLinearColo
 	}
 }
 
-void UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(FRuntimeCurveLinearColor& InCurve, float InTime, FLinearColor InColor, ERichCurveInterpMode InterpMode)
+void UTODCurveFunctionLibrary::AddKeyToRuntimeColorCurve(FRuntimeCurveLinearColor& InCurve, float InTime, FLinearColor InColor, ERichCurveInterpMode InterpMode)
 {
 	float Vals[4] = { InColor.R, InColor.G, InColor.B, InColor.A };
 	for (int32 i = 0; i < 4; ++i)
@@ -61,14 +61,14 @@ void UMyBlueprintFunctionLibrary::AddKeyToRuntimeColorCurve(FRuntimeCurveLinearC
 	}
 }
 
-FLinearColor UMyBlueprintFunctionLibrary::GetRuntimeColorCurveValue(const FRuntimeCurveLinearColor& InCurve, float InTime)
+FLinearColor UTODCurveFunctionLibrary::GetRuntimeColorCurveValue(const FRuntimeCurveLinearColor& InCurve, float InTime)
 {
 	return InCurve.GetLinearColorValue(InTime);
 }
 
 // Auto-Seal
 
-void UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(FRuntimeFloatCurve& InCurve)
+void UTODCurveFunctionLibrary::SealTODCurveFor24Hours(FRuntimeFloatCurve& InCurve)
 {
 	FRichCurve* RichCurve = InCurve.GetRichCurve();
 	if (!RichCurve || RichCurve->GetNumKeys() == 0) return;
@@ -100,7 +100,7 @@ void UMyBlueprintFunctionLibrary::SealTODCurveFor24Hours(FRuntimeFloatCurve& InC
 	RichCurve->PostInfinityExtrap = RCCE_Cycle;
 }
 
-void UMyBlueprintFunctionLibrary::SealColorCurveFor24Hours(FRuntimeCurveLinearColor& InCurve)
+void UTODCurveFunctionLibrary::SealColorCurveFor24Hours(FRuntimeCurveLinearColor& InCurve)
 {
 	for (int32 i = 0; i < 4; ++i)
 	{

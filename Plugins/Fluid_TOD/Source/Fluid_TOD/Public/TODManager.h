@@ -38,7 +38,7 @@ struct FTODCinematicSetting
     bool bOverrideVisuals = true;
 };
 
-UCLASS(BlueprintType, meta = (HideFunctions = "SetStartTime, SetTOD_State"))
+UCLASS(BlueprintType, meta = (HideFunctions = "SetStartTime"))
 class FLUID_TOD_API ATODManager : public AActor
 {
     GENERATED_BODY()

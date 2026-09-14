@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/DataAsset.h"
 #include "Curves/CurveFloat.h"
@@ -372,22 +371,6 @@ struct FTODCurveDataModeSnapshot
 
 	UPROPERTY()
 	TArray<FTODSingleCurveModeList> ColorCurveModes;
-};
-
-UCLASS()
-class FLUID_TOD_API UTOD_Types : public UObject
-{
-	GENERATED_BODY()
-};
-
-UCLASS(BlueprintType)
-class FLUID_TOD_API UTODSinglePreset : public UDataAsset
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TOD")
-	FTODMasterData SavedData;
 };
 
 UCLASS(BlueprintType)

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -7,10 +7,10 @@
 #include "Engine/PostProcessVolume.h"
 #include "Components/PostProcessComponent.h"
 #include "TOD_Types.h"
-#include "MyBlueprintFunctionLibrary.generated.h"
+#include "TODCurveFunctionLibrary.generated.h"
 
 UCLASS()
-class FLUID_TOD_API UMyBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
+class FLUID_TOD_API UTODCurveFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
