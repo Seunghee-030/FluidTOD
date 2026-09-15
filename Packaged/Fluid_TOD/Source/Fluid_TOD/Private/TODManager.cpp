@@ -74,7 +74,7 @@ void ATODManager::BeginPlay()
 		}
 	}
 
-	FindComponents();
+	// FindComponents()는 BakeTODCurves() 내부에서도 호출되므로 여기서 중복 호출하지 않는다.
 	UpdateSunTimes();
 	SortTODDataArray();
 
@@ -465,6 +465,7 @@ FString ATODManager::GetFormattedTimeAsString(float InTime) const
 	// 시간 0~24 보정
 	float SafeTime = FMath::Fmod(InTime, 24.0f);
 	if (SafeTime < 0.0f) SafeTime += 24.0f;
+	if (FMath::IsNearlyEqual(SafeTime, 24.0f, 0.001f)) SafeTime = 0.0f;
 
 	int32 Hours = FMath::FloorToInt(SafeTime);
 	int32 Minutes = FMath::FloorToInt((SafeTime - Hours) * 60.0f);
@@ -504,19 +505,20 @@ float ATODManager::GetScaledMoonDistance() const
 		return MoonDistance;
 	}
 
-	const float LocalRadius = Mesh->GetBounds().SphereRadius;
-
-	if (LocalRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
+	if (CachedMoonMeshRadius <= KINDA_SMALL_NUMBER || MoonMeshReferenceRadius <= KINDA_SMALL_NUMBER)
 	{
 		return MoonDistance;
 	}
 
-	return MoonDistance * (LocalRadius / MoonMeshReferenceRadius);
+	return MoonDistance * (CachedMoonMeshRadius / MoonMeshReferenceRadius);
 }
 
 void ATODManager::UpdateMoonMeshTransform()
 {
-	if (!IsValid(MoonMesh)) return;
+	if (!IsValid(MoonMesh))
+	{
+		return;
+	}
 
 	if (IsValid(MeshPivotComponent))
 	{
@@ -533,23 +535,6 @@ void ATODManager::UpdateMoonMeshTransform()
 	{
 		const float GlowScale = FMath::Max(GetMoonGlowScaleAtTime(CurrentSystemTime), 0.001f);
 		MoonGlowMesh->SetRelativeScale3D(FVector((GlowScale * (ActualDistance / 100000.0f)))); // moon glow 크기 조절
-
-		const FVector MoonWorldLocation = MoonMesh->GetComponentLocation();
-		const FVector PivotWorldLocation = MeshPivotComponent->GetComponentLocation();
-		const FVector DirectionToPivot = (PivotWorldLocation - MoonWorldLocation).GetSafeNormal();
-
-		// Moon의 현재 실제(월드) 반지름 계산
-		float MoonWorldRadius = 0.0f;
-		if (const UStaticMesh* MoonStaticMesh = MoonMesh->GetStaticMesh())
-		{
-			MoonWorldRadius = MoonStaticMesh->GetBounds().SphereRadius * MoonMesh->GetComponentScale().X;
-		}
-
-		// 반지름보다 살짝 크게 (10% 여유)
-		constexpr float FrontOffsetMultiplier = 1.1f;
-		const float FrontOffset = MoonWorldRadius * FrontOffsetMultiplier;
-
-		MoonGlowMesh->SetWorldLocation(MoonWorldLocation + DirectionToPivot * FrontOffset);
 	}
 }
 
@@ -783,6 +768,7 @@ float ATODManager::WrapStartTime(float InTime)
 	{
 		Wrapped += 24.0f;
 	}
+	if (FMath::IsNearlyEqual(Wrapped, 24.0f, 0.001f)) return 0.0f;
 	return Wrapped;
 }
 
@@ -800,10 +786,7 @@ void ATODManager::ApplyStaticSunMoonOffsets()
 		MoonLightComponent->SetRelativeRotation(MoonLocalRotationOffset);
 	}
 
-	if (IsValid(MoonGlowMesh))
-	{
-		MoonGlowMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	}
+	//UpdateMoonMeshTransform();
 }
 
 // 태양 방위각 변경 Setter
@@ -903,7 +886,6 @@ void ATODManager::RequestDeferredRebake()
 				ATODManager* Manager = WeakThis.Get();
 
 				Manager->bRebakeRequested = false;
-				Manager->UpdateSunTimes();
 				Manager->BakeTODCurves();
 				Manager->UpdateTOD(Manager->StartTime);
 				Manager->ApplyStaticSunMoonOffsets();
@@ -919,7 +901,6 @@ void ATODManager::RequestDeferredRebake()
 	bRebakeRequested = false;
 
 	BakeTODCurves();
-	UpdateSunTimes();
 	UpdateTOD(StartTime);
 	ApplyStaticSunMoonOffsets();
 	UpdatePivotRotation(StartTime);
@@ -1016,8 +997,15 @@ void ATODManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(ATODManager, LoadPreset))
 	{
-		LoadSelectedPreset();
-		RequestDeferredRebake();
+		LoadSelectedPreset(); // 내부에서 이미 BakeTODCurves()까지 수행함
+
+		// RequestDeferredRebake()를 그대로 쓰면 BakeTODCurves()가 한 번 더 실행되어
+		// (컴포넌트 재탐색 + 전체 커브 재생성) 위와 완전히 중복되므로,
+		// 여기서 빠진 후속 처리만 직접 호출한다.
+		UpdateMoonMeshTransform();
+		ApplyStaticSunMoonOffsets();
+		UpdatePivotRotation(CurrentSystemTime);
+		ForceViewportRedraw();
 		return;
 	}
 
@@ -1119,7 +1107,11 @@ void ATODManager::PostEditChangeChainProperty(FPropertyChangedChainEvent& Proper
 					const float BoundaryTolerance = 0.001f;
 					bool bCollision = true;
 
-					while (bCollision)
+					// TOD_DataArray.Num()번 시도해도 못 풀리면(예: Time이 24.0f에 막혀 더 이상
+					// 전진할 수 없는 경우) 무한 루프에 빠지므로 시도 횟수를 제한한다.
+					int32 SafetyCounter = TOD_DataArray.Num();
+
+					while (bCollision && SafetyCounter-- > 0)
 					{
 						bCollision = false;
 						for (int32 i = 0; i < TOD_DataArray.Num(); ++i)

@@ -1,6 +1,6 @@
 #include "TODSystem.h"
 #include "TODManager.h"
-
+#include "Engine/StaticMesh.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -204,7 +204,9 @@ void FTODSystem::UpdateSunTimes(ATODManager* Owner)
 float FTODSystem::NormalizeTime(float Time)
 {
 	float SafeTime = FMath::Fmod(Time, 24.0f);
-	return SafeTime < 0.f ? SafeTime + 24.f : SafeTime;
+	if (SafeTime < 0.0f) SafeTime += 24.0f;
+	if (FMath::IsNearlyEqual(SafeTime, 24.0f, 0.001f)) return 0.0f;
+	return SafeTime;
 }
 
 // 태양의 위치에 따라 Pivot 컴포넌트를 회전
@@ -338,20 +340,36 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 
 	Owner->ApplyPPVBlending(CurrentTime);
 
-	FTODSunMoonSettings Sun;
-	FTODMoonSettings Moon;
-	FTODSkyLightSettings Sky;
-	FTODFogSettings Fog;
-	FTODSkyAtmosphereSettings Atmos;
+	bool bTimeJumped = false;
+	if (Owner->LastEvaluatedTime >= 0.0f)
+	{
+		float LastSafe = NormalizeTime(Owner->LastEvaluatedTime);
+		float CurrSafe = NormalizeTime(CurrentTime);
+		// 시간이 1시간 이상 튀면(24->0 순환 등) Temporal 캐시를 비우기 위한 플래그
+		if (FMath::Abs(CurrSafe - LastSafe) > 1.0f)
+		{
+			bTimeJumped = true;
+		}
+	}
 
-	Owner->GetTODSettingsAtTime(
-		CurrentTime,
-		Sun,
-		Moon,
-		Sky,
-		Fog,
-		Atmos
-	);
+	if (!FMath::IsNearlyEqual(Owner->LastEvaluatedTime, CurrentTime, 0.001f))
+	{
+		Owner->GetTODSettingsAtTime(
+			CurrentTime,
+			Owner->CachedSun,
+			Owner->CachedMoon,
+			Owner->CachedSky,
+			Owner->CachedFog,
+			Owner->CachedAtmos
+		);
+		Owner->LastEvaluatedTime = CurrentTime;
+	}
+
+	const FTODSunMoonSettings& Sun = Owner->CachedSun;
+	const FTODMoonSettings& Moon = Owner->CachedMoon;
+	const FTODSkyLightSettings& Sky = Owner->CachedSky;
+	const FTODFogSettings& Fog = Owner->CachedFog;
+	const FTODSkyAtmosphereSettings& Atmos = Owner->CachedAtmos;
 
 	if (IsValid(Owner->SkyMaterialInstance))
 	{
@@ -385,84 +403,34 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Sun
 	if (IsValid(Owner->SunLightComponent))
 	{
-		FTODSunMoonSettings& Cache = AppliedState.Sun;
-		const bool bForce = !AppliedState.bSunInitialized;
-
-		// 라이트가 (재)탐색된 직후 한 번만 확인해 불필요한 렌더 스테이트 갱신을 막는다.
-		if (bForce && !Owner->SunLightComponent->bAtmosphereSunLight)
+		if (!Owner->SunLightComponent->bAtmosphereSunLight)
 		{
+			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
 			Owner->SunLightComponent->MarkRenderStateDirty();
 		}
 
-		if (bForce || HasChangedNoticeably(Sun.Intensity, Cache.Intensity, EpsIntensityLarge))
-		{
-			Owner->SunLightComponent->SetIntensity(Sun.Intensity);
-			Cache.Intensity = Sun.Intensity;
-		}
-		if (bForce || HasChangedNoticeably(Sun.Light_Color, Cache.Light_Color, EpsColor))
-		{
-			Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
-			Cache.Light_Color = Sun.Light_Color;
-		}
-		if (bForce || HasChangedNoticeably(Sun.Source_Angle, Cache.Source_Angle, EpsAngleDeg))
-		{
-			Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
-			Cache.Source_Angle = Sun.Source_Angle;
-		}
-		if (bForce || HasChangedNoticeably(Sun.Source_Soft_Angle, Cache.Source_Soft_Angle, EpsAngleDeg))
-		{
-			Owner->SunLightComponent->SetLightSourceSoftAngle(Sun.Source_Soft_Angle);
-			Cache.Source_Soft_Angle = Sun.Source_Soft_Angle;
-		}
-		if (bForce || HasChangedNoticeably(Sun.Indirect_Light_Intensity, Cache.Indirect_Light_Intensity, EpsUnitScale))
-		{
-			Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
-			Cache.Indirect_Light_Intensity = Sun.Indirect_Light_Intensity;
-		}
-
-		AppliedState.bSunInitialized = true;
+		Owner->SunLightComponent->SetIntensity(Sun.Intensity);
+		Owner->SunLightComponent->SetLightColor(Sun.Light_Color);
+		Owner->SunLightComponent->SetLightSourceAngle(Sun.Source_Angle);
+		Owner->SunLightComponent->SetLightSourceSoftAngle(Sun.Source_Soft_Angle);
+		Owner->SunLightComponent->SetIndirectLightingIntensity(Sun.Indirect_Light_Intensity);
 	}
 
 	// Moon
 	if (IsValid(Owner->MoonLightComponent))
 	{
-		FTODMoonSettings& Cache = AppliedState.Moon;
-		const bool bForce = !AppliedState.bMoonInitialized;
-
-		if (bForce && Owner->MoonLightComponent->bAtmosphereSunLight)
+		// 달의 대기 산란 영향 차단 (붉은 달 방지)
+		if (Owner->MoonLightComponent->bAtmosphereSunLight)
 		{
+			Owner->bCachedMoonAtmosphere = Owner->MoonLightComponent->bAtmosphereSunLight;
 			Owner->MoonLightComponent->MarkRenderStateDirty();
 		}
-		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
-		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
 
-		if (bForce || HasChangedNoticeably(Moon.Intensity, Cache.Intensity, EpsIntensityLarge))
-		{
-			Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
-			Cache.Intensity = Moon.Intensity;
-		}
-		if (bForce || HasChangedNoticeably(Moon.Light_Color, Cache.Light_Color, EpsColor))
-		{
-			Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
-			Cache.Light_Color = Moon.Light_Color;
-		}
-		if (bForce || HasChangedNoticeably(Moon.Source_Angle, Cache.Source_Angle, EpsAngleDeg))
-		{
-			Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
-			Cache.Source_Angle = Moon.Source_Angle;
-		}
-		if (bForce || HasChangedNoticeably(Moon.Source_Soft_Angle, Cache.Source_Soft_Angle, EpsAngleDeg))
-		{
-			Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
-			Cache.Source_Soft_Angle = Moon.Source_Soft_Angle;
-		}
-		if (bForce || HasChangedNoticeably(Moon.Indirect_Light_Intensity, Cache.Indirect_Light_Intensity, EpsUnitScale))
-		{
-			Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
-			Cache.Indirect_Light_Intensity = Moon.Indirect_Light_Intensity;
-		}
-
-		AppliedState.bMoonInitialized = true;
+		Owner->MoonLightComponent->SetIntensity(Moon.Intensity);
+		Owner->MoonLightComponent->SetLightColor(Moon.Light_Color);
+		Owner->MoonLightComponent->SetLightSourceAngle(Moon.Source_Angle);
+		Owner->MoonLightComponent->SetLightSourceSoftAngle(Moon.Source_Soft_Angle);
+		Owner->MoonLightComponent->SetIndirectLightingIntensity(Moon.Indirect_Light_Intensity);
 	}
 
 	// Sky Light

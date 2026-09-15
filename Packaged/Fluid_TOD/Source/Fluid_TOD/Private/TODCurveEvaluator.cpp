@@ -15,19 +15,7 @@ namespace
 
 	float NormalizeTODTimeForBake(float Time)
 	{
-		float SafeTime = FMath::Fmod(Time, TODHours);
-		if (SafeTime < 0.0f)
-		{
-			SafeTime += TODHours;
-		}
-
-		if (FMath::IsNearlyEqual(SafeTime, TODHours, TODBoundaryTolerance) ||
-			FMath::IsNearlyEqual(SafeTime, 0.0f, TODBoundaryTolerance))
-		{
-			return 0.0f;
-		}
-
-		return SafeTime;
+		return FTODSystem::NormalizeTime(Time);
 	}
 
 	bool IsTwentyFourBoundary(float Time)
@@ -406,6 +394,7 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 {
 	if (!Owner || !IsValid(Owner->RuntimePPVComponent)) return;
 
+	Owner->CachedPPVBlendData.RemoveAll([](const FTODPPVEntry& Entry) { return !IsValid(Entry.PPV); });
 	const TArray<FTODPPVEntry>& ValidPPVs = Owner->CachedPPVBlendData;
 
 	const int32 Num = ValidPPVs.Num();
@@ -496,17 +485,13 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
 		if (bPrevOverride || bNextOverride) \
 		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+			const auto PrevVal = bPrevOverride ? PrevPPV->Settings.Prop : NextPPV->Settings.Prop; \
+			const auto NextVal = bNextOverride ? NextPPV->Settings.Prop : PrevPPV->Settings.Prop; \
+			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevVal, NextVal, Alpha); \
 		} \
 	}
 
 #define LERP_VEC4_PPV(Prop) LERP_PPV(Prop)
-
-#define LERP_PPV_FORCE_OVERRIDE(Prop) \
-	{ \
-		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = true; \
-		Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
-	}
 
 #define LERP_COLOR_PPV(Prop) \
 	{ \
@@ -515,16 +500,18 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 		Owner->RuntimePPVComponent->Settings.bOverride_##Prop = bPrevOverride || bNextOverride; \
 		if (bPrevOverride || bNextOverride) \
 		{ \
-			Owner->RuntimePPVComponent->Settings.Prop = FLinearColor::LerpUsingHSV(PrevPPV->Settings.Prop, NextPPV->Settings.Prop, Alpha); \
+			const auto PrevVal = bPrevOverride ? PrevPPV->Settings.Prop : NextPPV->Settings.Prop; \
+			const auto NextVal = bNextOverride ? NextPPV->Settings.Prop : PrevPPV->Settings.Prop; \
+			Owner->RuntimePPVComponent->Settings.Prop = FMath::Lerp(PrevVal, NextVal, Alpha); \
 		} \
 	}
 
 	// Exposure / EV100
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureMinBrightness);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureMaxBrightness);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureBias);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedUp);
-	LERP_PPV_FORCE_OVERRIDE(AutoExposureSpeedDown);
+	LERP_PPV(AutoExposureMinBrightness);
+	LERP_PPV(AutoExposureMaxBrightness);
+	LERP_PPV(AutoExposureBias);
+	LERP_PPV(AutoExposureSpeedUp);
+	LERP_PPV(AutoExposureSpeedDown);
 
 	// Bloom
 	LERP_PPV(BloomIntensity);
@@ -576,6 +563,10 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 	// Indirect Color
 	LERP_COLOR_PPV(IndirectLightingColor);
+
+	// Lumen
+	LERP_PPV(LumenSceneLightingQuality);
+	LERP_PPV(LumenSceneDetail);
 
 	// Depth of Field
 	LERP_PPV(DepthOfFieldFocalDistance);
@@ -654,7 +645,6 @@ void FTODCurveEvaluator::ApplyPPVBlending(ATODManager* Owner, float CurrentTime)
 
 #undef LERP_PPV
 #undef LERP_VEC4_PPV
-#undef LERP_PPV_FORCE_OVERRIDE
 #undef LERP_COLOR_PPV
 
 	ApplyPPVCompensation(Owner, CurrentTime);
@@ -691,8 +681,11 @@ void FTODCurveEvaluator::BakeTODCurves(ATODManager* Owner)
 	TArray<FRuntimeFloatCurve*> FloatCurves = GetAllFloatCurves(Owner->CurveData);
 	TArray<FRuntimeCurveLinearColor*> ColorCurves = GetAllColorCurves(Owner->CurveData);
 
-	// Clear 하기 전 InterpMode를 캡처 (리베이크 복원용)
-	const FTODCurveDataModeSnapshot PreviousModes = CaptureInterpModes(Owner->CurveData);
+	FTODCurveDataModeSnapshot PreviousModes;
+	if (!Owner->bApplyPresetCurveModesOnNextBake)
+	{
+		PreviousModes = CaptureInterpModes(Owner->CurveData);
+	}
 
 	for (FRuntimeFloatCurve* Curve : FloatCurves) { UTODCurveFunctionLibrary::ClearRuntimeFloatCurve(*Curve); }
 	for (FRuntimeCurveLinearColor* Curve : ColorCurves) { UTODCurveFunctionLibrary::ClearRuntimeColorCurve(*Curve); }
