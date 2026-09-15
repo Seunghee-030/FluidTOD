@@ -2039,7 +2039,7 @@ struct Z_Construct_UClass_ATODManager_Statics
 #if WITH_METADATA
 	static constexpr UECodeGen_Private::FMetaDataPairParam Class_MetaDataParams[] = {
 		{ "BlueprintType", "true" },
-		{ "HideFunctions", "SetStartTime, SetTOD_State" },
+		{ "HideFunctions", "SetStartTime" },
 		{ "IncludePath", "TODManager.h" },
 		{ "ModuleRelativePath", "Public/TODManager.h" },
 	};
@@ -2668,10 +2668,10 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_
 		{ FTODCinematicSetting::StaticStruct, Z_Construct_UScriptStruct_FTODCinematicSetting_Statics::NewStructOps, TEXT("TODCinematicSetting"),&Z_Registration_Info_UScriptStruct_FTODCinematicSetting, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCinematicSetting), 3645121645U) },
 	};
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_ATODManager, ATODManager::StaticClass, TEXT("ATODManager"), &Z_Registration_Info_UClass_ATODManager, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(ATODManager), 1192965615U) },
+		{ Z_Construct_UClass_ATODManager, ATODManager::StaticClass, TEXT("ATODManager"), &Z_Registration_Info_UClass_ATODManager, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(ATODManager), 2499863856U) },
 	};
 }; // Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_1421916153{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_1939344453{
 	TEXT("/Script/Fluid_TOD"),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ClassInfo),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TODManager_h__Script_Fluid_TOD_Statics::ScriptStructInfo),

@@ -14,19 +14,14 @@ static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compi
 void EmptyLinkFunctionForGeneratedCodeTOD_Types() {}
 
 // ********** Begin Cross Module References ********************************************************
-COREUOBJECT_API UClass* Z_Construct_UClass_UObject();
 COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FLinearColor();
 ENGINE_API UClass* Z_Construct_UClass_APostProcessVolume_NoRegister();
 ENGINE_API UClass* Z_Construct_UClass_UDataAsset();
 ENGINE_API UEnum* Z_Construct_UEnum_Engine_ERichCurveInterpMode();
 ENGINE_API UScriptStruct* Z_Construct_UScriptStruct_FRuntimeCurveLinearColor();
 ENGINE_API UScriptStruct* Z_Construct_UScriptStruct_FRuntimeFloatCurve();
-FLUID_TOD_API UClass* Z_Construct_UClass_UTOD_Types();
-FLUID_TOD_API UClass* Z_Construct_UClass_UTOD_Types_NoRegister();
 FLUID_TOD_API UClass* Z_Construct_UClass_UTODPresetData();
 FLUID_TOD_API UClass* Z_Construct_UClass_UTODPresetData_NoRegister();
-FLUID_TOD_API UClass* Z_Construct_UClass_UTODSinglePreset();
-FLUID_TOD_API UClass* Z_Construct_UClass_UTODSinglePreset_NoRegister();
 FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODComponentCategory();
 FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODDirectionalLightType();
 FLUID_TOD_API UEnum* Z_Construct_UEnum_Fluid_TOD_ETODSeason();
@@ -1842,187 +1837,6 @@ UScriptStruct* Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot()
 }
 // ********** End ScriptStruct FTODCurveDataModeSnapshot *******************************************
 
-// ********** Begin Class UTOD_Types ***************************************************************
-FClassRegistrationInfo Z_Registration_Info_UClass_UTOD_Types;
-UClass* UTOD_Types::GetPrivateStaticClass()
-{
-	using TClass = UTOD_Types;
-	if (!Z_Registration_Info_UClass_UTOD_Types.InnerSingleton)
-	{
-		GetPrivateStaticClassBody(
-			TClass::StaticPackage(),
-			TEXT("TOD_Types"),
-			Z_Registration_Info_UClass_UTOD_Types.InnerSingleton,
-			StaticRegisterNativesUTOD_Types,
-			sizeof(TClass),
-			alignof(TClass),
-			TClass::StaticClassFlags,
-			TClass::StaticClassCastFlags(),
-			TClass::StaticConfigName(),
-			(UClass::ClassConstructorType)InternalConstructor<TClass>,
-			(UClass::ClassVTableHelperCtorCallerType)InternalVTableHelperCtorCaller<TClass>,
-			UOBJECT_CPPCLASS_STATICFUNCTIONS_FORCLASS(TClass),
-			&TClass::Super::StaticClass,
-			&TClass::WithinClass::StaticClass
-		);
-	}
-	return Z_Registration_Info_UClass_UTOD_Types.InnerSingleton;
-}
-UClass* Z_Construct_UClass_UTOD_Types_NoRegister()
-{
-	return UTOD_Types::GetPrivateStaticClass();
-}
-struct Z_Construct_UClass_UTOD_Types_Statics
-{
-#if WITH_METADATA
-	static constexpr UECodeGen_Private::FMetaDataPairParam Class_MetaDataParams[] = {
-		{ "IncludePath", "TOD_Types.h" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-#endif // WITH_METADATA
-
-// ********** Begin Class UTOD_Types constinit property declarations *******************************
-// ********** End Class UTOD_Types constinit property declarations *********************************
-	static UObject* (*const DependentSingletons[])();
-	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
-		TCppClassTypeTraits<UTOD_Types>::IsAbstract,
-	};
-	static const UECodeGen_Private::FClassParams ClassParams;
-}; // struct Z_Construct_UClass_UTOD_Types_Statics
-UObject* (*const Z_Construct_UClass_UTOD_Types_Statics::DependentSingletons[])() = {
-	(UObject* (*)())Z_Construct_UClass_UObject,
-	(UObject* (*)())Z_Construct_UPackage__Script_Fluid_TOD,
-};
-static_assert(UE_ARRAY_COUNT(Z_Construct_UClass_UTOD_Types_Statics::DependentSingletons) < 16);
-const UECodeGen_Private::FClassParams Z_Construct_UClass_UTOD_Types_Statics::ClassParams = {
-	&UTOD_Types::StaticClass,
-	nullptr,
-	&StaticCppClassTypeInfo,
-	DependentSingletons,
-	nullptr,
-	nullptr,
-	nullptr,
-	UE_ARRAY_COUNT(DependentSingletons),
-	0,
-	0,
-	0,
-	0x001000A0u,
-	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UClass_UTOD_Types_Statics::Class_MetaDataParams), Z_Construct_UClass_UTOD_Types_Statics::Class_MetaDataParams)
-};
-void UTOD_Types::StaticRegisterNativesUTOD_Types()
-{
-}
-UClass* Z_Construct_UClass_UTOD_Types()
-{
-	if (!Z_Registration_Info_UClass_UTOD_Types.OuterSingleton)
-	{
-		UECodeGen_Private::ConstructUClass(Z_Registration_Info_UClass_UTOD_Types.OuterSingleton, Z_Construct_UClass_UTOD_Types_Statics::ClassParams);
-	}
-	return Z_Registration_Info_UClass_UTOD_Types.OuterSingleton;
-}
-UTOD_Types::UTOD_Types(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {}
-DEFINE_VTABLE_PTR_HELPER_CTOR_NS(, UTOD_Types);
-UTOD_Types::~UTOD_Types() {}
-// ********** End Class UTOD_Types *****************************************************************
-
-// ********** Begin Class UTODSinglePreset *********************************************************
-FClassRegistrationInfo Z_Registration_Info_UClass_UTODSinglePreset;
-UClass* UTODSinglePreset::GetPrivateStaticClass()
-{
-	using TClass = UTODSinglePreset;
-	if (!Z_Registration_Info_UClass_UTODSinglePreset.InnerSingleton)
-	{
-		GetPrivateStaticClassBody(
-			TClass::StaticPackage(),
-			TEXT("TODSinglePreset"),
-			Z_Registration_Info_UClass_UTODSinglePreset.InnerSingleton,
-			StaticRegisterNativesUTODSinglePreset,
-			sizeof(TClass),
-			alignof(TClass),
-			TClass::StaticClassFlags,
-			TClass::StaticClassCastFlags(),
-			TClass::StaticConfigName(),
-			(UClass::ClassConstructorType)InternalConstructor<TClass>,
-			(UClass::ClassVTableHelperCtorCallerType)InternalVTableHelperCtorCaller<TClass>,
-			UOBJECT_CPPCLASS_STATICFUNCTIONS_FORCLASS(TClass),
-			&TClass::Super::StaticClass,
-			&TClass::WithinClass::StaticClass
-		);
-	}
-	return Z_Registration_Info_UClass_UTODSinglePreset.InnerSingleton;
-}
-UClass* Z_Construct_UClass_UTODSinglePreset_NoRegister()
-{
-	return UTODSinglePreset::GetPrivateStaticClass();
-}
-struct Z_Construct_UClass_UTODSinglePreset_Statics
-{
-#if WITH_METADATA
-	static constexpr UECodeGen_Private::FMetaDataPairParam Class_MetaDataParams[] = {
-		{ "BlueprintType", "true" },
-		{ "IncludePath", "TOD_Types.h" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_SavedData_MetaData[] = {
-		{ "Category", "TOD" },
-		{ "ModuleRelativePath", "Public/TOD_Types.h" },
-	};
-#endif // WITH_METADATA
-
-// ********** Begin Class UTODSinglePreset constinit property declarations *************************
-	static const UECodeGen_Private::FStructPropertyParams NewProp_SavedData;
-	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
-// ********** End Class UTODSinglePreset constinit property declarations ***************************
-	static UObject* (*const DependentSingletons[])();
-	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
-		TCppClassTypeTraits<UTODSinglePreset>::IsAbstract,
-	};
-	static const UECodeGen_Private::FClassParams ClassParams;
-}; // struct Z_Construct_UClass_UTODSinglePreset_Statics
-
-// ********** Begin Class UTODSinglePreset Property Definitions ************************************
-const UECodeGen_Private::FStructPropertyParams Z_Construct_UClass_UTODSinglePreset_Statics::NewProp_SavedData = { "SavedData", nullptr, (EPropertyFlags)0x0010000000000005, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(UTODSinglePreset, SavedData), Z_Construct_UScriptStruct_FTODMasterData, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_SavedData_MetaData), NewProp_SavedData_MetaData) }; // 3337876751
-const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UClass_UTODSinglePreset_Statics::PropPointers[] = {
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UClass_UTODSinglePreset_Statics::NewProp_SavedData,
-};
-static_assert(UE_ARRAY_COUNT(Z_Construct_UClass_UTODSinglePreset_Statics::PropPointers) < 2048);
-// ********** End Class UTODSinglePreset Property Definitions **************************************
-UObject* (*const Z_Construct_UClass_UTODSinglePreset_Statics::DependentSingletons[])() = {
-	(UObject* (*)())Z_Construct_UClass_UDataAsset,
-	(UObject* (*)())Z_Construct_UPackage__Script_Fluid_TOD,
-};
-static_assert(UE_ARRAY_COUNT(Z_Construct_UClass_UTODSinglePreset_Statics::DependentSingletons) < 16);
-const UECodeGen_Private::FClassParams Z_Construct_UClass_UTODSinglePreset_Statics::ClassParams = {
-	&UTODSinglePreset::StaticClass,
-	nullptr,
-	&StaticCppClassTypeInfo,
-	DependentSingletons,
-	nullptr,
-	Z_Construct_UClass_UTODSinglePreset_Statics::PropPointers,
-	nullptr,
-	UE_ARRAY_COUNT(DependentSingletons),
-	0,
-	UE_ARRAY_COUNT(Z_Construct_UClass_UTODSinglePreset_Statics::PropPointers),
-	0,
-	0x001000A0u,
-	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UClass_UTODSinglePreset_Statics::Class_MetaDataParams), Z_Construct_UClass_UTODSinglePreset_Statics::Class_MetaDataParams)
-};
-void UTODSinglePreset::StaticRegisterNativesUTODSinglePreset()
-{
-}
-UClass* Z_Construct_UClass_UTODSinglePreset()
-{
-	if (!Z_Registration_Info_UClass_UTODSinglePreset.OuterSingleton)
-	{
-		UECodeGen_Private::ConstructUClass(Z_Registration_Info_UClass_UTODSinglePreset.OuterSingleton, Z_Construct_UClass_UTODSinglePreset_Statics::ClassParams);
-	}
-	return Z_Registration_Info_UClass_UTODSinglePreset.OuterSingleton;
-}
-UTODSinglePreset::UTODSinglePreset(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {}
-DEFINE_VTABLE_PTR_HELPER_CTOR_NS(, UTODSinglePreset);
-UTODSinglePreset::~UTODSinglePreset() {}
-// ********** End Class UTODSinglePreset ***********************************************************
-
 // ********** Begin Class UTODPresetData ***********************************************************
 FClassRegistrationInfo Z_Registration_Info_UClass_UTODPresetData;
 UClass* UTODPresetData::GetPrivateStaticClass()
@@ -2157,12 +1971,10 @@ struct Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_
 		{ FTODCurveDataModeSnapshot::StaticStruct, Z_Construct_UScriptStruct_FTODCurveDataModeSnapshot_Statics::NewStructOps, TEXT("TODCurveDataModeSnapshot"),&Z_Registration_Info_UScriptStruct_FTODCurveDataModeSnapshot, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FTODCurveDataModeSnapshot), 2847508156U) },
 	};
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UTOD_Types, UTOD_Types::StaticClass, TEXT("UTOD_Types"), &Z_Registration_Info_UClass_UTOD_Types, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTOD_Types), 4251130632U) },
-		{ Z_Construct_UClass_UTODSinglePreset, UTODSinglePreset::StaticClass, TEXT("UTODSinglePreset"), &Z_Registration_Info_UClass_UTODSinglePreset, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODSinglePreset), 3945834529U) },
 		{ Z_Construct_UClass_UTODPresetData, UTODPresetData::StaticClass, TEXT("UTODPresetData"), &Z_Registration_Info_UClass_UTODPresetData, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UTODPresetData), 1126662819U) },
 	};
 }; // Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_3278487214{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_1735784408{
 	TEXT("/Script/Fluid_TOD"),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ClassInfo),
 	Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_Users_laeum_Documents_GitHub_FluidTOD_Packaged_Fluid_TOD_HostProject_Plugins_Fluid_TOD_Source_Fluid_TOD_Public_TOD_Types_h__Script_Fluid_TOD_Statics::ScriptStructInfo),

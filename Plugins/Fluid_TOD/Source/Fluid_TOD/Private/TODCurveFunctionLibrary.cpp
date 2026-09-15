@@ -68,69 +68,47 @@ FLinearColor UTODCurveFunctionLibrary::GetRuntimeColorCurveValue(const FRuntimeC
 
 // Auto-Seal
 
+namespace
+{
+	void SealRichCurveFor24Hours(FRichCurve& RichCurve)
+	{
+		if (RichCurve.GetNumKeys() == 0) return;
+
+		float MinTime, MaxTime;
+		RichCurve.GetTimeRange(MinTime, MaxTime);
+
+		if (MaxTime == 24.0f && MinTime > 0.0f)
+		{
+			RichCurve.AddKey(0.0f, RichCurve.Eval(24.0f));
+		}
+		else if (MinTime == 0.0f && MaxTime < 24.0f)
+		{
+			RichCurve.AddKey(24.0f, RichCurve.Eval(0.0f));
+		}
+		else if (MinTime > 0.0f && MaxTime < 24.0f)
+		{
+			const float BlendedValue = (RichCurve.Eval(MinTime) + RichCurve.Eval(MaxTime)) * 0.5f;
+			RichCurve.AddKey(0.0f, BlendedValue);
+			RichCurve.AddKey(24.0f, BlendedValue);
+		}
+
+		RichCurve.PreInfinityExtrap = RCCE_Cycle;
+		RichCurve.PostInfinityExtrap = RCCE_Cycle;
+	}
+}
+
 void UTODCurveFunctionLibrary::SealTODCurveFor24Hours(FRuntimeFloatCurve& InCurve)
 {
-	FRichCurve* RichCurve = InCurve.GetRichCurve();
-	if (!RichCurve || RichCurve->GetNumKeys() == 0) return;
-
-	float MinTime, MaxTime;
-	RichCurve->GetTimeRange(MinTime, MaxTime);
-
-	float ValueAtZero = 0.0f;
-	float ValueAt24 = 0.0f;
-
-	if (MaxTime == 24.0f && MinTime > 0.0f)
+	if (FRichCurve* RichCurve = InCurve.GetRichCurve())
 	{
-		ValueAtZero = RichCurve->Eval(24.0f);
-		RichCurve->AddKey(0.0f, ValueAtZero);
+		SealRichCurveFor24Hours(*RichCurve);
 	}
-	else if (MinTime == 0.0f && MaxTime < 24.0f)
-	{
-		ValueAt24 = RichCurve->Eval(0.0f);
-		RichCurve->AddKey(24.0f, ValueAt24);
-	}
-	else if (MinTime > 0.0f && MaxTime < 24.0f)
-	{
-		float BlendedValue = (RichCurve->Eval(MinTime) + RichCurve->Eval(MaxTime)) * 0.5f;
-		RichCurve->AddKey(0.0f, BlendedValue);
-		RichCurve->AddKey(24.0f, BlendedValue);
-	}
-
-	RichCurve->PreInfinityExtrap = RCCE_Cycle;
-	RichCurve->PostInfinityExtrap = RCCE_Cycle;
 }
 
 void UTODCurveFunctionLibrary::SealColorCurveFor24Hours(FRuntimeCurveLinearColor& InCurve)
 {
 	for (int32 i = 0; i < 4; ++i)
 	{
-		FRichCurve* RichCurve = &InCurve.ColorCurves[i];
-		if (!RichCurve || RichCurve->GetNumKeys() == 0) continue;
-
-		float MinTime, MaxTime;
-		RichCurve->GetTimeRange(MinTime, MaxTime);
-
-		float ValueAtZero = 0.0f;
-		float ValueAt24 = 0.0f;
-
-		if (MaxTime == 24.0f && MinTime > 0.0f)
-		{
-			ValueAtZero = RichCurve->Eval(24.0f);
-			RichCurve->AddKey(0.0f, ValueAtZero);
-		}
-		else if (MinTime == 0.0f && MaxTime < 24.0f)
-		{
-			ValueAt24 = RichCurve->Eval(0.0f);
-			RichCurve->AddKey(24.0f, ValueAt24);
-		}
-		else if (MinTime > 0.0f && MaxTime < 24.0f)
-		{
-			float BlendedValue = (RichCurve->Eval(MinTime) + RichCurve->Eval(MaxTime)) * 0.5f;
-			RichCurve->AddKey(0.0f, BlendedValue);
-			RichCurve->AddKey(24.0f, BlendedValue);
-		}
-
-		RichCurve->PreInfinityExtrap = RCCE_Cycle;
-		RichCurve->PostInfinityExtrap = RCCE_Cycle;
+		SealRichCurveFor24Hours(InCurve.ColorCurves[i]);
 	}
 }

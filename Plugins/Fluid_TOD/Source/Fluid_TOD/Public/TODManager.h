@@ -470,8 +470,6 @@ protected:
     virtual bool ShouldTickIfViewportsOnly() const override { return true; }
 
 private:
-    FTODCurveEvaluator CurveEvaluator;
-    FTODEditor EditorModule;
     FTODSystem TODSystem;
     FTimerHandle DebugTimerHandle;
 

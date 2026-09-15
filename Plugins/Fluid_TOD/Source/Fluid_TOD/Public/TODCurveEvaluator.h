@@ -15,13 +15,13 @@ struct FTODPPVEntry
 class FLUID_TOD_API FTODCurveEvaluator
 {
 public:
-    void ApplyPPVBlending(ATODManager* Owner, float CurrentTime);
+    static void ApplyPPVBlending(ATODManager* Owner, float CurrentTime);
 
-    void RebuildPPVCache(ATODManager* Owner);
+    static void RebuildPPVCache(ATODManager* Owner);
 
-    void BakeTODCurves(ATODManager* Owner);
+    static void BakeTODCurves(ATODManager* Owner);
 
-    void GetTODSettingsAtTime(
+    static void GetTODSettingsAtTime(
         ATODManager* Owner,
         float InTime,
         FTODSunMoonSettings& OutSun,
@@ -31,11 +31,11 @@ public:
         FTODSkyAtmosphereSettings& OutSkyAtmosphere
     );
 
-    float GetMoonSourceScaleAtTime(const class ATODManager* Owner, float InTime) const;
-    float GetMoonGlowScaleAtTime(const class ATODManager* Owner, float InTime) const;
-    float GetMoonIntensity(const class ATODManager* Owner, float InTime) const;
+    static float GetMoonSourceScaleAtTime(const class ATODManager* Owner, float InTime);
+    static float GetMoonGlowScaleAtTime(const class ATODManager* Owner, float InTime);
+    static float GetMoonIntensity(const class ATODManager* Owner, float InTime);
 
-    float GetSunIntensity(const class ATODManager* Owner, float InTime) const;
+    static float GetSunIntensity(const class ATODManager* Owner, float InTime);
 
     static TArray<FRuntimeFloatCurve*> GetAllFloatCurves(class UTODCurveContainer* CurveData);
     static TArray<FRuntimeCurveLinearColor*> GetAllColorCurves(class UTODCurveContainer* CurveData);

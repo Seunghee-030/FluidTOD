@@ -257,46 +257,31 @@ void FTODSystem::UpdateState(ATODManager* Owner, float CurrentTime)
 	float SunsetStart = Owner->CalculatedSunsetTime - Owner->TransitionDuration;
 	float DuskEnd = Owner->CalculatedSunsetTime + Owner->TransitionDuration;
 
-	ETODState NewState;
-	ETODState NewPreviousState;
-
 	// 경과시간 계산을 위한 세그먼트 시작 시간
 	float SegmentStart;
 
 	if (SafeTime >= DawnStart && SafeTime < Owner->CalculatedSunriseTime)
 	{
-		NewState = ETODState::Dawn;
-		NewPreviousState = ETODState::Night;
 		SegmentStart = DawnStart;
 	}
 	else if (SafeTime >= Owner->CalculatedSunriseTime && SafeTime < SunriseEnd)
 	{
-		NewState = ETODState::Sunrise;
-		NewPreviousState = ETODState::Dawn;
 		SegmentStart = Owner->CalculatedSunriseTime;
 	}
 	else if (SafeTime >= SunriseEnd && SafeTime < SunsetStart)
 	{
-		NewState = ETODState::Day;
-		NewPreviousState = ETODState::Sunrise;
 		SegmentStart = SunriseEnd;
 	}
 	else if (SafeTime >= SunsetStart && SafeTime < Owner->CalculatedSunsetTime)
 	{
-		NewState = ETODState::Sunset;
-		NewPreviousState = ETODState::Day;
 		SegmentStart = SunsetStart;
 	}
 	else if (SafeTime >= Owner->CalculatedSunsetTime && SafeTime < DuskEnd)
 	{
-		NewState = ETODState::Dusk;
-		NewPreviousState = ETODState::Sunset;
 		SegmentStart = Owner->CalculatedSunsetTime;
 	}
 	else
 	{
-		NewState = ETODState::Night;
-		NewPreviousState = ETODState::Dusk;
 		SegmentStart = DuskEnd;
 	}
 
@@ -400,14 +385,14 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Sun
 	if (IsValid(Owner->SunLightComponent))
 	{
-		if (!Owner->SunLightComponent->bAtmosphereSunLight)
-		{
-			//Owner->SunLightComponent->SetAtmosphereSunLight(true);
-			Owner->SunLightComponent->MarkRenderStateDirty();
-		}
-
 		FTODSunMoonSettings& Cache = AppliedState.Sun;
 		const bool bForce = !AppliedState.bSunInitialized;
+
+		// 라이트가 (재)탐색된 직후 한 번만 확인해 불필요한 렌더 스테이트 갱신을 막는다.
+		if (bForce && !Owner->SunLightComponent->bAtmosphereSunLight)
+		{
+			Owner->SunLightComponent->MarkRenderStateDirty();
+		}
 
 		if (bForce || HasChangedNoticeably(Sun.Intensity, Cache.Intensity, EpsIntensityLarge))
 		{
@@ -441,16 +426,15 @@ void FTODSystem::UpdateTOD(ATODManager* Owner, float CurrentTime)
 	// Moon
 	if (IsValid(Owner->MoonLightComponent))
 	{
-		// 달의 대기 산란 영향 차단 (붉은 달 방지)
-		if (Owner->MoonLightComponent->bAtmosphereSunLight)
+		FTODMoonSettings& Cache = AppliedState.Moon;
+		const bool bForce = !AppliedState.bMoonInitialized;
+
+		if (bForce && Owner->MoonLightComponent->bAtmosphereSunLight)
 		{
 			Owner->MoonLightComponent->MarkRenderStateDirty();
 		}
 		Owner->MoonLightComponent->SetAtmosphereSunLightIndex(1);
 		Owner->MoonLightComponent->bPerPixelAtmosphereTransmittance = false;
-
-		FTODMoonSettings& Cache = AppliedState.Moon;
-		const bool bForce = !AppliedState.bMoonInitialized;
 
 		if (bForce || HasChangedNoticeably(Moon.Intensity, Cache.Intensity, EpsIntensityLarge))
 		{

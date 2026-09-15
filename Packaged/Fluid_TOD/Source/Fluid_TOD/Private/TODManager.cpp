@@ -556,12 +556,12 @@ void ATODManager::UpdateMoonMeshTransform()
 // ======== Curve Evaluation =========
 void ATODManager::BakeTODCurves()
 {
-	CurveEvaluator.BakeTODCurves(this);
+	FTODCurveEvaluator::BakeTODCurves(this);
 }
 
 void ATODManager::ApplyPPVBlending(float CurrentTime)
 {
-	CurveEvaluator.ApplyPPVBlending(this, CurrentTime);
+	FTODCurveEvaluator::ApplyPPVBlending(this, CurrentTime);
 }
 
 void ATODManager::GetTODSettingsAtTime(
@@ -572,7 +572,7 @@ void ATODManager::GetTODSettingsAtTime(
 	FTODFogSettings& OutFog,
 	FTODSkyAtmosphereSettings& OutSkyAtmosphere)
 {
-	CurveEvaluator.GetTODSettingsAtTime(
+	FTODCurveEvaluator::GetTODSettingsAtTime(
 		this,
 		InTime,
 		OutSun,
@@ -736,22 +736,22 @@ float ATODManager::GetMoonAlignmentErrorDeg() const
 
 float ATODManager::GetMoonSourceScaleAtTime(float InTime) const
 {
-	return CurveEvaluator.GetMoonSourceScaleAtTime(this, InTime);
+	return FTODCurveEvaluator::GetMoonSourceScaleAtTime(this, InTime);
 }
 
 float ATODManager::GetMoonGlowScaleAtTime(float InTime) const
 {
-	return CurveEvaluator.GetMoonGlowScaleAtTime(this, InTime);
+	return FTODCurveEvaluator::GetMoonGlowScaleAtTime(this, InTime);
 }
 
 float ATODManager::GetMoonIntensity(float InTime) const
 {
-	return CurveEvaluator.GetMoonIntensity(this, InTime);
+	return FTODCurveEvaluator::GetMoonIntensity(this, InTime);
 }
 
 float ATODManager::GetSunIntensity(float InTime) const
 {
-	return CurveEvaluator.GetSunIntensity(this, InTime);
+	return FTODCurveEvaluator::GetSunIntensity(this, InTime);
 }
 
 float ATODManager::GetFinalSpeed(float InTime)
@@ -817,29 +817,29 @@ void ATODManager::SetSunAzimuthOffset(float InAzimuthOffset)
 // ======= Presets: Editor =========
 void ATODManager::SaveNewPreset()
 {
-	EditorModule.SaveNewPreset(this);
+	FTODEditor::SaveNewPreset(this);
 }
 
 void ATODManager::SaveCurrentPreset()
 {
-	EditorModule.SaveCurrentPreset(this);
+	FTODEditor::SaveCurrentPreset(this);
 }
 
 void ATODManager::OpenPresetDialog()
 {
-	EditorModule.OpenPresetDialog(this);
+	FTODEditor::OpenPresetDialog(this);
 }
 
 void ATODManager::LoadSelectedPreset()
 {
-	EditorModule.LoadSelectedPreset(this);
+	FTODEditor::LoadSelectedPreset(this);
 	BakeTODCurves();
 	UpdateTOD(CurrentSystemTime);
 }
 
 void ATODManager::ForceViewportRedraw()
 {
-	EditorModule.ForceViewportRedraw(this);
+	FTODEditor::ForceViewportRedraw(this);
 }
 
 // ========= System ===========

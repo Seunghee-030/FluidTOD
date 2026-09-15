@@ -2,9 +2,9 @@
 	"OutputFiles": [
 		"Module.Fluid_TOD.cpp.obj",
 		"Fluid_TOD.cpp.obj",
-		"MyBlueprintFunctionLibrary.cpp.obj",
 		"TODCurveContainer.cpp.obj",
 		"TODCurveEvaluator.cpp.obj",
+		"TODCurveFunctionLibrary.cpp.obj",
 		"TODEditor.cpp.obj",
 		"TODManager.cpp.obj",
 		"TODSystem.cpp.obj",
